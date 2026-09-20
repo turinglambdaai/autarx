@@ -1,52 +1,163 @@
 # Architecture
 
+## Product architecture, not configurator architecture
+
+Autarx is an AUTOSAR Integration Workbench. Its core responsibility is to understand engineering data across OEM and supplier boundaries, not to become a production BSW/RTE/MCAL generator.
+
+The architecture therefore optimizes for:
+
+- multi-file ARXML workspaces
+- provenance-preserving semantic indexes
+- reference tracing
+- semantic diff and ECU impact analysis
+- deterministic CLI/CI automation
+- thin GUI and AI clients
+- vendor-tool hand-off for authoritative validation/generation
+
+See [docs/PRODUCT.md](docs/PRODUCT.md) for the product boundary.
+
 ## Stack
 
-C# / .NET 10, Avalonia for the GUI. One UI-free core, two frontends.
+C# / .NET 10, Avalonia for the GUI. One UI-free core, multiple clients.
+
+The repository stays single-language for now. A Rust core may be reconsidered only if profiling, portability, distribution, or library requirements justify the added FFI/process boundary. For an independent developer, reducing architectural surface area is currently more valuable than adding another implementation language.
 
 Why this stack:
 
-- **One core, two frontends from day one.** The GUI and the CLI are thin
-  shells over `Autarx.Core`; neither contains domain logic.
-- **The BCL XML/JSON stack is production-grade** — streaming `XmlReader`
-  chews through the 10M+ line ECUC files real projects ship, and
-  `System.Text.Json` powers the CLI's machine interface.
-- **Self-contained single-file distribution** — customers install nothing.
-- **IP protection is tractable** — unlike JS-based UI stacks, the shipping
-  artifact is compiled IL that can be obfuscated when the product goes to
-  market.
-- Alternatives considered: Electron/TypeScript (weakest IP protection, no
-  precedent in our toolchain) and our own Racket stack (glaze/tessera are
-  promising but pre-1.0 — a commercial product should not ride on framework
-  risk).
+- **One core for GUI, CLI, CI and AI.** Domain logic does not live in the frontend.
+- **Production-grade XML/JSON primitives.** `XmlReader` and `System.Text.Json` are sufficient for the current parser/automation surface.
+- **Self-contained distribution.** Customers should not need a preinstalled runtime.
+- **Avalonia keeps the desktop client native enough for engineering workflows** while preserving Windows/Linux/macOS reach.
 
-## Layering
+## Layers
 
 ```text
-Autarx.Core   ARXML parse → ECUC model → validation. No UI dependencies.
-   ├── Autarx.Cli   info / modules / validate, --json output
-   └── Autarx.Gui   Avalonia workspace (MVVM)
++-------------------------------------------------------------+
+| Clients                                                     |
+|                                                             |
+|  Autarx.Gui        Autarx.Cli        CI / AI / integrations |
++---------------------------+---------------------------------+
+                            |
+                            v
++-------------------------------------------------------------+
+| Semantic / application layer                                |
+|                                                             |
+|  Query   Trace   Diff   Impact   Validation   Reports       |
+|                                                             |
+|  Domain projections:                                        |
+|  System / ECU / Communication / SWC / ECUC                 |
++---------------------------+---------------------------------+
+                            |
+                            v
++-------------------------------------------------------------+
+| Workspace                                                   |
+|                                                             |
+|  Documents   Identifiables   Reference graph   Provenance    |
++---------------------------+---------------------------------+
+                            |
+                            v
++-------------------------------------------------------------+
+| Raw ARXML                                                   |
+|                                                             |
+|  Parser   source locations (planned)   round-trip support    |
++-------------------------------------------------------------+
+                            |
+                            v
++-------------------------------------------------------------+
+| Vendor adapters (optional / isolated)                       |
+|                                                             |
+|  DaVinci   EB tresos   ETAS ISOLAR   OEM-specific tools    |
++-------------------------------------------------------------+
 ```
 
-## ARXML strategy
+### Raw ARXML model
 
-- Matching is **LocalName-based**: namespace prefixes never affect what is
-  parsed. Vendor tools disagree about prefixes; LocalName is what survives
-  interchange.
-- One streaming pass builds an `ArxmlElement` tree. ECUC modules are then
-  located by whole-tree scan, so files with modules directly under
-  `AR-PACKAGE/ELEMENTS` or wrapped in `ECUC-VALUE-COLLECTION` / `ECUC-VALUES`
-  all work.
-- Planned (M1): write-back that preserves untouched subtrees byte-for-byte,
-  and per-module chunked loading for huge files.
+`ArxmlElement` is the loss-tolerant raw representation used by the parser. It must remain independent from ECUC-specific semantics.
 
-## Diagnostics
+Current matching is LocalName-based so namespace prefixes do not affect discovery. Namespace URI / AUTOSAR release awareness should be added explicitly rather than inferred from prefixes.
 
-Structural validation reports SHORT-NAME paths
-(`Mcu/McuGeneralConfiguration/...`) — how AUTOSAR engineers actually refer to
-configuration locations.
+### Workspace
 
-Rule codes are part of the CLI contract. **Never renumber; append only.**
+`ArxmlWorkspace` is the first shared semantic layer. It can load a file or an ARXML directory and builds:
+
+- an identifiable-object index from `SHORT-NAME`
+- AUTOSAR-like hierarchical paths
+- simple reference edges from `*-REF` / `*-TREF`
+- source-file provenance
+
+This is intentionally generic. It exists so System Description, ECU Extract, communication and ECUC models do not each invent independent document/reference handling.
+
+### Semantic projections
+
+A projection turns raw indexed objects into domain concepts without owning the source document.
+
+Planned projections include:
+
+- **System / ECU** — `SYSTEM`, `ECU-INSTANCE`, clusters, connectors, mappings
+- **Communication** — Signal / PDU / Frame / Cluster / ECU relationships
+- **SWC** — components, ports, interfaces and deployment/mapping
+- **ECUC** — module/container/parameter/reference configuration
+
+The existing `EcucReader` is an early projection. It should gradually be adapted to consume workspace semantics, not become the foundation of every other feature.
+
+### Query and trace
+
+Search starts with deterministic object/path/type matching. Later query syntax should operate on semantic objects and graph relationships, not raw XPath-like XML positions.
+
+`refs` is the first graph operation. `trace` will compose edges into engineering paths such as:
+
+```text
+Signal -> PDU -> Frame -> Cluster -> ECU
+```
+
+or, when ECUC data is present:
+
+```text
+Com -> PduR -> SecOC -> CanIf
+```
+
+### Diff and impact
+
+Semantic diff compares engineering identities and properties rather than serialized XML lines.
+
+Impact analysis is a higher-level operation over semantic diff plus the reference/deployment graph. The key initial use case is:
+
+```text
+OEM Delivery V32 + OEM Delivery V33 + target ECU
+                    -> ECU impact report
+```
+
+The report should distinguish relevant changes from unrelated vehicle changes and retain provenance to the exact source objects/files.
+
+### Validation
+
+Validation is layered and claims must match the layer:
+
+1. XML / parser validity
+2. workspace consistency / broken references
+3. deterministic Autarx semantic rules
+4. optional vendor validation through adapters
+
+Autarx must never present layer 1-3 as equivalent to a vendor's complete production configuration validation.
+
+### Editing
+
+Editing is intentionally later than analysis. Before adding broad write capability the engine needs stable identity, provenance, semantic diff and tests.
+
+The intended flow is:
+
+```text
+plan -> review semantic patch -> write ARXML -> Autarx validate
+     -> optional vendor validate -> vendor generate
+```
+
+Production code generation remains outside the core product boundary.
+
+## Existing ECUC diagnostics
+
+The current ECUC validation reports SHORT-NAME paths.
+
+Rule codes are part of the CLI contract. Never renumber; append only.
 
 | Code   | Severity | Rule |
 | :----- | :------- | :--- |
@@ -57,15 +168,26 @@ Rule codes are part of the CLI contract. **Never renumber; append only.**
 | ARX005 | Warning  | Parameter DEFINITION-REF outside module definition |
 | ARX006 | Error    | Module/container missing SHORT-NAME |
 
-## CLI JSON contract
+Future rule families should make their scope clear (workspace/system/communication/ECUC/vendor adapter) rather than mixing all checks into one validator.
 
-- `--json` emits camelCase keys, indented.
-- Exit codes: `0` success, `1` validation errors found, `2` usage/file/parse
-  error. Deterministic, documented in `--help`.
-- Additive changes only — scripts and AI agents parse this output.
+## CLI contract
 
-## Testing
+- `--json` emits camelCase keys.
+- Exit codes remain deterministic.
+- Machine-readable output changes are additive whenever possible.
+- Human formatting is not a stable API; JSON is.
+- Commands should work against workspaces/directories when their semantics are naturally multi-file.
 
-Parser, ECUC reader, and validation suites run against a checked-in fixture
-(`tests/Autarx.Tests/Fixtures/minimal.arxml`). CI builds, tests, and runs the
-CLI against the fixture as a smoke test on every push.
+## Testing strategy
+
+Tests should grow from parser-level fixtures into scenario fixtures representing realistic deliveries:
+
+- multi-file reference resolution
+- duplicate short names in separate scopes
+- System + ECU Extract examples
+- communication chains
+- semantic diff fixtures
+- ECU impact fixtures
+- vendor adapter contract tests without requiring proprietary tools in normal CI
+
+Every semantic result should be traceable to its source ARXML and covered by deterministic tests before AI consumes it.
