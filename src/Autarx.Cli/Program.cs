@@ -1,0 +1,67 @@
+using System.Reflection;
+
+namespace Autarx.Cli;
+
+internal static class Program
+{
+    public static int Main(string[] args)
+    {
+        if (args.Length == 0)
+            return Usage();
+
+        if (args[0] is "-h" or "--help" or "help")
+            return Usage(0);
+
+        if (args[0] is "--version" or "-v")
+        {
+            Console.WriteLine($"autarx {Version()}");
+            return 0;
+        }
+
+        return args[0] switch
+        {
+            "info" => Commands.Info(args[1..]),
+            "modules" => Commands.Modules(args[1..]),
+            "validate" => Commands.Validate(args[1..]),
+            _ => UnknownCommand(args[0]),
+        };
+    }
+
+    internal static string Version()
+    {
+        var v = typeof(Program).Assembly.GetName().Version;
+        return v is null ? "0.0.0" : $"{v.Major}.{v.Minor}.{v.Build}";
+    }
+
+    private static int UnknownCommand(string name)
+    {
+        Console.Error.WriteLine($"autarx: unknown command '{name}' — try 'autarx --help'");
+        return 2;
+    }
+
+    private static int Usage(int exitCode = 2)
+    {
+        Console.WriteLine($"""
+            autarx {Version()} — AUTOSAR configuration tool
+
+            Usage:
+              autarx <command> [options] <file.arxml>
+
+            Commands:
+              info       Summarize an ARXML file (size, element count, ECUC modules)
+              modules    List ECUC module configurations (containers, parameters)
+              validate   Run structural validation and report diagnostics
+
+            Options:
+              --json     Machine-readable JSON output
+              -h, --help Show this help
+              --version  Show version
+
+            Exit codes:
+              0  success
+              1  validation reported errors (validate only)
+              2  usage, file, or parse error
+            """);
+        return exitCode;
+    }
+}

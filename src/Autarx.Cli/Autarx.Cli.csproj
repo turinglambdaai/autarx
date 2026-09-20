@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>autarx</AssemblyName>
+    <RootNamespace>Autarx.Cli</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Autarx.Core\Autarx.Core.csproj" />
+  </ItemGroup>
+
+</Project>

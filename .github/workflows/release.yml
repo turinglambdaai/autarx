@@ -1,0 +1,74 @@
+name: release
+
+# Builds self-contained single-file binaries on GitHub's runners and ships
+# them via GitHub Releases — end users just download their platform's zip
+# and run, no .NET install needed.
+#   - workflow_dispatch : manual run, uploads build artifacts to the Actions run.
+#   - push tag v*        : creates a GitHub Release with the zips attached.
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { rid: win-x64,   platform: windows-x64 }
+          - { rid: osx-arm64, platform: macos-arm64 }
+          - { rid: linux-x64, platform: linux-x64 }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish GUI (${{ matrix.rid }})
+        run: >-
+          dotnet publish src/Autarx.Gui/Autarx.Gui.csproj -c Release -r ${{ matrix.rid }}
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:EnableCompressionInSingleFile=true
+          -p:PublishTrimmed=false
+          -o publish/gui
+
+      - name: Publish CLI (${{ matrix.rid }})
+        run: >-
+          dotnet publish src/Autarx.Cli/Autarx.Cli.csproj -c Release -r ${{ matrix.rid }}
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:EnableCompressionInSingleFile=true
+          -p:PublishTrimmed=false
+          -o publish/cli
+
+      - name: Package
+        working-directory: publish
+        run: |
+          zip -r "Autarx-gui-${{ matrix.platform }}.zip" gui -x '*.pdb'
+          zip -r "Autarx-cli-${{ matrix.platform }}.zip" cli -x '*.pdb'
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Autarx-${{ matrix.platform }}
+          path: |
+            publish/Autarx-gui-${{ matrix.platform }}.zip
+            publish/Autarx-cli-${{ matrix.platform }}.zip
+
+      - name: Attach to Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: publish/Autarx-*.zip
+          generate_release_notes: true

@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Autarx.Core/Autarx.Core.csproj" />
+    <Project Path="src/Autarx.Cli/Autarx.Cli.csproj" />
+    <Project Path="src/Autarx.Gui/Autarx.Gui.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Autarx.Tests/Autarx.Tests.csproj" />
+  </Folder>
+</Solution>

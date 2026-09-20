@@ -1,0 +1,17 @@
+bin/
+obj/
+out/
+publish/
+artifacts/
+
+.vs/
+.idea/
+*.user
+*.suo
+*.binlog
+
+TestResults/
+*.lcov
+
+*.DS_Store
+Thumbs.db

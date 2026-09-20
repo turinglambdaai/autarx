@@ -1,0 +1,30 @@
+name: ci
+
+# Build + test on every push/PR to main.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build
+        run: dotnet build Autarx.slnx -c Release
+
+      - name: Test
+        run: dotnet test -c Release --no-build
+
+      - name: CLI smoke test
+        run: |
+          dotnet run --project src/Autarx.Cli -c Release --no-build -- info tests/Autarx.Tests/Fixtures/minimal.arxml
+          dotnet run --project src/Autarx.Cli -c Release --no-build -- validate tests/Autarx.Tests/Fixtures/minimal.arxml --json
