@@ -35,6 +35,10 @@ jobs:
           dotnet run --project src/Autarx.Cli -c Release --no-build -- refs VehicleSpeed tests/Autarx.Tests/Fixtures/OemDelivery --incoming
           dotnet run --project src/Autarx.Cli -c Release --no-build -- trace Pdu_VehicleSpeed tests/Autarx.Tests/Fixtures/OemDelivery --depth 2 --json
           # the fixture intentionally contains one unresolved reference —
-          # the gate is the exit code, not just the output
+          # the gate is the exit code, not just the output (bash -e would
+          # abort on the expected failure, so disable it for the check)
+          set +e
           dotnet run --project src/Autarx.Cli -c Release --no-build -- unresolved tests/Autarx.Tests/Fixtures/OemDelivery --json
-          test $? -eq 1
+          code=$?
+          set -e
+          test "$code" -eq 1
