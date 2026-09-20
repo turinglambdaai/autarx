@@ -28,5 +28,13 @@ jobs:
         run: |
           dotnet run --project src/Autarx.Cli -c Release --no-build -- info tests/Autarx.Tests/Fixtures/minimal.arxml
           dotnet run --project src/Autarx.Cli -c Release --no-build -- validate tests/Autarx.Tests/Fixtures/minimal.arxml --json
-          dotnet run --project src/Autarx.Cli -c Release --no-build -- find Mcu tests/Autarx.Tests/Fixtures/minimal.arxml --json
-          dotnet run --project src/Autarx.Cli -c Release --no-build -- refs McuModuleConfiguration tests/Autarx.Tests/Fixtures/minimal.arxml --json
+          dotnet run --project src/Autarx.Cli -c Release --no-build -- inspect tests/Autarx.Tests/Fixtures/OemDelivery --json
+          dotnet run --project src/Autarx.Cli -c Release --no-build -- find VehicleSpeed tests/Autarx.Tests/Fixtures/OemDelivery --json
+          dotnet run --project src/Autarx.Cli -c Release --no-build -- ecus tests/Autarx.Tests/Fixtures/OemDelivery
+          dotnet run --project src/Autarx.Cli -c Release --no-build -- ecu tests/Autarx.Tests/Fixtures/OemDelivery RadarFL --json
+          dotnet run --project src/Autarx.Cli -c Release --no-build -- refs VehicleSpeed tests/Autarx.Tests/Fixtures/OemDelivery --incoming
+          dotnet run --project src/Autarx.Cli -c Release --no-build -- trace Pdu_VehicleSpeed tests/Autarx.Tests/Fixtures/OemDelivery --depth 2 --json
+          # the fixture intentionally contains one unresolved reference —
+          # the gate is the exit code, not just the output
+          dotnet run --project src/Autarx.Cli -c Release --no-build -- unresolved tests/Autarx.Tests/Fixtures/OemDelivery --json
+          test $? -eq 1

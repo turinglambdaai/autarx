@@ -1,10 +1,7 @@
 # Autarx
 
-**AUTOSAR Integration Workbench for OEM-to-supplier engineering workflows.**
-
-Autarx opens AUTOSAR engineering data directly and helps engineers **inspect, search, trace references, compare deliveries, analyze ECU impact, validate structure, and automate the same workflows from CLI/CI/AI**.
-
-It is not intended to replace DaVinci Configurator, EB tresos, ETAS ISOLAR, or vendor production code generators.
+**A modern AUTOSAR engineering workbench for inspecting, understanding, comparing, tracing and automating OEM-to-supplier integration data.**
+Point it at an OEM delivery or ECU extract directory and get a semantic workspace: inventories, reference graphs, ECU discovery and unresolved-reference checks — scriptable end to end from an agent-friendly JSON CLI. Autarx sits **above** the vendor generators; it does not replace DaVinci, tresos or ISOLAR.
 
 [![CI](https://github.com/turinglambdaai/autarx/actions/workflows/ci.yml/badge.svg)](https://github.com/turinglambdaai/autarx/actions/workflows/ci.yml)
 [![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
@@ -15,130 +12,81 @@ It is not intended to replace DaVinci Configurator, EB tresos, ETAS ISOLAR, or v
 
 ---
 
-## Product direction
-
-The first target users are Tier-1 system integration engineers and ECU AUTOSAR engineers receiving OEM deliveries such as:
-
-- System Description / System Extract
-- ECU Extract
-- communication-related ARXML
-- ECU configuration (ECUC) ARXML
-- multi-file delivery packages
-
-Autarx focuses on the engineering gap between receiving those artifacts and opening the vendor configuration/generation toolchain.
-
-```text
-OEM delivery
-System / ECU Extract / ARXML package
-                |
-                v
-             Autarx
-   inspect / find / refs / trace
-   semantic diff / ECU impact
-      validation / reporting
-                |
-                v
-       reviewed engineering data
-                |
-        +-------+--------+
-        |                |
-        v                v
-     DaVinci          tresos / ISOLAR
-        |                |
-        +-- authoritative vendor validation / generation --> production code
-```
-
-**Product rule:** Autarx may integrate with vendor generators, but production BSW/RTE/MCAL generation is not owned by the Autarx core product.
-
-See [docs/PRODUCT.md](docs/PRODUCT.md) for the scope and non-goals.
-
 ## Why Autarx?
 
-- **OEM deliveries are difficult to understand** — useful engineering meaning is spread across packages, references, mappings, and many ARXML files.
-- **XML diff is not engineering diff** — suppliers need to know what changed for their ECU, not which lines moved.
-- **Cross-references are expensive to follow manually** — engineers need fast answers to “who references this?” and “where does this object lead?”.
-- **Vendor tools are authoritative but heavy** — many analysis tasks should be possible before launching a full configurator.
-- **Automation needs a stable surface** — the same analysis should run in CLI, CI, GUI, and AI workflows.
+- **Deliveries are opaque** — an OEM drop is dozens of ARXML files with system descriptions, ECU extracts and ECUC bundles; nothing answers "what is in here, and does it hold together" without opening a full vendor toolchain
+- **ARXML is grep-hostile** — engineers hand-navigate XML trees of millions of lines; tracing one signal from the ECU back to the cluster means mentally resolving dozens of REF elements across files
+- **No automation surface** — CI cannot diff, trace or sanity-check deliveries because no vendor tool exposes a stable machine interface
+- **Agents cannot help** — LLM agents work on text surfaces with structured feedback; vendor tools offer neither
 
-## Current capabilities
+Autarx fixes that: one UI-free semantic engine that reads ARXML directly, a native Avalonia GUI for humans, and a JSON-first CLI for scripts, CI and AI agents.
 
-The repository is still early, but the architecture now separates raw ARXML, shared workspace semantics, and ECUC-specific projections.
+## What Autarx is — and is not
 
-- **ARXML parser** — streaming `XmlReader`, LocalName-based matching
-- **Multi-file workspace** — open one `.arxml` file or recursively load a directory
-- **Semantic object index** — discover AUTOSAR identifiables by `SHORT-NAME`
-- **Reference graph** — index simple `*-REF` / `*-TREF` edges for incoming/outgoing tracing
-- **ECUC projection** — existing module → container → parameter/reference view
-- **Structural ECUC validation** — current ARX001–ARX006 rules
-- **JSON-first CLI** — stable machine-readable output for scripts/CI/agents
-- **Avalonia GUI shell** — native desktop frontend; domain logic remains in the UI-free core
+Autarx **can**: read ARXML workspaces, index identifiables with stable absolute paths, build forward/reverse reference graphs, search, trace, inspect, check basic consistency, emit deterministic JSON.
 
-## CLI
+Autarx **does not**: replace DaVinci/tresos/ISOLAR, generate production BSW/RTE/MCAL code, or claim its validation substitutes for vendor validation. `validate` means structural checks only. The chain is: **Autarx analyses → Vendor Tool → Vendor Validation → Vendor Generator.** See [docs/PRODUCT.md](docs/PRODUCT.md).
 
-Existing ECUC-oriented commands remain available:
+## Features
 
-```bash
-autarx info Mcu_Can.arxml
-autarx modules Mcu_Can.arxml --json
-autarx validate Mcu_Can.arxml
-```
+- **Workspace semantic index** — every package-level identifiable gets a stable absolute short-name path (`/Vehicle/Signals/VehicleSpeed`); identity never relies on XML line numbers
+- **Semantic classification** — systems, ECUs, clusters, frames, PDUs, signals, SW components, ports, interfaces, ECUC modules; unknown element types are reported honestly as unknown and never break parsing
+- **Reference engine** — forward and reverse graphs over `*-REF`/`*-TREF` elements, cross-file resolution, nested-element attribution (`/Pdu_VehicleSpeed/VehicleSpeedMapping`), duplicate-path detection, unresolved-reference findings
+- **OEM delivery inspection** — `inspect` reports files, sizes, element counts, packages, AUTOSAR namespace/schema/release and the full semantic inventory in one shot
+- **ECU discovery** — `ecus` lists ECU instances; `ecu <name>` shows an ECU's direct relations with explicit `direct` relationship confidence (no guessed semantics)
+- **Agent-friendly CLI** — camelCase JSON, deterministic exit codes, ambiguity is reported instead of guessed; a ready-made command chain for CI gates
+- **Avalonia workspace** — native GUI on Windows, macOS and Linux
+- **Self-contained builds** — single-file executables per platform, no .NET install needed
 
-Workspace/semantic commands can operate on one file or a directory of ARXML files:
+## Command line
 
 ```bash
-# find by SHORT-NAME, path fragment, or AUTOSAR element type
-autarx find VehicleSpeed ./oem-delivery
-autarx find ECU-INSTANCE ./oem-delivery --json
+# inspect a whole OEM delivery directory
+autarx inspect ./OEM_Delivery/
+autarx inspect ./OEM_Delivery/ --json
 
-# trace incoming/outgoing references for matching objects
-autarx refs /Can/Can/CanGeneralConfiguration ./project
-autarx refs VehicleSpeed ./oem-delivery --json
+# find objects by SHORT-NAME substring
+autarx find VehicleSpeed ./OEM_Delivery/
+
+# who references whom
+autarx refs VehicleSpeed ./OEM_Delivery/
+autarx refs VehicleSpeed ./OEM_Delivery/ --incoming
+autarx refs /Vehicle/Clusters/VehicleCan ./OEM_Delivery/ --outgoing --json
+
+# follow the reference graph
+autarx trace Pdu_VehicleSpeed ./OEM_Delivery/ --depth 3
+
+# ECU discovery
+autarx ecus ./OEM_Delivery/
+autarx ecu ./OEM_Delivery/ Gateway --json
+
+# delivery quality seed — exit code 1 when findings exist
+autarx unresolved ./OEM_Delivery/
+
+# single-file ECUC commands (structural validation only — not vendor validation)
+autarx info Mcu.arxml
+autarx modules Mcu.arxml --json
+autarx validate Mcu.arxml
 ```
 
-Planned high-value commands include `inspect`, `trace`, `diff`, and `impact --ecu <name>`.
+`autarx unresolved --json` output:
 
-## Architecture
-
-```text
-                    Autarx.Core
-                         |
-             +-----------+-----------+
-             |                       |
-       Raw ARXML model          Workspace index
-             |                 objects / refs
-             |                       |
-             +-----------+-----------+
-                         |
-               Semantic projections
-          System / ECU / Communication / ECUC
-                         |
-              +----------+----------+
-              |                     |
-         Autarx.Cli             Autarx.Gui
-              |                     |
-            CI / AI              Avalonia
-                         |
-                  Vendor adapters
-             DaVinci / tresos / ISOLAR
+```json
+[
+  {
+    "kind": "REQUIRED-INTERFACE-TREF",
+    "sourcePath": "/Vehicle/SwCs/SpeedSensor",
+    "sourceElementPath": "/Vehicle/SwCs/SpeedSensor/CalibrationIn",
+    "targetPath": "/Vehicle/Interfaces/IF_Calibration",
+    "sourceFile": "communication.arxml",
+    "resolved": false
+  }
+]
 ```
-
-ECUC is intentionally **one projection**, not the root model for the whole product. This keeps the engine suitable for OEM System Description and ECU Extract workflows as the product grows.
-
-See [ARCHITECTURE.md](ARCHITECTURE.md).
-
-## What Autarx is not
-
-Autarx is not currently trying to:
-
-- implement a complete AUTOSAR BSW stack
-- generate production BSW/RTE/MCAL C code
-- replace DaVinci Configurator, EB tresos, or ISOLAR
-- become a complete OEM E/E architecture authoring suite
-- use AI as the source of truth for deterministic engineering data
-
-Those boundaries are deliberate so the product remains feasible for a small team while solving real integration pain.
 
 ## Getting started
+
+### Build from source
 
 Requirements: [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0).
 
@@ -146,44 +94,46 @@ Requirements: [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0).
 git clone https://github.com/turinglambdaai/autarx.git
 cd autarx
 dotnet build Autarx.slnx
-dotnet test
-
-dotnet run --project src/Autarx.Cli -- find Mcu tests/Autarx.Tests/Fixtures/minimal.arxml
 dotnet run --project src/Autarx.Gui
+dotnet run --project src/Autarx.Cli -- inspect tests/Autarx.Tests/Fixtures/OemDelivery
 ```
+
+### Tests
+
+```bash
+dotnet test
+```
+
+The suite covers the parser (namespace stripping, attributes, error line numbers), semantic classification, workspace indexing, forward/reverse reference graphs, summaries and traces — over a synthetic non-ECUC System/Communication workspace plus ECUC fixtures, including deliberate unresolved references and ambiguous/duplicate paths.
 
 ## Project structure
 
 ```text
 autarx/
 ├── src/
-│   ├── Autarx.Core/
-│   │   ├── Models/          # raw ARXML + current ECUC projection
-│   │   ├── Parsing/         # ARXML parser + ECUC reader
-│   │   ├── Workspace/       # multi-file object/reference semantic index
-│   │   └── Validation/      # deterministic diagnostics
-│   ├── Autarx.Cli/          # CLI / JSON automation surface
-│   └── Autarx.Gui/          # Avalonia frontend
-├── tests/Autarx.Tests/
-└── docs/
-    ├── PRODUCT.md
-    └── ROADMAP.md
+│   ├── Autarx.Core/            # semantic engine (no UI dependencies)
+│   │   ├── Models/             # SemanticObject, SemanticKind, references, documents
+│   │   ├── Parsing/            # ArxmlParser (streaming), EcucReader, release parser
+│   │   ├── Index/              # WorkspaceIndex builder, graphs, trace, summary
+│   │   └── Validation/         # ValidationEngine, ARX00NN diagnostics
+│   ├── Autarx.Cli/             # workspace + single-file commands, --json
+│   └── Autarx.Gui/             # Avalonia workspace — module tree, details, status bar
+├── tests/Autarx.Tests/         # unit suites + synthetic fixtures (ECUC and non-ECUC)
+├── docs/PRODUCT.md             # positioning, boundaries, non-goals
+└── docs/ROADMAP.md             # M0–M8
 ```
+
+## Design notes
+
+- **Core is the semantic engine, not an ECUC parser** — ECUC is one projection; the top-level model (Workspace, SemanticObject, reference graph) must serve System Descriptions and ECU Extracts just as well
+- **Identity = AUTOSAR absolute path** — stable across rewrites and diff-ready; XML line numbers are never identity
+- **Unknown degrades gracefully** — an unmapped element type is indexed, referenceable and reported as unknown, never a parse failure
+- **Ambiguity is surfaced, not guessed** — duplicate SHORT-NAMEs resolve to an explicit ambiguity result listing every candidate path
+- **The CLI JSON is a machine contract** — camelCase keys, string enums, deterministic exit codes, additive changes only; scripts and AI agents depend on it
 
 ## Roadmap
 
-The near-term roadmap prioritizes **workspace understanding before editing**:
-
-1. multi-file workspace and reference resolution
-2. delivery inspection and System/ECU projections
-3. semantic diff
-4. ECU impact analysis
-5. communication trace views
-6. vendor validation adapters
-7. reviewed editing/patches
-8. AI plan/review/apply on top of deterministic tools
-
-See [docs/ROADMAP.md](docs/ROADMAP.md).
+See [docs/ROADMAP.md](docs/ROADMAP.md): semantic diff (M3), ECU impact analysis (M4), communication trace (M5), vendor tool adapters (M6), reviewed editing (M7), AI agent on the stable tool API (M8).
 
 ## License
 

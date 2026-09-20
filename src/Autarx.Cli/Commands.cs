@@ -1,22 +1,13 @@
 using System.IO;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using Autarx.Core.Models;
 using Autarx.Core.Parsing;
 using Autarx.Core.Validation;
-using Autarx.Core.Workspace;
 
 namespace Autarx.Cli;
 
 internal static class Commands
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        WriteIndented = true,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-    };
-
     public static int Info(string[] args)
     {
         if (!TryParseArgs(args, out var file, out var json, out var error))
@@ -40,7 +31,7 @@ internal static class Commands
 
             if (json)
             {
-                Console.WriteLine(JsonSerializer.Serialize(result, JsonOptions));
+                Console.WriteLine(JsonSerializer.Serialize(result, JsonOutput.Options));
                 return 0;
             }
 
@@ -73,7 +64,7 @@ internal static class Commands
 
             if (json)
             {
-                Console.WriteLine(JsonSerializer.Serialize(rows, JsonOptions));
+                Console.WriteLine(JsonSerializer.Serialize(rows, JsonOutput.Options));
                 return 0;
             }
 
@@ -107,7 +98,7 @@ internal static class Commands
 
             if (json)
             {
-                Console.WriteLine(JsonSerializer.Serialize(result, JsonOptions));
+                Console.WriteLine(JsonSerializer.Serialize(result, JsonOutput.Options));
             }
             else
             {
@@ -119,105 +110,6 @@ internal static class Commands
             }
 
             return result.Errors > 0 ? 1 : 0;
-        });
-    }
-
-    public static int Find(string[] args)
-    {
-        if (!TryParseQueryArgs(args, out var query, out var input, out var json, out var error))
-        {
-            Console.Error.WriteLine(error);
-            return 2;
-        }
-
-        return WithWorkspace(input, workspace =>
-        {
-            var matches = workspace.Find(query)
-                .OrderBy(item => item.Path, StringComparer.Ordinal)
-                .ThenBy(item => item.FilePath, StringComparer.OrdinalIgnoreCase)
-                .Select(item => new FindJson(
-                    item.Path,
-                    item.ShortName,
-                    item.ElementName,
-                    item.FilePath))
-                .ToArray();
-
-            if (json)
-            {
-                Console.WriteLine(JsonSerializer.Serialize(matches, JsonOptions));
-                return 0;
-            }
-
-            foreach (var match in matches)
-                Console.WriteLine($"{match.Path}  [{match.ElementName}]  {match.File}");
-
-            if (matches.Length == 0)
-                Console.WriteLine("no matches");
-
-            return 0;
-        });
-    }
-
-    public static int Refs(string[] args)
-    {
-        if (!TryParseQueryArgs(args, out var query, out var input, out var json, out var error))
-        {
-            Console.Error.WriteLine(error);
-            return 2;
-        }
-
-        return WithWorkspace(input, workspace =>
-        {
-            var objects = workspace.Find(query);
-            if (query.StartsWith('/'))
-                objects = objects.Where(item => string.Equals(item.Path, query, StringComparison.Ordinal));
-
-            var rows = new List<ReferenceJson>();
-            foreach (var item in objects.OrderBy(item => item.Path, StringComparer.Ordinal))
-            {
-                rows.AddRange(workspace.Incoming(item.Path).Select(reference =>
-                    new ReferenceJson(
-                        "in",
-                        item.Path,
-                        reference.SourcePath,
-                        reference.TargetPath,
-                        reference.ReferenceKind,
-                        reference.Destination,
-                        reference.FilePath)));
-
-                rows.AddRange(workspace.Outgoing(item.Path).Select(reference =>
-                    new ReferenceJson(
-                        "out",
-                        item.Path,
-                        reference.SourcePath,
-                        reference.TargetPath,
-                        reference.ReferenceKind,
-                        reference.Destination,
-                        reference.FilePath)));
-            }
-
-            var result = new RefsJson(query, rows.ToArray());
-
-            if (json)
-            {
-                Console.WriteLine(JsonSerializer.Serialize(result, JsonOptions));
-                return 0;
-            }
-
-            if (rows.Count == 0)
-            {
-                Console.WriteLine("no references");
-                return 0;
-            }
-
-            foreach (var row in rows)
-            {
-                var arrow = row.Direction == "in" ? "<-" : "->";
-                var other = row.Direction == "in" ? row.SourcePath : row.TargetPath;
-                Console.WriteLine($"{row.ObjectPath} {arrow} {other}  [{row.ReferenceKind}]");
-            }
-
-            return 0;
         });
     }
 
@@ -247,35 +139,6 @@ internal static class Commands
         catch (IOException ex)
         {
             Console.Error.WriteLine($"autarx: cannot read {file}: {ex.Message}");
-            return 2;
-        }
-        catch (ArxmlParseException ex)
-        {
-            var location = ex.LineNumber > 0 ? $" (line {ex.LineNumber})" : "";
-            Console.Error.WriteLine($"autarx: invalid ARXML{location}: {ex.Message}");
-            return 2;
-        }
-    }
-
-    private static int WithWorkspace(string input, Func<ArxmlWorkspace, int> action)
-    {
-        try
-        {
-            return action(ArxmlWorkspace.Open(input));
-        }
-        catch (FileNotFoundException)
-        {
-            Console.Error.WriteLine($"autarx: input not found: {input}");
-            return 2;
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            Console.Error.WriteLine($"autarx: cannot access {input}: {ex.Message}");
-            return 2;
-        }
-        catch (IOException ex)
-        {
-            Console.Error.WriteLine($"autarx: cannot read {input}: {ex.Message}");
             return 2;
         }
         catch (ArxmlParseException ex)
@@ -320,46 +183,6 @@ internal static class Commands
         return error is null;
     }
 
-    private static bool TryParseQueryArgs(
-        string[] args,
-        out string query,
-        out string input,
-        out bool json,
-        out string? error)
-    {
-        query = "";
-        input = "";
-        json = false;
-        error = null;
-        var positional = new List<string>();
-
-        foreach (var arg in args)
-        {
-            if (arg == "--json")
-            {
-                json = true;
-            }
-            else if (arg.StartsWith('-'))
-            {
-                error = $"autarx: unknown option '{arg}' — try 'autarx --help'";
-                return false;
-            }
-            else
-            {
-                positional.Add(arg);
-            }
-        }
-
-        if (positional.Count != 2)
-        {
-            error = "autarx: expected <query> <file-or-directory> — try 'autarx --help'";
-            return false;
-        }
-
-        query = positional[0];
-        input = positional[1];
-        return true;
-    }
 
     private static string ModulesSuffix(List<EcucModule> modules) =>
         modules.Count > 0 ? $" ({string.Join(", ", modules.Select(m => m.ShortName))})" : "";
@@ -389,22 +212,4 @@ internal static class Commands
         string Message,
         string Path);
 
-    internal sealed record FindJson(
-        string Path,
-        string ShortName,
-        string ElementName,
-        string File);
-
-    internal sealed record RefsJson(
-        string Query,
-        ReferenceJson[] References);
-
-    internal sealed record ReferenceJson(
-        string Direction,
-        string ObjectPath,
-        string SourcePath,
-        string TargetPath,
-        string ReferenceKind,
-        string? Destination,
-        string File);
 }
