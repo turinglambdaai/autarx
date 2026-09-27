@@ -15,7 +15,9 @@ generates BSW/RTE/MCAL code. Private commercial project.
 
 CLI commands: `inspect` `find` `refs` `trace` `ecus` `ecu` `unresolved`
 (workspace) · `diff` `impact` (two deliveries) · `comm` (communication
-projection) · `info` `modules` `validate` (single file).
+projection) · `vendor list|validate` (hand-off only) · `patch plan|apply|undo`
+(reviewed editing) · `mcp` (MCP stdio server) · `info` `modules` `validate`
+(single file).
 
 ## Layout
 
@@ -27,6 +29,10 @@ projection) · `info` `modules` `validate` (single file).
   - `Diff/` — semantic diff between two deliveries (path identity + content
     hashes; property detail re-reads source files)
   - `Impact/` — ECU-scoped relevance closure + deterministic ARX-IMP-* rules
+  - `Communication/` — cluster→frame→PDU→signal projection from the graph
+  - `Vendor/` — adapter detection + vendor hand-off relay (never a verdict)
+  - `Patch/` — plan/apply/undo; writes gated by the mandatory semantic diff
+  - `Mcp/` — MCP stdio server; no raw-write tool exists by design
   - `Validation/` — structural rules (ARX00NN)
 - `src/Autarx.Cli` — commands + `--json`; no domain logic in command files
 - `src/Autarx.Gui` — Avalonia MVVM (`Views/` + `ViewModels/`); no domain logic

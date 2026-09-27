@@ -13,8 +13,26 @@ public partial class MainWindow : Window
         DataContextChanged += (_, _) =>
         {
             if (DataContext is MainViewModel vm)
+            {
                 vm.PickFile = PickFileAsync;
+                vm.PickFolder = PickFolderAsync;
+            }
         };
+    }
+
+    private async Task<string?> PickFolderAsync()
+    {
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel is null)
+            return null;
+
+        var folders = await topLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            Title = "Open Workspace (delivery folder)",
+            AllowMultiple = false,
+        });
+
+        return folders.Count > 0 ? folders[0].Path.LocalPath : null;
     }
 
     private async Task<string?> PickFileAsync()

@@ -34,6 +34,12 @@ Autarx **does not**: replace DaVinci/tresos/ISOLAR, generate production BSW/RTE/
 - **Reference engine** — forward and reverse graphs over `*-REF`/`*-TREF` elements, cross-file resolution, nested-element attribution (`/Pdu_VehicleSpeed/VehicleSpeedMapping`), duplicate-path detection, unresolved-reference findings
 - **OEM delivery inspection** — `inspect` reports files, sizes, element counts, packages, AUTOSAR namespace/schema/release and the full semantic inventory in one shot
 - **ECU discovery** — `ecus` lists ECU instances; `ecu <name>` shows an ECU's direct relations with explicit `direct` relationship confidence (no guessed semantics)
+- **Semantic diff** — `diff` compares two deliveries by path identity with content hashes; property-level explanations address ECUC values by their DEFINITION-REF, so "McuFrequency: 80000000 → 160000000" is a first-class finding, never a line-number noise
+- **ECU impact analysis** — `impact --ecu RadarFL` classifies every change relevant/unrelated by closure over the union reference graph of both deliveries; deterministic ARX-IMP-* findings flag removed-referenced objects and type changes as breaking
+- **Communication projection** — `comm` derives cluster → frame → PDU → signal chains from the reference graph and reports frames/PDUs/signals not attached anywhere; structural only, no invented sender/receiver semantics
+- **Vendor hand-off** — `vendor list` detects DaVinci/tresos/ISOLAR installations; `vendor validate` relays the vendor tool's own run with normalized diagnostics and the raw output preserved — never an Autarx verdict
+- **Reviewed editing** — `patch plan` previews every change as a semantic diff before anything is written; `patch apply` keeps backups and an undo manifest; renames rewrite incoming reference targets across the workspace
+- **AI agent surface** — `autarx mcp` runs a Model Context Protocol stdio server exposing the whole tool API; there is no raw-write tool, so an agent cannot bypass the plan/diff/review boundary, and every call is audit-logged
 - **Agent-friendly CLI** — camelCase JSON, deterministic exit codes, ambiguity is reported instead of guessed; a ready-made command chain for CI gates
 - **Avalonia workspace** — native GUI on Windows, macOS and Linux
 - **Self-contained builds** — single-file executables per platform, no .NET install needed
@@ -62,6 +68,27 @@ autarx ecu ./OEM_Delivery/ Gateway --json
 
 # delivery quality seed — exit code 1 when findings exist
 autarx unresolved ./OEM_Delivery/
+
+# semantic diff between two deliveries — exit 1 when they differ
+autarx diff ./V32/ ./V33/ --detail
+
+# what changed for my ECU — exit 1 when relevant changes exist
+autarx impact ./V32/ ./V33/ --ecu RadarFL
+
+# communication chains and orphans
+autarx comm ./OEM_Delivery/ --cluster VehicleCan
+
+# vendor tool hand-off (detection + relayed validation)
+autarx vendor list
+autarx vendor validate davinci ./Project.dvcfg
+
+# reviewed editing: plan is read-only, apply keeps backups, undo restores
+autarx patch plan ./OEM_Delivery/ --file ops.json
+autarx patch apply ./OEM_Delivery/ --file ops.json
+autarx patch undo ./OEM_Delivery/
+
+# MCP stdio server for AI agents (JSON-RPC 2.0, audit-logged)
+autarx mcp
 
 # single-file ECUC commands (structural validation only — not vendor validation)
 autarx info Mcu.arxml
@@ -115,9 +142,15 @@ autarx/
 │   │   ├── Models/             # SemanticObject, SemanticKind, references, documents
 │   │   ├── Parsing/            # ArxmlParser (streaming), EcucReader, release parser
 │   │   ├── Index/              # WorkspaceIndex builder, graphs, trace, summary
+│   │   ├── Diff/               # semantic diff (path identity + content hashes)
+│   │   ├── Impact/             # ECU relevance closure, ARX-IMP-* findings
+│   │   ├── Communication/      # cluster→frame→PDU→signal projection
+│   │   ├── Vendor/             # adapter detection + vendor hand-off relay
+│   │   ├── Patch/              # plan/apply/undo, canonical ARXML writer
+│   │   ├── Mcp/                # MCP stdio server + tool registry
 │   │   └── Validation/         # ValidationEngine, ARX00NN diagnostics
 │   ├── Autarx.Cli/             # workspace + single-file commands, --json
-│   └── Autarx.Gui/             # Avalonia workspace — module tree, details, status bar
+│   └── Autarx.Gui/             # Avalonia workbench — workspace explorer, trace, comm, diff
 ├── tests/Autarx.Tests/         # unit suites + synthetic fixtures (ECUC and non-ECUC)
 ├── docs/PRODUCT.md             # positioning, boundaries, non-goals
 └── docs/ROADMAP.md             # M0–M8
@@ -133,7 +166,7 @@ autarx/
 
 ## Roadmap
 
-See [docs/ROADMAP.md](docs/ROADMAP.md): semantic diff (M3), ECU impact analysis (M4), communication trace (M5), vendor tool adapters (M6), reviewed editing (M7), AI agent on the stable tool API (M8).
+M0–M8 are shipped: semantic engine, semantic diff, ECU impact, communication trace, vendor hand-off, reviewed editing, and the AI agent surface (MCP). What remains is M9 commercial hardening (installer, licensing, telemetry, performance profiling) — see [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## License
 

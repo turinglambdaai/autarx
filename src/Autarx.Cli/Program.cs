@@ -32,6 +32,8 @@ internal static class Program
             "impact" => ImpactCommand.Run(args[1..]),
             "comm" => CommCommand.Run(args[1..]),
             "vendor" => VendorCommand.Run(args[1..]),
+            "patch" => PatchCommand.Run(args[1..]),
+            "mcp" => Mcp(args[1..]),
 
             // single-file commands
             "info" => Commands.Info(args[1..]),
@@ -46,6 +48,18 @@ internal static class Program
     {
         var v = typeof(Program).Assembly.GetName().Version;
         return v is null ? "0.0.0" : $"{v.Major}.{v.Minor}.{v.Build}";
+    }
+
+    /// <summary>`autarx mcp` — MCP stdio server exposing the whole tool API
+    /// to AI agents (newline-delimited JSON-RPC 2.0).</summary>
+    private static int Mcp(string[] args)
+    {
+        if (args.Length > 0)
+        {
+            Console.Error.WriteLine($"autarx: 'mcp' takes no arguments — try 'autarx --help'");
+            return 2;
+        }
+        return Autarx.Core.Mcp.McpServer.Serve(Console.In, Console.Out, Version());
     }
 
     private static int UnknownCommand(string name)
@@ -87,6 +101,15 @@ internal static class Program
               vendor      Detect DaVinci / tresos / ISOLAR and relay their
                           validation runs
                           vendor list · vendor validate <tool> <project>
+
+            Reviewed editing (plan → diff → apply → undo):
+              patch       Semantic rename / ECUC parameter / reference edits;
+                          every write is gated by a semantic diff
+                          patch plan|apply <ws> --file ops.json · patch undo <ws>
+
+            AI agents:
+              mcp         Run the MCP stdio server (JSON-RPC 2.0) exposing
+                          the full tool API with workspace audit logging
 
             Single-file commands:
               info        Summarize a single ARXML file
