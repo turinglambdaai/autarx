@@ -1,183 +1,140 @@
 # Autarx
 
-**面向 OEM → Tier1 / ECU 集成流程的 AUTOSAR Integration Workbench。**
+**面向 OEM-Tier1 集成数据的现代 AUTOSAR 工程工作台：检查、理解、比较、追溯、自动化。**
+把 OEM 交付包或 ECU Extract 目录交给它，得到一个语义化工作区：对象清单、引用图、ECU 发现、未解析引用检查——全程可通过 agent 友好的 JSON CLI 脚本化。Autarx 位于厂商生成器**上层**；它不替代达芬奇、tresos 或 ISOLAR。
 
-Autarx 直接读取 AUTOSAR 工程数据，帮助工程师完成 **交付包检查、搜索、引用追踪、语义对比、ECU 影响分析、基础校验，以及 CLI / CI / AI 自动化**。
+[![CI](https://github.com/turinglambdaai/autarx/actions/workflows/ci.yml/badge.svg)](https://github.com/turinglambdaai/autarx/actions/workflows/ci.yml)
+[![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![Avalonia](https://img.shields.io/badge/UI-Avalonia-12-9B4FBE?logo=avaloniaui&logoColor=white)](https://avaloniaui.net/)
+[![License](https://img.shields.io/badge/License-Proprietary-red)](LICENSE)
 
-它的目标不是替代 DaVinci Configurator、EB tresos、ETAS ISOLAR，也不承担量产 BSW/RTE/MCAL 代码生成。
-
-[English](README.md) · 中文
+中文 · [English](README.md)
 
 ---
 
-## 产品定位
+## 为什么做 Autarx？
 
-第一阶段主要服务：
+- **交付包是黑盒**——一个 OEM 交付是几十个 ARXML 文件：系统描述、ECU Extract、ECUC 捆绑混在一起；不打开完整厂商工具链，没人能回答"这里面有什么、它们拼不拼得起来"
+- **ARXML 对 grep 不友好**——工程师在百万行 XML 树里手工翻找；把一个信号从 ECU 追回 Cluster，意味着跨文件人工解析几十个 REF 元素
+- **没有自动化接口**——CI 无法 diff、追溯或体检交付包，因为没有厂商工具提供稳定的机器接口
+- **Agent 帮不上忙**——LLM agent 依赖文本界面和结构化反馈，厂商工具两者皆无
 
-- Tier1 系统集成工程师
-- ECU AUTOSAR 工程师
-- 接收 OEM System Description / System Extract / ECU Extract 的团队
-- 需要处理多文件 ARXML 交付包、通信数据和 ECUC 配置数据的团队
+Autarx 解决这些问题：一个无 UI 的语义引擎直接读取 ARXML，给人一个原生 Avalonia GUI，给脚本、CI 和 AI agent 一个 JSON 优先的 CLI。
 
-Autarx 解决的是 **OEM 数据交付 → Tier1/ECU 集成 → Vendor 工具校验/生成** 中间的工程效率问题。
+## Autarx 是什么、不是什么
 
-```text
-OEM 交付
-System / ECU Extract / ARXML Package
-                 |
-                 v
-              Autarx
-      inspect / find / refs / trace
-       semantic diff / ECU impact
-         validation / report
-                 |
-                 v
-          已理解/已审核的数据
-                 |
-        +--------+---------+
-        |                  |
-        v                  v
-     DaVinci           tresos / ISOLAR
-        |                  |
-        +--- Vendor Validation / Generation ---> 量产代码
-```
+Autarx **可以**：读取 ARXML 工作区、以稳定绝对路径索引 identifiable、构建正/反向引用图、搜索、追溯、检查、输出确定性 JSON。
 
-**产品边界：** Autarx 可以调用 Vendor 工具进行最终校验和生成，但 Autarx Core 本身不自研量产 BSW/RTE/MCAL Generator。
+Autarx **不会**：替代达芬奇/tresos/ISOLAR、生成量产 BSW/RTE/MCAL 代码、宣称自己的校验能替代厂商校验。`validate` 只代表结构检查。产品链路是：**Autarx 分析 → 厂商工具 → 厂商校验 → 厂商生成器**。见 [docs/PRODUCT.md](docs/PRODUCT.md)。
 
-详细范围见 [docs/PRODUCT.md](docs/PRODUCT.md)。
+## 功能
 
-## 为什么做 Autarx
+- **工作区语义索引**——每个包级 identifiable 获得稳定绝对路径（`/Vehicle/Signals/VehicleSpeed`）；身份绝不依赖 XML 行号
+- **语义分类**——System、ECU、Cluster、Frame、PDU、Signal、SW 组件、Port、Interface、ECUC 模块；未知元素类型如实报告为 unknown，绝不导致解析失败
+- **引用引擎**——基于 `*-REF`/`*-TREF` 的正反向图、跨文件解析、嵌套元素归因（`/Pdu_VehicleSpeed/VehicleSpeedMapping`）、重复路径检测、未解析引用发现
+- **OEM 交付检查**——`inspect` 一次输出文件、大小、元素数、包数、AUTOSAR 命名空间/schema/release 和完整语义清单
+- **ECU 发现**——`ecus` 列出 ECU 实例；`ecu <name>` 展示直接关系并显式标注 `direct` 关系置信度（不猜测语义）
+- **Agent 友好 CLI**——camelCase JSON、确定性退出码、歧义显式上报而非猜测；现成的 CI 门禁命令链
+- **Avalonia 工作区**——Windows/macOS/Linux 原生 GUI
+- **自包含构建**——每平台单文件可执行，无需安装 .NET
 
-- **OEM 交付很难快速理解**：工程信息散落在大量 ARXML、Package、Reference、Mapping 中。
-- **XML Diff 不等于工程 Diff**：供应商真正想知道的是“这次 OEM 改动是否影响我的 ECU”。
-- **Reference 很难手工追踪**：需要快速回答“谁引用它”“它最终指向哪里”。
-- **Vendor 工具是最终权威，但并非所有分析都值得先启动重工具链**。
-- **自动化缺少统一入口**：GUI、CLI、CI、AI 应该共享同一套确定性的语义能力。
-
-## 当前能力
-
-仓库仍处在早期阶段，但方向已经调整为“Raw ARXML → Workspace/Semantic Index → Domain Projection”。
-
-- **ARXML Parser**：基于 `XmlReader` 的流式解析
-- **Multi-file Workspace**：支持单个 `.arxml` 或递归读取目录
-- **Semantic Object Index**：基于 `SHORT-NAME` 建立 AUTOSAR identifiable 索引
-- **Reference Graph**：索引简单 `*-REF` / `*-TREF` 引用关系
-- **ECUC Projection**：保留现有 Module → Container → Parameter/Reference 模型
-- **ECUC Structural Validation**：现有 ARX001–ARX006 规则
-- **JSON-first CLI**：供脚本、CI、Agent 使用
-- **Avalonia GUI Shell**：GUI 只做前端，领域逻辑留在 Core
-
-## CLI
-
-现有 ECUC 命令继续保留：
+## 命令行
 
 ```bash
-autarx info Mcu_Can.arxml
-autarx modules Mcu_Can.arxml --json
-autarx validate Mcu_Can.arxml
+# 检查整个 OEM 交付目录
+autarx inspect ./OEM_Delivery/
+autarx inspect ./OEM_Delivery/ --json
+
+# 按 SHORT-NAME 子串搜索对象
+autarx find VehicleSpeed ./OEM_Delivery/
+
+# 谁引用谁
+autarx refs VehicleSpeed ./OEM_Delivery/
+autarx refs VehicleSpeed ./OEM_Delivery/ --incoming
+autarx refs /Vehicle/Clusters/VehicleCan ./OEM_Delivery/ --outgoing --json
+
+# 沿引用图追溯
+autarx trace Pdu_VehicleSpeed ./OEM_Delivery/ --depth 3
+
+# ECU 发现
+autarx ecus ./OEM_Delivery/
+autarx ecu ./OEM_Delivery/ Gateway --json
+
+# 交付质量种子——存在发现时退出码为 1
+autarx unresolved ./OEM_Delivery/
+
+# 单文件 ECUC 命令（仅结构校验——不是厂商校验）
+autarx info Mcu.arxml
+autarx modules Mcu.arxml --json
+autarx validate Mcu.arxml
 ```
 
-新的 Workspace/Semantic 命令可作用于单个文件或整个 ARXML 目录：
+`autarx unresolved --json` 输出：
 
-```bash
-# 按 SHORT-NAME、路径片段或 AUTOSAR Element 类型查找
-autarx find VehicleSpeed ./oem-delivery
-autarx find ECU-INSTANCE ./oem-delivery --json
-
-# 查看匹配对象的入向/出向引用
-autarx refs /Can/Can/CanGeneralConfiguration ./project
-autarx refs VehicleSpeed ./oem-delivery --json
+```json
+[
+  {
+    "kind": "REQUIRED-INTERFACE-TREF",
+    "sourcePath": "/Vehicle/SwCs/SpeedSensor",
+    "sourceElementPath": "/Vehicle/SwCs/SpeedSensor/CalibrationIn",
+    "targetPath": "/Vehicle/Interfaces/IF_Calibration",
+    "sourceFile": "communication.arxml",
+    "resolved": false
+  }
+]
 ```
 
-后续重点命令：
+## 快速开始
 
-```text
-inspect
-trace
-diff
-impact --ecu <name>
-```
+### 从源码构建
 
-## 架构方向
-
-```text
-                    Autarx.Core
-                         |
-             +-----------+-----------+
-             |                       |
-        Raw ARXML Model         Workspace Index
-                               Object / Reference
-             |                       |
-             +-----------+-----------+
-                         |
-                 Semantic Projection
-          System / ECU / Communication / ECUC
-                         |
-              +----------+----------+
-              |                     |
-         Autarx.Cli             Autarx.Gui
-              |                     |
-            CI / AI              Avalonia
-                         |
-                  Vendor Adapters
-             DaVinci / tresos / ISOLAR
-```
-
-**ECUC 只是一个 Projection，而不是整个产品的根模型。**
-
-这样未来才能正确支持：
-
-- System Description
-- System Extract
-- ECU Extract
-- ECU / Network Topology
-- Signal / PDU / Frame / Cluster
-- SWC Deployment
-- ECUC
-
-详细设计见 [ARCHITECTURE.md](ARCHITECTURE.md)。
-
-## 我们明确不做什么
-
-当前阶段不做：
-
-- 完整 AUTOSAR BSW 实现
-- 量产 BSW / RTE / MCAL C Code Generator
-- DaVinci / tresos / ISOLAR 替代品
-- 完整 OEM E/E Architecture Authoring Suite
-- 把 AI 当作工程正确性的来源
-
-这些边界是为了让产品保持为独立开发者/小团队可以逐步完成的商业软件，而不是滑向“再造 Vector / EB”。
-
-## 构建
-
-需要 [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)。
+依赖：[.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)。
 
 ```bash
 git clone https://github.com/turinglambdaai/autarx.git
 cd autarx
 dotnet build Autarx.slnx
-dotnet test
-
-dotnet run --project src/Autarx.Cli -- find Mcu tests/Autarx.Tests/Fixtures/minimal.arxml
 dotnet run --project src/Autarx.Gui
+dotnet run --project src/Autarx.Cli -- inspect tests/Autarx.Tests/Fixtures/OemDelivery
 ```
 
-## 近期路线
+### 测试
 
-近期优先级是 **先把 AUTOSAR 工程理解透，再做编辑**：
+```bash
+dotnet test
+```
 
-1. Multi-file Workspace + Reference Resolution
-2. OEM Delivery Inspection + System/ECU Projection
-3. Semantic Diff
-4. ECU Impact Analysis
-5. Communication Trace
-6. Vendor Validation Adapter
-7. Reviewable Edit / Patch
-8. AI Plan → Review → Apply
+测试覆盖解析器（命名空间剥离、属性、错误行号）、语义分类、工作区索引、正反向引用图、汇总与追溯——基于合成的非 ECUC System/Communication 工作区加 ECUC fixture，包含刻意构造的未解析引用和歧义/重复路径。
 
-详细路线见 [docs/ROADMAP.md](docs/ROADMAP.md)。
+## 项目结构
 
-## License
+```text
+autarx/
+├── src/
+│   ├── Autarx.Core/            # 语义引擎（无 UI 依赖）
+│   │   ├── Models/             # SemanticObject、SemanticKind、引用、文档
+│   │   ├── Parsing/            # ArxmlParser（流式）、EcucReader、release 解析
+│   │   ├── Index/              # WorkspaceIndex 构建、引用图、trace、summary
+│   │   └── Validation/         # ValidationEngine、ARX00NN 诊断
+│   ├── Autarx.Cli/             # 工作区 + 单文件命令，--json
+│   └── Autarx.Gui/             # Avalonia 工作区——模块树、详情、状态栏
+├── tests/Autarx.Tests/         # 单元测试 + 合成 fixture（ECUC 与非 ECUC）
+├── docs/PRODUCT.md             # 定位、边界、非目标
+└── docs/ROADMAP.md             # M0–M8
+```
 
-Proprietary — © TuringLambdaAI, all rights reserved. See [LICENSE](LICENSE).
+## 设计说明
+
+- **Core 是语义引擎，不是 ECUC 解析器**——ECUC 只是投影之一；顶层模型（Workspace、SemanticObject、引用图）必须同样服务于系统描述和 ECU Extract
+- **身份 = AUTOSAR 绝对路径**——跨改写稳定、为 diff 铺路；XML 行号绝不作为身份
+- **Unknown 优雅降级**——未映射的元素类型照样索引、可引用、如实报告为 unknown，绝不是解析失败
+- **歧义显式上报，绝不猜测**——重复 SHORT-NAME 返回明确的歧义结果并列出所有候选路径
+- **CLI JSON 是机器契约**——camelCase 键、字符串枚举、确定性退出码、只做增量变更；脚本和 AI agent 依赖它
+
+## 路线图
+
+见 [docs/ROADMAP.md](docs/ROADMAP.md)：语义 diff（M3）、ECU 影响分析（M4）、通信追溯（M5）、厂商工具适配器（M6）、受控编辑（M7）、构建在稳定工具 API 上的 AI agent（M8）。
+
+## 许可证
+
+专有软件——© TuringLambdaAI，保留所有权利。见 [LICENSE](LICENSE)。

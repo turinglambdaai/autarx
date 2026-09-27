@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AUTOSAR xmlns="http://autosar.org/schema/r4.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://autosar.org/schema/r4.0 AUTOSAR_4-3-0.xsd">
+  <AR-PACKAGES>
+    <AR-PACKAGE>
+      <SHORT-NAME>Vehicle</SHORT-NAME>
+      <AR-PACKAGES>
+        <AR-PACKAGE>
+          <SHORT-NAME>Clusters</SHORT-NAME>
+          <ELEMENTS>
+            <CAN-CLUSTER>
+              <SHORT-NAME>VehicleCan</SHORT-NAME>
+            </CAN-CLUSTER>
+          </ELEMENTS>
+        </AR-PACKAGE>
+        <AR-PACKAGE>
+          <SHORT-NAME>Interfaces</SHORT-NAME>
+          <ELEMENTS>
+            <SENDER-RECEIVER-INTERFACE>
+              <SHORT-NAME>IF_VehicleSpeed</SHORT-NAME>
+            </SENDER-RECEIVER-INTERFACE>
+          </ELEMENTS>
+        </AR-PACKAGE>
+        <AR-PACKAGE>
+          <SHORT-NAME>Signals</SHORT-NAME>
+          <ELEMENTS>
+            <I-SIGNAL>
+              <SHORT-NAME>VehicleSpeed</SHORT-NAME>
+            </I-SIGNAL>
+          </ELEMENTS>
+        </AR-PACKAGE>
+        <AR-PACKAGE>
+          <SHORT-NAME>Pdus</SHORT-NAME>
+          <ELEMENTS>
+            <I-SIGNAL-I-PDU>
+              <SHORT-NAME>Pdu_VehicleSpeed</SHORT-NAME>
+              <LENGTH>5</LENGTH>
+              <I-SIGNAL-TO-I-PDU-MAPPINGS>
+                <ISIGNAL-TO-I-PDU-MAPPING>
+                  <SHORT-NAME>VehicleSpeedMapping</SHORT-NAME>
+                  <I-SIGNAL-REF DEST="I-SIGNAL">/Vehicle/Signals/VehicleSpeed</I-SIGNAL-REF>
+                </ISIGNAL-TO-I-PDU-MAPPING>
+              </I-SIGNAL-TO-I-PDU-MAPPINGS>
+            </I-SIGNAL-I-PDU>
+          </ELEMENTS>
+        </AR-PACKAGE>
+        <AR-PACKAGE>
+          <SHORT-NAME>FrameMappings</SHORT-NAME>
+          <ELEMENTS>
+            <PDU-TO-FRAME-MAPPING>
+              <SHORT-NAME>Map_VehicleSpeed</SHORT-NAME>
+              <FRAME-REF DEST="CAN-FRAME">/Vehicle/Frames/Frame_VehicleSpeed</FRAME-REF>
+              <I-PDU-REF DEST="I-SIGNAL-I-PDU">/Vehicle/Pdus/Pdu_VehicleSpeed</I-PDU-REF>
+            </PDU-TO-FRAME-MAPPING>
+          </ELEMENTS>
+        </AR-PACKAGE>
+        <AR-PACKAGE>
+          <SHORT-NAME>Frames</SHORT-NAME>
+          <ELEMENTS>
+            <CAN-FRAME>
+              <SHORT-NAME>Frame_VehicleSpeed</SHORT-NAME>
+              <FRAME-LENGTH>64</FRAME-LENGTH>
+            </CAN-FRAME>
+          </ELEMENTS>
+        </AR-PACKAGE>
+        <AR-PACKAGE>
+          <SHORT-NAME>SwCs</SHORT-NAME>
+          <ELEMENTS>
+            <APPLICATION-SW-COMPONENT-TYPE>
+              <SHORT-NAME>SpeedSensor</SHORT-NAME>
+              <PORTS>
+                <P-PORT-PROTOTYPE>
+                  <SHORT-NAME>SpeedOut</SHORT-NAME>
+                  <PROVIDED-INTERFACE-TREF DEST="SENDER-RECEIVER-INTERFACE">/Vehicle/Interfaces/IF_VehicleSpeed</PROVIDED-INTERFACE-TREF>
+                </P-PORT-PROTOTYPE>
+                <R-PORT-PROTOTYPE>
+                  <SHORT-NAME>CalibrationIn</SHORT-NAME>
+                  <REQUIRED-INTERFACE-TREF DEST="SENDER-RECEIVER-INTERFACE">/Vehicle/Interfaces/IF_Calibration</REQUIRED-INTERFACE-TREF>
+                </R-PORT-PROTOTYPE>
+              </PORTS>
+            </APPLICATION-SW-COMPONENT-TYPE>
+          </ELEMENTS>
+        </AR-PACKAGE>
+      </AR-PACKAGES>
+    </AR-PACKAGE>
+  </AR-PACKAGES>
+</AUTOSAR>
