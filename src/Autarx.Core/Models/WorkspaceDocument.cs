@@ -5,6 +5,11 @@ public sealed class WorkspaceDocument
 {
     public required string FilePath { get; init; }
 
+    /// <summary>FilePath relative to the workspace root — the stable identity
+    /// for cross-workspace comparisons (two deliveries live in different
+    /// directories; only the relative name can match).</summary>
+    public required string RelativePath { get; init; }
+
     public required long FileSizeBytes { get; init; }
 
     /// <summary>Root xmlns attribute, e.g. http://autosar.org/schema/r4.0.</summary>

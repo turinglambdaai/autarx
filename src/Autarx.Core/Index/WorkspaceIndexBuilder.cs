@@ -34,10 +34,11 @@ public static class WorkspaceIndexBuilder
 
         foreach (var file in files)
         {
+            var relativePath = Path.GetRelativePath(fullPath, file);
             if (singleFile)
             {
                 // An explicitly named file is a hard input: parse errors abort.
-                CollectFile(file, documents, objects, references, ref packageCount);
+                CollectFile(file, relativePath, documents, objects, references, ref packageCount);
             }
             else
             {
@@ -45,7 +46,7 @@ public static class WorkspaceIndexBuilder
                 // workspace — record and continue.
                 try
                 {
-                    CollectFile(file, documents, objects, references, ref packageCount);
+                    CollectFile(file, relativePath, documents, objects, references, ref packageCount);
                 }
                 catch (ArxmlParseException ex)
                 {
@@ -86,6 +87,7 @@ public static class WorkspaceIndexBuilder
             .ToList();
 
         return new WorkspaceIndex(
+            fullPath,
             documents.OrderBy(d => d.FilePath, StringComparer.Ordinal).ToList(),
             sortedObjects,
             sortedReferences,
@@ -96,6 +98,7 @@ public static class WorkspaceIndexBuilder
 
     private static void CollectFile(
         string file,
+        string relativePath,
         List<WorkspaceDocument> documents,
         List<SemanticObject> objects,
         List<AutosarReference> references,
@@ -115,6 +118,7 @@ public static class WorkspaceIndexBuilder
         documents.Add(new WorkspaceDocument
         {
             FilePath = file,
+            RelativePath = relativePath,
             FileSizeBytes = new FileInfo(file).Length,
             Namespace = namespaceUri,
             SchemaLocation = schemaLocation,
@@ -161,6 +165,7 @@ public static class WorkspaceIndexBuilder
             SemanticKind = kind,
             AbsolutePath = path,
             SourceFile = state.File,
+            ContentHash = ContentHasher.Hash(element),
         });
         state.NamedElementCount++;
         if (kind != SemanticKind.Unknown)

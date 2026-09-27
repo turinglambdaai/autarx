@@ -21,4 +21,12 @@ public sealed class SemanticObject
     public required string AbsolutePath { get; init; }
 
     public required string SourceFile { get; init; }
+
+    /// <summary>
+    /// FNV-1a hash over the canonical form of the object's subtree. Same path
+    /// but different hash ⇒ the object was modified; equal hashes prove the
+    /// subtree is unchanged. The diff explains changes by re-reading the two
+    /// source files, so collisions only cost an explanation, never correctness.
+    /// </summary>
+    public required ulong ContentHash { get; init; }
 }

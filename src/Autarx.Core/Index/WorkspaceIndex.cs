@@ -16,6 +16,7 @@ public sealed class WorkspaceIndex
     private readonly List<AutosarReference> _unresolved;
 
     internal WorkspaceIndex(
+        string sourcePath,
         List<WorkspaceDocument> documents,
         List<SemanticObject> objects,
         List<AutosarReference> references,
@@ -23,6 +24,7 @@ public sealed class WorkspaceIndex
         List<WorkspaceFileError> fileErrors,
         int packageCount)
     {
+        SourcePath = sourcePath;
         Documents = documents;
         Objects = objects;
         References = references;
@@ -37,6 +39,11 @@ public sealed class WorkspaceIndex
         _incoming = GroupBy(references, r => r.TargetPath);
         _unresolved = references.Where(r => !r.IsResolved).ToList();
     }
+
+    /// <summary>The file-system path the workspace was built from, exactly as
+    /// resolved at build time — carried so diff/impact reports can name both
+    /// sides.</summary>
+    public string SourcePath { get; }
 
     public IReadOnlyList<WorkspaceDocument> Documents { get; }
 

@@ -42,3 +42,16 @@ jobs:
           code=$?
           set -e
           test "$code" -eq 1
+          dotnet run --project src/Autarx.Cli -c Release --no-build -- diff tests/Autarx.Tests/Fixtures/DiffBefore tests/Autarx.Tests/Fixtures/DiffAfter --detail --json
+          dotnet run --project src/Autarx.Cli -c Release --no-build -- diff tests/Autarx.Tests/Fixtures/DiffBefore tests/Autarx.Tests/Fixtures/DiffBefore --json
+          # impact with relevant changes exits 1, unknown ECU exits 2
+          set +e
+          dotnet run --project src/Autarx.Cli -c Release --no-build -- impact tests/Autarx.Tests/Fixtures/DiffBefore tests/Autarx.Tests/Fixtures/DiffAfter --ecu RadarFL --json
+          code=$?
+          set -e
+          test "$code" -eq 1
+          set +e
+          dotnet run --project src/Autarx.Cli -c Release --no-build -- impact tests/Autarx.Tests/Fixtures/DiffBefore tests/Autarx.Tests/Fixtures/DiffAfter --ecu NoSuch
+          code=$?
+          set -e
+          test "$code" -eq 2

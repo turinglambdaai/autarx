@@ -28,6 +28,8 @@ internal static class Program
             "ecus" => EcusCommand.RunList(args[1..]),
             "ecu" => EcusCommand.RunDetail(args[1..]),
             "unresolved" => UnresolvedCommand.Run(args[1..]),
+            "diff" => DiffCommand.Run(args[1..]),
+            "impact" => ImpactCommand.Run(args[1..]),
 
             // single-file commands
             "info" => Commands.Info(args[1..]),
@@ -71,6 +73,10 @@ internal static class Program
               ecus        List ECU instances in a workspace
               ecu         Show one ECU instance and its direct relations
               unresolved  List references whose target is not in the workspace
+              diff        Semantic diff between two deliveries
+                          diff <before> <after> [--detail]
+              impact      ECU-scoped impact analysis across two deliveries
+                          impact <before> <after> --ecu <name> [--detail]
 
             Single-file commands:
               info        Summarize a single ARXML file
@@ -88,7 +94,7 @@ internal static class Program
             Exit codes:
               0  success
               1  nothing matched (find/refs/trace/ecu) or findings reported
-                 (validate/unresolved)
+                 (validate/unresolved/diff/impact)
               2  usage, file, or parse error, or ambiguous object name
             """);
         return exitCode;

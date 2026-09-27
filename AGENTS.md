@@ -14,7 +14,8 @@ generates BSW/RTE/MCAL code. Private commercial project.
 - Fixture workspace: `tests/Autarx.Tests/Fixtures/OemDelivery`
 
 CLI commands: `inspect` `find` `refs` `trace` `ecus` `ecu` `unresolved`
-(workspace) · `info` `modules` `validate` (single file).
+(workspace) · `diff` `impact` (two deliveries) · `info` `modules` `validate`
+(single file).
 
 ## Layout
 
@@ -23,11 +24,15 @@ CLI commands: `inspect` `find` `refs` `trace` `ecus` `ecu` `unresolved`
   - `Parsing/` — ArxmlParser (streaming), EcucReader (ECUC projection),
     AutosarReleaseParser
   - `Index/` — WorkspaceIndex builder, reference graphs, trace, summary
+  - `Diff/` — semantic diff between two deliveries (path identity + content
+    hashes; property detail re-reads source files)
+  - `Impact/` — ECU-scoped relevance closure + deterministic ARX-IMP-* rules
   - `Validation/` — structural rules (ARX00NN)
 - `src/Autarx.Cli` — commands + `--json`; no domain logic in command files
 - `src/Autarx.Gui` — Avalonia MVVM (`Views/` + `ViewModels/`); no domain logic
   in ViewModels
-- `tests/Autarx.Tests` — xunit + fixtures (ECUC and non-ECUC)
+- `tests/Autarx.Tests` — xunit + fixtures (ECUC and non-ECUC, incl. the
+  DiffBefore/DiffAfter delivery pair)
 
 ## Rules
 
