@@ -42,7 +42,13 @@ jobs:
           code=$?
           set -e
           test "$code" -eq 1
+          # diff between different deliveries exits 1 (findings), between
+          # identical ones exits 0 — gate both via exit codes
+          set +e
           dotnet run --project src/Autarx.Cli -c Release --no-build -- diff tests/Autarx.Tests/Fixtures/DiffBefore tests/Autarx.Tests/Fixtures/DiffAfter --detail --json
+          code=$?
+          set -e
+          test "$code" -eq 1
           dotnet run --project src/Autarx.Cli -c Release --no-build -- diff tests/Autarx.Tests/Fixtures/DiffBefore tests/Autarx.Tests/Fixtures/DiffBefore --json
           # impact with relevant changes exits 1, unknown ECU exits 2
           set +e
