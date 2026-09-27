@@ -30,6 +30,8 @@ internal static class Program
             "unresolved" => UnresolvedCommand.Run(args[1..]),
             "diff" => DiffCommand.Run(args[1..]),
             "impact" => ImpactCommand.Run(args[1..]),
+            "comm" => CommCommand.Run(args[1..]),
+            "vendor" => VendorCommand.Run(args[1..]),
 
             // single-file commands
             "info" => Commands.Info(args[1..]),
@@ -77,6 +79,14 @@ internal static class Program
                           diff <before> <after> [--detail]
               impact      ECU-scoped impact analysis across two deliveries
                           impact <before> <after> --ecu <name> [--detail]
+              comm        Communication projection: clusters, frames, PDUs,
+                          signals — and what is not attached anywhere
+                          comm <workspace> [--cluster <name>]
+
+            Vendor tools (hand-off only — no generation is reimplemented):
+              vendor      Detect DaVinci / tresos / ISOLAR and relay their
+                          validation runs
+                          vendor list · vendor validate <tool> <project>
 
             Single-file commands:
               info        Summarize a single ARXML file
