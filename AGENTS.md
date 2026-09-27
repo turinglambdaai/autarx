@@ -14,8 +14,8 @@ generates BSW/RTE/MCAL code. Private commercial project.
 - Fixture workspace: `tests/Autarx.Tests/Fixtures/OemDelivery`
 
 CLI commands: `inspect` `find` `refs` `trace` `ecus` `ecu` `unresolved`
-(workspace) · `diff` `impact` (two deliveries) · `info` `modules` `validate`
-(single file).
+(workspace) · `diff` `impact` (two deliveries) · `comm` (communication
+projection) · `info` `modules` `validate` (single file).
 
 ## Layout
 

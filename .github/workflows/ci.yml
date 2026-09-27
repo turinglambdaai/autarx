@@ -61,3 +61,10 @@ jobs:
           code=$?
           set -e
           test "$code" -eq 2
+          dotnet run --project src/Autarx.Cli -c Release --no-build -- comm tests/Autarx.Tests/Fixtures/CommDelivery --json
+          # no communication content anywhere → exit 1
+          set +e
+          dotnet run --project src/Autarx.Cli -c Release --no-build -- comm tests/Autarx.Tests/Fixtures/minimal.arxml
+          code=$?
+          set -e
+          test "$code" -eq 1

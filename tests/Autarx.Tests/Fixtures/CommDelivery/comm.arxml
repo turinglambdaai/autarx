@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AUTOSAR xmlns="http://autosar.org/schema/r4.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://autosar.org/schema/r4.0 AUTOSAR_4-3-0.xsd">
+  <AR-PACKAGES>
+    <AR-PACKAGE>
+      <SHORT-NAME>Vehicle</SHORT-NAME>
+      <AR-PACKAGES>
+        <AR-PACKAGE>
+          <SHORT-NAME>Clusters</SHORT-NAME>
+          <ELEMENTS>
+            <CAN-CLUSTER>
+              <SHORT-NAME>VehicleCan</SHORT-NAME>
+              <CAN-CLUSTER-VARIANTS>
+                <CAN-CLUSTER-CONDITIONAL>
+                  <PHYSICAL-CHANNELS>
+                    <CAN-PHYSICAL-CHANNEL>
+                      <SHORT-NAME>CanChannel</SHORT-NAME>
+                      <FRAME-TRIGGERINGS>
+                        <CAN-FRAME-TRIGGERING>
+                          <SHORT-NAME>Trig_VehicleSpeed</SHORT-NAME>
+                          <FRAME-REF DEST="CAN-FRAME">/Vehicle/Frames/Frame_VehicleSpeed</FRAME-REF>
+                        </CAN-FRAME-TRIGGERING>
+                        <CAN-FRAME-TRIGGERING>
+                          <SHORT-NAME>Trig_VehicleSpeedFa</SHORT-NAME>
+                          <FRAME-REF DEST="CAN-FRAME">/Vehicle/Frames/Frame_VehicleSpeedFa</FRAME-REF>
+                        </CAN-FRAME-TRIGGERING>
+                      </FRAME-TRIGGERINGS>
+                    </CAN-PHYSICAL-CHANNEL>
+                  </PHYSICAL-CHANNELS>
+                </CAN-CLUSTER-CONDITIONAL>
+              </CAN-CLUSTER-VARIANTS>
+            </CAN-CLUSTER>
+          </ELEMENTS>
+        </AR-PACKAGE>
+        <AR-PACKAGE>
+          <SHORT-NAME>Signals</SHORT-NAME>
+          <ELEMENTS>
+            <I-SIGNAL>
+              <SHORT-NAME>VehicleSpeed</SHORT-NAME>
+            </I-SIGNAL>
+            <I-SIGNAL>
+              <SHORT-NAME>BrakePressure</SHORT-NAME>
+            </I-SIGNAL>
+            <I-SIGNAL>
+              <SHORT-NAME>DiagCounter</SHORT-NAME>
+            </I-SIGNAL>
+          </ELEMENTS>
+        </AR-PACKAGE>
+        <AR-PACKAGE>
+          <SHORT-NAME>Pdus</SHORT-NAME>
+          <ELEMENTS>
+            <I-SIGNAL-I-PDU>
+              <SHORT-NAME>Pdu_VehicleSpeed</SHORT-NAME>
+              <I-SIGNAL-TO-I-PDU-MAPPINGS>
+                <ISIGNAL-TO-I-PDU-MAPPING>
+                  <SHORT-NAME>VehicleSpeedMapping</SHORT-NAME>
+                  <I-SIGNAL-REF DEST="I-SIGNAL">/Vehicle/Signals/VehicleSpeed</I-SIGNAL-REF>
+                </ISIGNAL-TO-I-PDU-MAPPING>
+              </I-SIGNAL-TO-I-PDU-MAPPINGS>
+            </I-SIGNAL-I-PDU>
+            <I-SIGNAL-I-PDU>
+              <SHORT-NAME>Pdu_VehicleSpeedFa</SHORT-NAME>
+              <I-SIGNAL-TO-I-PDU-MAPPINGS>
+                <ISIGNAL-TO-I-PDU-MAPPING>
+                  <SHORT-NAME>VehicleSpeedFaMapping</SHORT-NAME>
+                  <I-SIGNAL-REF DEST="I-SIGNAL">/Vehicle/Signals/VehicleSpeed</I-SIGNAL-REF>
+                </ISIGNAL-TO-I-PDU-MAPPING>
+                <ISIGNAL-TO-I-PDU-MAPPING>
+                  <SHORT-NAME>BrakePressureMapping</SHORT-NAME>
+                  <I-SIGNAL-REF DEST="I-SIGNAL">/Vehicle/Signals/BrakePressure</I-SIGNAL-REF>
+                </ISIGNAL-TO-I-PDU-MAPPING>
+              </I-SIGNAL-TO-I-PDU-MAPPINGS>
+            </I-SIGNAL-I-PDU>
+          </ELEMENTS>
+        </AR-PACKAGE>
+        <AR-PACKAGE>
+          <SHORT-NAME>FrameMappings</SHORT-NAME>
+          <ELEMENTS>
+            <PDU-TO-FRAME-MAPPING>
+              <SHORT-NAME>Map_VehicleSpeed</SHORT-NAME>
+              <FRAME-REF DEST="CAN-FRAME">/Vehicle/Frames/Frame_VehicleSpeed</FRAME-REF>
+              <I-PDU-REF DEST="I-SIGNAL-I-PDU">/Vehicle/Pdus/Pdu_VehicleSpeed</I-PDU-REF>
+            </PDU-TO-FRAME-MAPPING>
+            <PDU-TO-FRAME-MAPPING>
+              <SHORT-NAME>Map_VehicleSpeedFa</SHORT-NAME>
+              <FRAME-REF DEST="CAN-FRAME">/Vehicle/Frames/Frame_VehicleSpeedFa</FRAME-REF>
+              <I-PDU-REF DEST="I-SIGNAL-I-PDU">/Vehicle/Pdus/Pdu_VehicleSpeedFa</I-PDU-REF>
+            </PDU-TO-FRAME-MAPPING>
+          </ELEMENTS>
+        </AR-PACKAGE>
+        <AR-PACKAGE>
+          <SHORT-NAME>Frames</SHORT-NAME>
+          <ELEMENTS>
+            <CAN-FRAME>
+              <SHORT-NAME>Frame_VehicleSpeed</SHORT-NAME>
+              <FRAME-LENGTH>64</FRAME-LENGTH>
+            </CAN-FRAME>
+            <CAN-FRAME>
+              <SHORT-NAME>Frame_VehicleSpeedFa</SHORT-NAME>
+              <FRAME-LENGTH>128</FRAME-LENGTH>
+            </CAN-FRAME>
+          </ELEMENTS>
+        </AR-PACKAGE>
+        <AR-PACKAGE>
+          <SHORT-NAME>Ecus</SHORT-NAME>
+          <ELEMENTS>
+            <ECU-INSTANCE>
+              <SHORT-NAME>RadarFL</SHORT-NAME>
+              <CONNECTORS>
+                <CAN-COMMUNICATION-CONNECTOR>
+                  <SHORT-NAME>Con_RadarFL</SHORT-NAME>
+                  <CHANNEL-REF DEST="IDENTIFIABLE">/Vehicle/Clusters/VehicleCan</CHANNEL-REF>
+                </CAN-COMMUNICATION-CONNECTOR>
+              </CONNECTORS>
+            </ECU-INSTANCE>
+            <ECU-INSTANCE>
+              <SHORT-NAME>Gateway</SHORT-NAME>
+              <CONNECTORS>
+                <CAN-COMMUNICATION-CONNECTOR>
+                  <SHORT-NAME>Con_Gateway</SHORT-NAME>
+                  <CHANNEL-REF DEST="IDENTIFIABLE">/Vehicle/Clusters/VehicleCan</CHANNEL-REF>
+                </CAN-COMMUNICATION-CONNECTOR>
+              </CONNECTORS>
+            </ECU-INSTANCE>
+          </ELEMENTS>
+        </AR-PACKAGE>
+      </AR-PACKAGES>
+    </AR-PACKAGE>
+    <AR-PACKAGE>
+      <SHORT-NAME>Config</SHORT-NAME>
+      <ELEMENTS>
+        <ECUC-MODULE-CONFIGURATION-VALUES>
+          <SHORT-NAME>PduR</SHORT-NAME>
+          <DEFINITION-REF DEST="ECUC-MODULE-DEF">/AURIX2G/PduR</DEFINITION-REF>
+        </ECUC-MODULE-CONFIGURATION-VALUES>
+        <ECUC-MODULE-CONFIGURATION-VALUES>
+          <SHORT-NAME>Mcu</SHORT-NAME>
+          <DEFINITION-REF DEST="ECUC-MODULE-DEF">/AURIX2G/Mcu</DEFINITION-REF>
+        </ECUC-MODULE-CONFIGURATION-VALUES>
+      </ELEMENTS>
+    </AR-PACKAGE>
+  </AR-PACKAGES>
+</AUTOSAR>
