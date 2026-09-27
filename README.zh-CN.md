@@ -34,6 +34,12 @@ Autarx **不会**：替代达芬奇/tresos/ISOLAR、生成量产 BSW/RTE/MCAL �
 - **引用引擎**——基于 `*-REF`/`*-TREF` 的正反向图、跨文件解析、嵌套元素归因（`/Pdu_VehicleSpeed/VehicleSpeedMapping`）、重复路径检测、未解析引用发现
 - **OEM 交付检查**——`inspect` 一次输出文件、大小、元素数、包数、AUTOSAR 命名空间/schema/release 和完整语义清单
 - **ECU 发现**——`ecus` 列出 ECU 实例；`ecu <name>` 展示直接关系并显式标注 `direct` 关系置信度（不猜测语义）
+- **语义 Diff**——`diff` 基于路径身份和内容哈希比较两版交付；属性级变化以 DEFINITION-REF 定位 ECUC 参数，"McuFrequency: 80000000 → 160000000" 是一等公民发现，而非行号噪声
+- **ECU 影响分析**——`impact --ecu RadarFL` 通过两版交付引用图的并集闭包，把每个变化归类为"与本 ECU 相关/无关"；确定性 ARX-IMP-* 规则把"被引用对象被删""类型被改"判为 breaking
+- **通信投影**——`comm` 从引用图推导 Cluster → Frame → PDU → Signal 链路，并报告未挂接的孤儿 Frame/PDU/Signal；只陈述结构，不虚构收发方向
+- **厂商交接**——`vendor list` 探测达芬奇/tresos/ISOLAR 安装；`vendor validate` 中继厂商工具自身的运行结果（归一化诊断 + 保留原始输出）——这永远是厂商的结论，不是 Autarx 的
+- **受控编辑**——`patch plan` 把每次修改先转成语义 diff 供审阅，未审阅不落盘；`patch apply` 保留备份和撤销清单；重命名会同步重写全工作区的入向引用
+- **AI Agent 接口**——`autarx mcp` 启动 Model Context Protocol stdio 服务器暴露完整工具 API；不存在裸写文件工具，agent 无法绕过 plan/diff/审阅边界，且每次调用都进审计日志
 - **Agent 友好 CLI**——camelCase JSON、确定性退出码、歧义显式上报而非猜测；现成的 CI 门禁命令链
 - **Avalonia 工作区**——Windows/macOS/Linux 原生 GUI
 - **自包含构建**——每平台单文件可执行，无需安装 .NET
@@ -62,6 +68,27 @@ autarx ecu ./OEM_Delivery/ Gateway --json
 
 # 交付质量种子——存在发现时退出码为 1
 autarx unresolved ./OEM_Delivery/
+
+# 两版交付的语义 diff——有差异时退出码为 1
+autarx diff ./V32/ ./V33/ --detail
+
+# 我的 ECU 受了什么影响——有相关变化时退出码为 1
+autarx impact ./V32/ ./V33/ --ecu RadarFL
+
+# 通信链路与孤儿对象
+autarx comm ./OEM_Delivery/ --cluster VehicleCan
+
+# 厂商工具交接（探测 + 结果中继）
+autarx vendor list
+autarx vendor validate davinci ./Project.dvcfg
+
+# 受控编辑：plan 只读预览，apply 保留备份，undo 撤销
+autarx patch plan ./OEM_Delivery/ --file ops.json
+autarx patch apply ./OEM_Delivery/ --file ops.json
+autarx patch undo ./OEM_Delivery/
+
+# AI agent 的 MCP stdio 服务器（JSON-RPC 2.0，带审计）
+autarx mcp
 
 # 单文件 ECUC 命令（仅结构校验——不是厂商校验）
 autarx info Mcu.arxml
@@ -104,7 +131,7 @@ dotnet run --project src/Autarx.Cli -- inspect tests/Autarx.Tests/Fixtures/OemDe
 dotnet test
 ```
 
-测试覆盖解析器（命名空间剥离、属性、错误行号）、语义分类、工作区索引、正反向引用图、汇总与追溯——基于合成的非 ECUC System/Communication 工作区加 ECUC fixture，包含刻意构造的未解析引用和歧义/重复路径。
+测试覆盖解析器、语义分类、工作区索引、引用图、汇总追溯、语义 diff、影响分析、通信投影、厂商适配器归一化、补丁 plan/apply/undo 往返和 MCP 协议——基于合成工作区与 DiffBefore/DiffAfter 交付对 fixture，包含刻意构造的未解析引用和歧义/重复路径。
 
 ## 项目结构
 
@@ -115,12 +142,18 @@ autarx/
 │   │   ├── Models/             # SemanticObject、SemanticKind、引用、文档
 │   │   ├── Parsing/            # ArxmlParser（流式）、EcucReader、release 解析
 │   │   ├── Index/              # WorkspaceIndex 构建、引用图、trace、summary
+│   │   ├── Diff/               # 语义 diff（路径身份 + 内容哈希）
+│   │   ├── Impact/             # ECU 相关性闭包、ARX-IMP-* 规则
+│   │   ├── Communication/      # Cluster→Frame→PDU→Signal 投影
+│   │   ├── Vendor/             # 适配器探测 + 厂商交接中继
+│   │   ├── Patch/              # plan/apply/undo、规范化 ARXML 写出
+│   │   ├── Mcp/                # MCP stdio 服务器 + 工具注册表
 │   │   └── Validation/         # ValidationEngine、ARX00NN 诊断
 │   ├── Autarx.Cli/             # 工作区 + 单文件命令，--json
-│   └── Autarx.Gui/             # Avalonia 工作区——模块树、详情、状态栏
+│   └── Autarx.Gui/             # Avalonia 工作台——工作区浏览器、trace、comm、diff
 ├── tests/Autarx.Tests/         # 单元测试 + 合成 fixture（ECUC 与非 ECUC）
 ├── docs/PRODUCT.md             # 定位、边界、非目标
-└── docs/ROADMAP.md             # M0–M8
+└── docs/ROADMAP.md             # M0–M9
 ```
 
 ## 设计说明
@@ -133,7 +166,7 @@ autarx/
 
 ## 路线图
 
-见 [docs/ROADMAP.md](docs/ROADMAP.md)：语义 diff（M3）、ECU 影响分析（M4）、通信追溯（M5）、厂商工具适配器（M6）、受控编辑（M7）、构建在稳定工具 API 上的 AI agent（M8）。
+M0–M8 已全部落地：语义引擎、语义 diff、ECU 影响分析、通信追溯、厂商交接、受控编辑、AI agent 接口（MCP）。剩余为 M9 商业化加固（安装器、授权、遥测、性能画像）——见 [docs/ROADMAP.md](docs/ROADMAP.md)。
 
 ## 许可证
 

@@ -3,7 +3,7 @@
         xmlns:vm="using:Autarx.Gui.ViewModels"
         x:Class="Autarx.Gui.Views.MainWindow"
         x:DataType="vm:MainViewModel"
-        Title="Autarx — AUTOSAR Configuration Tool"
+        Title="Autarx — AUTOSAR Integration Workbench"
         Width="1200" Height="760">
 
     <Design.DataContext>
@@ -13,9 +13,16 @@
     <DockPanel>
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_File">
-                <MenuItem Header="_Open…" Command="{Binding OpenCommand}" HotKey="Ctrl+O" />
+                <MenuItem Header="Open _File…" Command="{Binding OpenCommand}" HotKey="Ctrl+O" />
+                <MenuItem Header="Open _Workspace…" Command="{Binding OpenWorkspaceCommand}" HotKey="Ctrl+Shift+O" />
                 <Separator />
                 <MenuItem Header="E_xit" Click="OnExitClick" />
+            </MenuItem>
+            <MenuItem Header="_Analysis">
+                <MenuItem Header="_Trace Selected (4 hops)" Command="{Binding TraceSelectedCommand}" />
+                <MenuItem Header="_Communication Projection" Command="{Binding ShowCommCommand}" />
+                <Separator />
+                <MenuItem Header="_Compare With Delivery…" Command="{Binding CompareWithCommand}" />
             </MenuItem>
         </Menu>
 
@@ -25,7 +32,7 @@
             <TextBlock Text="{Binding StatusText}" TextTrimming="CharacterEllipsis" />
         </Border>
 
-        <Grid ColumnDefinitions="320,4,*">
+        <Grid ColumnDefinitions="360,4,*">
             <TreeView Grid.Column="0" ItemsSource="{Binding Modules}"
                       SelectedItem="{Binding SelectedNode}">
                 <TreeView.ItemTemplate>
@@ -42,17 +49,10 @@
 
             <GridSplitter Grid.Column="1" Background="Transparent" />
 
-            <ScrollViewer Grid.Column="2">
-                <StackPanel Margin="16" Spacing="8"
-                            IsVisible="{Binding SelectedNode, Converter={x:Static ObjectConverters.IsNotNull}}">
-                    <TextBlock Text="{Binding SelectedNode.Name}" FontSize="20" FontWeight="SemiBold" />
-                    <TextBlock Text="{Binding SelectedNode.Kind}" Opacity="0.6" />
-                    <TextBox Text="{Binding SelectedNode.Detail}" IsReadOnly="True"
-                             AcceptsReturn="True" TextWrapping="Wrap"
-                             BorderThickness="0" Background="Transparent"
-                             FontFamily="Consolas,Menlo,monospace" />
-                </StackPanel>
-            </ScrollViewer>
+            <TextBox Grid.Column="2" Text="{Binding AnalysisText}" IsReadOnly="True"
+                     AcceptsReturn="True" TextWrapping="Wrap"
+                     BorderThickness="0" Background="Transparent"
+                     FontFamily="Consolas,Menlo,monospace" Margin="12" />
         </Grid>
     </DockPanel>
 </Window>

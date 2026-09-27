@@ -15,7 +15,19 @@ public partial class TreeNodeViewModel : ObservableObject
 
     public string? Detail { get; init; }
 
+    /// <summary>Absolute short-name path when this node is a workspace object
+    /// (leaf); null for structural nodes (workspace root, package groups).</summary>
+    public string? ObjectPath { get; init; }
+
     public ObservableCollection<TreeNodeViewModel> Children { get; } = [];
+
+    public static TreeNodeViewModel FromObject(SemanticObject o) => new()
+    {
+        Kind = o.SemanticKind.ToString(),
+        Name = o.ShortName,
+        Detail = $"{o.ElementType} — {Path.GetFileName(o.SourceFile)}",
+        ObjectPath = o.AbsolutePath,
+    };
 
     public static TreeNodeViewModel FromModule(EcucModule module)
     {

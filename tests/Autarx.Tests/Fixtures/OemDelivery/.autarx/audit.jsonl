@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-09-27T09:24:39.9506654Z",
+  "tool": "ecus",
+  "arguments": {
+    "workspace": "tests/Autarx.Tests/Fixtures/OemDelivery"
+  }
+}

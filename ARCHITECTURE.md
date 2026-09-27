@@ -96,8 +96,69 @@ AUTOSAR domain logic.
 
 Generic breadth-first graph walk (`WorkspaceIndex.Trace`) with direction
 (outgoing/incoming/both) and depth limit. Communication semantics
-(Signal → PDU → Frame → Cluster → ECU) will layer on top of this API later —
-nothing is hardcoded into the CLI.
+(Signal → PDU → Frame → Cluster → ECU) layer on top of this API through the
+communication projection — nothing is hardcoded into the CLI.
+
+## Semantic diff
+
+`Diff/SemanticDiff` compares two workspaces by **path identity**. Modified
+detection uses FNV-1a content hashes captured per object at index time, so
+"did anything change" needs nothing beyond the two indexes. Property-level
+explanations re-read the affected source files on demand and compare subtrees
+with SHORT-NAME / DEFINITION-REF sibling keying (occurrence-suffixed when
+repeated) — ECUC parameter changes are reported as
+`…/DiagParamA/VALUE: 1 → 2`, never as line numbers. Reference changes are
+diffed by semantic identity (source, kind, target): a reference moving
+between files is not a change.
+
+## Impact analysis
+
+`Impact/ImpactAnalysis` seeds a breadth-first closure at the ECU instance
+over the **union** reference graph of both deliveries, then classifies every
+diff entry relevant/unrelated. Findings carry stable rule ids (ARX-IMP-*,
+append only): removed-referenced, type-changed and ECU-touching
+reference-removals are breaking; additions, retargets and property changes
+are informational. Communication impact counts relevant changes among
+clusters/frames/PDUs/signals.
+
+## Communication projection
+
+`Communication/CommunicationProjection` derives chains purely from the
+reference graph: ECU connectors (`*CHANNEL-REF`), frame triggerings nested
+under clusters (attributed to the cluster), PDU-to-frame mapping objects
+(holding both `*FRAME-REF` and `*PDU-REF`), signal-to-PDU mappings nested
+inside PDUs. Objects attached to nothing are reported as orphans. Direction
+(sender/receiver) is deliberately **not claimed** — the structural graph
+does not carry it reliably.
+
+## Vendor hand-off
+
+`Vendor/` detects DaVinci / EB tresos / ISOLAR through HOME env vars and
+PATH (probes injected for testability) and runs a **hand-off**: the vendor
+tool executes, Autarx normalizes its output (loose error/warning line
+heuristic) and preserves the raw output under `.autarx/`. The report relays
+the vendor's own result — never an Autarx verdict — and no generation is
+reimplemented.
+
+## Reviewed patching
+
+`Patch/PatchEngine` is plan → apply → undo. Planning runs operations against
+in-memory trees, materializes the full patched workspace into a temp
+directory and computes the mandatory before/after **semantic diff** —
+nothing is written. Apply writes only files the diff proved changed, keeps
+`.autarx/` backups plus a `patch-history.jsonl` manifest for undo, and adds
+a provenance comment. Renames rewrite incoming reference targets across all
+workspace files. `Parsing/ArxmlWriter` emits canonical serialization
+(deterministic indent, sorted attributes, root namespace reconstruction) —
+semantically equivalent, deliberately not byte-faithful.
+
+## AI layer (MCP)
+
+`Mcp/McpServer` is a newline-delimited JSON-RPC 2.0 stdio server exposing
+the full tool API (inspect/find/refs/trace/ecus/unresolved/diff/impact/
+comm/validate/patch_plan/patch_apply). The review boundary is structural:
+no raw-write tool exists, both patch tools run the plan/diff gate, and every
+tools/call is appended to `<workspace>/.autarx/audit.jsonl`.
 
 ## Diagnostics (structural validation)
 
@@ -124,16 +185,23 @@ vendor validation and must never be presented as "AUTOSAR compliant" or
 - `--json` emits camelCase keys, indented; enums serialize as camelCase
   strings (`"communicationCluster"`), never integers.
 - Exit codes: `0` success · `1` nothing matched (find/refs/trace/ecu) or
-  findings reported (validate/unresolved) · `2` usage/file/parse error or
-  ambiguous object name. Deterministic, documented in `--help`.
+  findings reported (validate/unresolved/diff/impact) · `2` usage/file/parse
+  error or ambiguous object name. Deterministic, documented in `--help`.
+  Per-command variants: diff `0` identical/`1` differences; impact `0` no
+  relevant changes/`1` relevant changes; patch `1` plan failures with
+  nothing written; vendor validate `0` tool clean/`1` tool reported
+  failure/`2` autarx-side problem (unknown tool, not detected, timeout).
 - Ambiguity is a first-class outcome: a SHORT-NAME matching several objects
   exits 2 and lists the candidate paths — never a silent guess.
 - Additive changes only — scripts, CI and AI agents parse this output.
 
 ## Testing
 
-Parser, ECUC, classification, workspace index, reference graph, summary and
-trace suites run against checked-in fixtures — including a synthetic
-non-ECUC System/Communication workspace (`Fixtures/OemDelivery`, with
-deliberate unresolved references and duplicate/ambiguous-path fixtures).
-CI builds, tests, and smoke-runs every workspace command on every push.
+Parser, ECUC, classification, workspace index, reference graph, summary,
+trace, diff, impact, communication projection, vendor hand-off
+normalization, patch plan/apply/undo round trips and the MCP protocol run
+against checked-in fixtures — including a synthetic non-ECUC
+System/Communication workspace (`Fixtures/OemDelivery`, with deliberate
+unresolved references and duplicate/ambiguous-path fixtures) and the
+`DiffBefore`/`DiffAfter` delivery pair. CI builds, tests, and smoke-runs
+every command's exit-code contract on every push.

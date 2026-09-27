@@ -40,6 +40,12 @@ public sealed class ArxmlElement
 
     public string? ChildText(string name) => Element(name)?.Text;
 
+    /// <summary>Replaces this element's text content (semantic patching).</summary>
+    public void SetText(string? text)
+    {
+        Text = string.IsNullOrEmpty(text) ? null : text.Trim();
+    }
+
     public string? Attribute(string name) => Attributes.TryGetValue(name, out var value) ? value : null;
 
     /// <summary>All descendants in document order, excluding this element.</summary>
