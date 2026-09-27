@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Autarx — AUTOSAR Integration Workbench</title>
+  <meta name="description" content="AUTOSAR Integration Workbench that opens OEM deliveries directly: inspect, search, trace references and validate ARXML before entering the vendor toolchain.">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    :root { --accent:#0E7490; --accent-hover:#155E75; --accent-soft:rgba(14,116,144,.14); --accent-tint:rgba(14,116,144,.08); }
+    .status-pill { display:inline-flex; gap:8px; align-items:center; padding:7px 12px; border-radius:999px; border:1px solid var(--border); font-family:var(--font-mono); font-size:12px; }
+    .status-dot { width:8px; height:8px; border-radius:50%; background:#22c55e; }
+    .hero-copy { max-width:850px; }
+    .support-table { width:100%; border-collapse:collapse; margin-top:24px; }
+    .support-table th,.support-table td { text-align:left; padding:13px 14px; border-bottom:1px solid var(--border); }
+    .support-table th { color:var(--text-2); }
+    .lang-actions { display:flex; gap:8px; align-items:center; }
+    .lang-actions button { border:1px solid var(--border); background:transparent; color:var(--text-2); border-radius:8px; padding:7px 10px; cursor:pointer; }
+  </style>
+</head>
+<body>
+  <nav class="nav-container">
+    <div class="nav-wrapper">
+      <div class="nav-brand">Autarx</div>
+      <ul class="nav-menu">
+        <li><a href="#features" data-en="Features" data-zh="功能">Features</a></li>
+        <li><a href="#platform" data-en="Platform" data-zh="平台">Platform</a></li>
+        <li><a href="#status" data-en="Status" data-zh="状态">Status</a></li>
+        <li><a href="https://github.com/turinglambdaai/autarx">GitHub</a></li>
+        <li class="lang-actions"><button onclick="setLanguage('en')">EN</button><button onclick="setLanguage('zh')">中文</button></li>
+      </ul>
+    </div>
+  </nav>
+
+  <section class="hero" id="overview">
+    <div class="container hero-copy">
+      <div class="status-pill"><span class="status-dot"></span><span data-en="In development · M2" data-zh="开发中 · M2">In development · M2</span></div>
+      <span class="eyebrow" data-en="OEM-to-supplier AUTOSAR workflows" data-zh="OEM–供应商 AUTOSAR 工作流">OEM-to-supplier AUTOSAR workflows</span>
+      <h1><span data-en="One workspace." data-zh="一个工作台，">One workspace.</span> <span class="accent" data-en="Full delivery visibility." data-zh="看清整套交付。">Full delivery visibility.</span></h1>
+      <p class="lead" data-en="Autarx is an AUTOSAR Integration Workbench that opens OEM deliveries directly — System Description, System Extract, ECU Extract, ECUC and communication ARXML — so integration engineers can inspect, search, trace references and validate structure before entering the vendor toolchain." data-zh="Autarx 是一个 AUTOSAR 集成工作台：直接打开 OEM 交付物——System Description、System Extract、ECU Extract、ECUC 与通信 ARXML——让集成工程师在进入 vendor 工具链之前，先完成检查、检索、引用追踪与结构校验。">Autarx is an AUTOSAR Integration Workbench that opens OEM deliveries directly — so integration engineers can inspect, search, trace references and validate structure before entering the vendor toolchain.</p>
+      <div class="hero-buttons">
+        <a href="https://github.com/turinglambdaai/autarx" class="btn btn-primary" data-en="View source" data-zh="查看源码">View source</a>
+        <a href="https://github.com/turinglambdaai/autarx/blob/main/docs/PRODUCT.md" class="btn btn-secondary" data-en="Product direction" data-zh="产品方向">Product direction</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="container">
+      <span class="eyebrow" data-en="What it does" data-zh="它做什么">What it does</span>
+      <h2 class="section-title"><span data-en="The delivery gap," data-zh="交付接手后的缺口，">The delivery gap,</span> <span class="accent" data-en="closed in one window." data-zh="一个窗口补齐。">closed in one window.</span></h2>
+      <div class="bento-grid">
+        <div class="bento-card"><h3 data-en="Open ARXML directly" data-zh="直接打开 ARXML">Open ARXML directly</h3><p data-en="System Description, System Extract, ECU Extract, ECUC and communication ARXML — multi-file delivery packages read by a streaming parser. No vendor configurator required." data-zh="System Description、System Extract、ECU Extract、ECUC 与通信 ARXML——流式解析器直接读多文件交付包，无需 vendor 配置器。">System Description, System Extract, ECU Extract, ECUC and communication ARXML — multi-file delivery packages, no vendor configurator required.</p></div>
+        <div class="bento-card"><h3 data-en="Workspace semantic index" data-zh="工作区语义索引">Workspace semantic index</h3><p data-en="Every SHORT-NAME becomes an indexable object with source-file provenance and a cross-file reference graph (*-REF / *-TREF)." data-zh="每个 SHORT-NAME 都是可索引对象，带来源文件信息与跨文件引用图（*-REF / *-TREF）。">Every SHORT-NAME becomes an indexable object with source-file provenance and a cross-file reference graph.</p></div>
+        <div class="bento-card"><h3 data-en="Delivery inspection" data-zh="交付检查">Delivery inspection</h3><p data-en="One inspect command answers the first question of every delivery: package inventory, ECU list, network and cluster inventory, SWC and communication counts." data-zh="一条 inspect 命令回答「这次 OEM 给了什么」：包清单、ECU 列表、网络与集群清单、SWC 与通信计数。">One inspect command answers the first question of every delivery: package inventory, ECU list, network inventory, SWC and communication counts.</p></div>
+        <div class="bento-card"><h3 data-en="Find, refs, trace" data-zh="检索、引用、追踪">Find, refs, trace</h3><p data-en="Locate any signal, PDU, SWC or ECU element and follow its references across files — with broken references reported, not hidden." data-zh="定位任意 signal、PDU、SWC 或 ECU 元素，跨文件追踪其引用——断链引用会被报告，不会被藏起来。">Locate any signal, PDU, SWC or ECU element and follow its references across files — broken references reported, not hidden.</p></div>
+        <div class="bento-card"><h3 data-en="Validate before vendors" data-zh="进 vendor 工具前先校验">Validate before vendors</h3><p data-en="Structural ECUC validation (ARX001–ARX006) so the ARXML is sound before it reaches DaVinci, tresos or ISOLAR." data-zh="结构化 ECUC 校验（ARX001–ARX006），让 ARXML 在进入 DaVinci、tresos、ISOLAR 之前就是干净的。">Structural ECUC validation (ARX001–ARX006) so the ARXML is sound before it reaches DaVinci, tresos or ISOLAR.</p></div>
+        <div class="bento-card"><h3 data-en="Agent-friendly CLI" data-zh="对 AI 友好的 CLI">Agent-friendly CLI</h3><p data-en="The same workflows run from CLI and CI with stable JSON output — ready for automation and AI agents." data-zh="同一套工作流可从 CLI/CI 运行，输出稳定 JSON——为自动化与 AI agent 准备。">The same workflows run from CLI and CI with stable JSON output — ready for automation and AI agents.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="platform">
+    <div class="container">
+      <span class="eyebrow" data-en="Platform contract" data-zh="平台契约">Platform contract</span>
+      <h2 class="section-title"><span data-en="Not a configurator." data-zh="不是配置器，">Not a configurator.</span> <span class="accent" data-en="A workbench." data-zh="是工作台。">A workbench.</span></h2>
+      <p class="lead" data-en="Autarx does not replace DaVinci Configurator, EB tresos or ETAS ISOLAR. It closes the engineering gap between receiving an OEM delivery and opening the vendor toolchain — vendor validation and code generation remain authoritative." data-zh="Autarx 不替代 DaVinci Configurator、EB tresos 或 ETAS ISOLAR。它补上的是收到 OEM 交付到打开 vendor 工具链之间的工程缺口——vendor 侧的校验与代码生成仍是权威路径。">Autarx does not replace DaVinci Configurator, EB tresos or ETAS ISOLAR. It closes the engineering gap between receiving an OEM delivery and opening the vendor toolchain.</p>
+      <table class="support-table">
+        <tr><th data-en="Desktop" data-zh="桌面端">Desktop</th><td>Avalonia 11 + .NET 10</td></tr>
+        <tr><th data-en="Platforms" data-zh="平台">Platforms</th><td>Windows · Linux · macOS</td></tr>
+        <tr><th data-en="Input" data-zh="输入">Input</th><td>ARXML — System Description / System Extract / ECU Extract / ECUC / communication, multi-file packages</td></tr>
+        <tr><th data-en="Automation" data-zh="自动化">Automation</th><td>CLI with stable JSON output (CI / AI-agent friendly)</td></tr>
+        <tr><th data-en="License" data-zh="许可">License</th><td>Source-available, proprietary</td></tr>
+        <tr><th data-en="Milestone" data-zh="里程碑">Milestone</th><td>M2 in progress — workspace semantic index + OEM delivery inspection</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section id="status">
+    <div class="container">
+      <span class="eyebrow" data-en="Status" data-zh="状态">Status</span>
+      <h2 class="section-title"><span data-en="Analysis first," data-zh="分析优先，">Analysis first,</span> <span class="accent" data-en="milestone by milestone." data-zh="一个里程碑一个里程碑。">milestone by milestone.</span></h2>
+      <p class="lead" data-en="M0 streaming parser, ECUC projection and structural validation are in. M1/M2 workspace semantic index and OEM delivery inspection are landing; M3 semantic diff follows. Watch the repo to follow along." data-zh="M0 流式解析器、ECUC 投影与结构校验已就绪；M1/M2 工作区语义索引与 OEM 交付检查正在落地；M3 语义对比随后。欢迎 watch 仓库跟进。">M0 streaming parser, ECUC projection and structural validation are in. M1/M2 workspace semantic index and OEM delivery inspection are landing; M3 semantic diff follows.</p>
+      <div class="hero-buttons">
+        <a href="https://github.com/turinglambdaai/autarx" class="btn btn-primary" data-en="View source" data-zh="查看源码">View source</a>
+        <a href="https://github.com/turinglambdaai/autarx/blob/main/docs/ROADMAP.md" class="btn btn-secondary" data-en="Roadmap" data-zh="路线图">Roadmap</a>
+      </div>
+    </div>
+  </section>
+
+  <footer><div class="container"><p data-en="Autarx · AUTOSAR Integration Workbench · turinglambdaai" data-zh="Autarx · AUTOSAR 集成工作台 · turinglambdaai">Autarx · AUTOSAR Integration Workbench · turinglambdaai</p></div></footer>
+
+  <script>
+    var LANGUAGE_OVERRIDE_KEY = 'autarx-lang-override-v1';
+    var pageMetadata = {
+      en: { title:'Autarx — AUTOSAR Integration Workbench', description:'AUTOSAR Integration Workbench that opens OEM deliveries directly: inspect, search, trace references and validate ARXML before entering the vendor toolchain.' },
+      zh: { title:'Autarx — AUTOSAR 集成工作台', description:'AUTOSAR 集成工作台：直接打开 OEM 交付物，在进入 vendor 工具链之前完成检查、检索、引用追踪与 ARXML 校验。' }
+    };
+    function readLanguageOverride(){ try { var v=localStorage.getItem(LANGUAGE_OVERRIDE_KEY); return v==='zh'||v==='en'?v:null; } catch(e){ return null; } }
+    function detectBrowserLanguage(){ var locale=(navigator.languages&&navigator.languages[0])||navigator.language||''; return String(locale).toLowerCase().indexOf('zh')===0?'zh':'en'; }
+    function applyLanguage(lang,persist){
+      if(persist){ try { localStorage.setItem(LANGUAGE_OVERRIDE_KEY,lang); } catch(e){} }
+      document.querySelectorAll('[data-en]').forEach(function(el){ var text=el.getAttribute('data-'+lang); if(text!==null) el.textContent=text; });
+      document.documentElement.lang=lang==='zh'?'zh-CN':'en';
+      var metadata=pageMetadata[lang];
+      if(metadata){ document.title=metadata.title; var d=document.querySelector('meta[name="description"]'); if(d)d.setAttribute('content',metadata.description); }
+    }
+    function setLanguage(lang){ if(lang==='zh'||lang==='en') applyLanguage(lang,true); }
+    applyLanguage(readLanguageOverride()||detectBrowserLanguage(),false);
+    window.addEventListener('languagechange',function(){ if(!readLanguageOverride()) applyLanguage(detectBrowserLanguage(),false); });
+  </script>
+</body>
+</html>
