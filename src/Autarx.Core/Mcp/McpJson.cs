@@ -17,12 +17,13 @@ public static class McpJson
     };
 
     /// <summary>For the JSON-RPC envelope itself: newline-delimited framing
-    /// means one message MUST be exactly one line — never indented.</summary>
+    /// means one message MUST be exactly one line — never indented. Null
+    /// values are NOT skipped here: JSON-RPC 2.0 requires `"id": null` to be
+    /// present (not omitted) on error responses to unparseable requests.</summary>
     public static readonly JsonSerializerOptions Envelope = new()
     {
         WriteIndented = false,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, allowIntegerValues: false) },
     };
 }

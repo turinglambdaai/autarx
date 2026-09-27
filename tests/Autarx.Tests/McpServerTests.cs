@@ -117,6 +117,20 @@ public class McpServerTests : IDisposable
         Assert.True(response.GetProperty("result").GetProperty("isError").GetBoolean());
     }
 
+    [Fact]
+    public void Parse_error_response_keeps_id_null_explicitly()
+    {
+        using var input = new StringReader("not json at all");
+        using var output = new StringWriter();
+
+        McpServer.Serve(input, output, "1.0.0");
+
+        // JSON-RPC 2.0: the id property must be PRESENT with null, never omitted
+        var line = output.ToString().Trim();
+        Assert.Contains("\"id\":null", line);
+        Assert.Contains("-32700", line);
+    }
+
     private static string Escape(string path) => path.Replace("\\", "\\\\");
 
     private static class JsonElementExtensions
