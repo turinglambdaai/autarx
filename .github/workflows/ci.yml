@@ -9,7 +9,11 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
@@ -25,6 +29,7 @@ jobs:
         run: dotnet test -c Release --no-build
 
       - name: CLI smoke test
+        if: runner.os == 'Linux'
         run: |
           dotnet run --project src/Autarx.Cli -c Release --no-build -- info tests/Autarx.Tests/Fixtures/minimal.arxml
           dotnet run --project src/Autarx.Cli -c Release --no-build -- validate tests/Autarx.Tests/Fixtures/minimal.arxml --json
