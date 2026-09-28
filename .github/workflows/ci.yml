@@ -113,4 +113,8 @@ jobs:
           set -e
           test "$code" -eq 1
           dotnet run --project src/Autarx.Cli -c Release --no-build -- update --check --feed tests/Autarx.Tests/Fixtures/UpdateFeed/latest.json --kind cli --platform linux-x64
+          set +e
           dotnet run --project src/Autarx.Cli -c Release --no-build -- update --check --feed tests/Autarx.Tests/Fixtures/UpdateFeed/latest.json --kind cli --platform windows-x64 --json
+          code=$?
+          set -e
+          test "$code" -eq 1
