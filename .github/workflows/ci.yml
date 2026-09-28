@@ -105,3 +105,16 @@ jobs:
           test "$(wc -l < /tmp/autarx-mcp.out)" -eq 2
           grep -q '"serverInfo"' /tmp/autarx-mcp.out
           grep -q 'RadarFL' /tmp/autarx-mcp.out
+          # self-update: check against a local feed fixture — newer version
+          # with a matching asset exits 1, no matching asset exits 0
+          set +e
+          dotnet run --project src/Autarx.Cli -c Release --no-build -- update --check --feed tests/Autarx.Tests/Fixtures/UpdateFeed/latest.json --kind cli --platform windows-x64
+          code=$?
+          set -e
+          test "$code" -eq 1
+          dotnet run --project src/Autarx.Cli -c Release --no-build -- update --check --feed tests/Autarx.Tests/Fixtures/UpdateFeed/latest.json --kind cli --platform linux-x64
+          set +e
+          dotnet run --project src/Autarx.Cli -c Release --no-build -- update --check --feed tests/Autarx.Tests/Fixtures/UpdateFeed/latest.json --kind cli --platform windows-x64 --json
+          code=$?
+          set -e
+          test "$code" -eq 1

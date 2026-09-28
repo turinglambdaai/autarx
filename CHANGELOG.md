@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-09-28
+
+### Added
+
+- Online self-update: `autarx update` checks the release feed and applies newer builds in place (checksum-verified, previous binaries kept as `.autarx-update.old`); `--check` reports availability for CI, `--json` for agents.
+- Update feed asset: the release pipeline publishes `latest.json` (version, per-platform download URLs, SHA-256, sizes) with every release.
+- GUI update menu: quiet startup check plus Help → Check for Updates / Install Update.
+- Local crash logs: unhandled failures in CLI and GUI write a log under `<TEMP>/autarx/crashes/` (exit code 3); nothing is sent anywhere.
+
 ## [1.0.1] - 2026-09-27
 
 ### Fixed
@@ -23,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reviewed patching, MCP agent layer and the Avalonia workbench GUI (M7/M8).
 - Self-contained single-file builds for Windows, macOS (Apple silicon) and Linux.
 
-[Unreleased]: https://github.com/turinglambdaai/autarx/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/turinglambdaai/autarx/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/turinglambdaai/autarx/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/turinglambdaai/autarx/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/turinglambdaai/autarx/releases/tag/v1.0.0

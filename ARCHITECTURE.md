@@ -152,6 +152,19 @@ workspace files. `Parsing/ArxmlWriter` emits canonical serialization
 (deterministic indent, sorted attributes, root namespace reconstruction) —
 semantically equivalent, deliberately not byte-faithful.
 
+## Self-update
+
+`Update/` implements the update channel. The release pipeline publishes a
+`latest.json` asset with every release (version, per-platform download URL,
+SHA-256, size); `UpdateFeed` parses it (URL or local file — local files keep
+CI gated without network), `UpdateService` checks and downloads,
+`UpdateInstaller` verifies the checksum BEFORE touching anything, then swaps
+files in place: current files move to `<name>.autarx-update.old` (allowed
+while the executable runs on Windows), stale backups are cleaned on the next
+update. The GUI checks quietly on startup and offers the install under
+Help. Unhandled exceptions write a local crash log under
+`<TEMP>/autarx/crashes/` and exit 3 — nothing is sent anywhere.
+
 ## AI layer (MCP)
 
 `Mcp/McpServer` is a newline-delimited JSON-RPC 2.0 stdio server exposing
@@ -186,7 +199,8 @@ vendor validation and must never be presented as "AUTOSAR compliant" or
   strings (`"communicationCluster"`), never integers.
 - Exit codes: `0` success · `1` nothing matched (find/refs/trace/ecu) or
   findings reported (validate/unresolved/diff/impact) · `2` usage/file/parse
-  error or ambiguous object name. Deterministic, documented in `--help`.
+  error or ambiguous object name · `3` unhandled crash (local crash log
+  written). Deterministic, documented in `--help`.
   Per-command variants: diff `0` identical/`1` differences; impact `0` no
   relevant changes/`1` relevant changes; patch `1` plan failures with
   nothing written; vendor validate `0` tool clean/`1` tool reported

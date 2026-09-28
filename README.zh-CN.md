@@ -40,6 +40,7 @@ Autarx **不会**：替代达芬奇/tresos/ISOLAR、生成量产 BSW/RTE/MCAL �
 - **厂商交接**——`vendor list` 探测达芬奇/tresos/ISOLAR 安装；`vendor validate` 中继厂商工具自身的运行结果（归一化诊断 + 保留原始输出）——这永远是厂商的结论，不是 Autarx 的
 - **受控编辑**——`patch plan` 把每次修改先转成语义 diff 供审阅，未审阅不落盘；`patch apply` 保留备份和撤销清单；重命名会同步重写全工作区的入向引用
 - **AI Agent 接口**——`autarx mcp` 启动 Model Context Protocol stdio 服务器暴露完整工具 API；不存在裸写文件工具，agent 无法绕过 plan/diff/审阅边界，且每次调用都进审计日志
+- **在线自更新**——`autarx update` 检查随每个版本发布的 `latest.json` 更新清单，校验 SHA-256 后就地替换二进制；GUI 启动时静默检查，Help 菜单一键安装。未处理崩溃会在 `<TEMP>/autarx/crashes/` 留本地日志——不上传任何数据
 - **Agent 友好 CLI**——camelCase JSON、确定性退出码、歧义显式上报而非猜测；现成的 CI 门禁命令链
 - **Avalonia 工作区**——Windows/macOS/Linux 原生 GUI
 - **自包含构建**——每平台单文件可执行，无需安装 .NET
@@ -89,6 +90,10 @@ autarx patch undo ./OEM_Delivery/
 
 # AI agent 的 MCP stdio 服务器（JSON-RPC 2.0，带审计）
 autarx mcp
+
+# 自更新：检查并就地应用新版本
+autarx update --check        # 只报告（有新版本时退出码 1）
+autarx update                # 下载、校验 SHA-256、就地替换
 
 # 单文件 ECUC 命令（仅结构校验——不是厂商校验）
 autarx info Mcu.arxml

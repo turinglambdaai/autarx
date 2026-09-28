@@ -6,6 +6,22 @@ internal static class Program
 {
     public static int Main(string[] args)
     {
+        try
+        {
+            return Dispatch(args);
+        }
+        catch (Exception ex)
+        {
+            var log = Autarx.Core.Diagnostics.CrashLog.Write("cli", ex);
+            Console.Error.WriteLine($"autarx: unexpected failure: {ex.Message}");
+            if (log is not null)
+                Console.Error.WriteLine($"autarx: crash log written to {log}");
+            return 3;
+        }
+    }
+
+    private static int Dispatch(string[] args)
+    {
         if (args.Length == 0)
             return Usage();
 
@@ -34,6 +50,7 @@ internal static class Program
             "vendor" => VendorCommand.Run(args[1..]),
             "patch" => PatchCommand.Run(args[1..]),
             "mcp" => Mcp(args[1..]),
+            "update" => UpdateCommand.Run(args[1..]),
 
             // single-file commands
             "info" => Commands.Info(args[1..]),
@@ -111,6 +128,10 @@ internal static class Program
               mcp         Run the MCP stdio server (JSON-RPC 2.0) exposing
                           the full tool API with workspace audit logging
 
+            Self-update:
+              update      Check the release feed and self-apply newer builds
+                          update [--check] [--json] [--feed <url|file>]
+
             Single-file commands:
               info        Summarize a single ARXML file
               modules     List ECUC module configurations in a file
@@ -127,8 +148,10 @@ internal static class Program
             Exit codes:
               0  success
               1  nothing matched (find/refs/trace/ecu) or findings reported
-                 (validate/unresolved/diff/impact)
+                 (validate/unresolved/diff/impact); update --check: newer
+                 release available
               2  usage, file, or parse error, or ambiguous object name
+              3  unhandled crash (a log was written under <TEMP>/autarx/crashes)
             """);
         return exitCode;
     }

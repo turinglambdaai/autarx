@@ -24,6 +24,10 @@
                 <Separator />
                 <MenuItem Header="_Compare With Delivery…" Command="{Binding CompareWithCommand}" />
             </MenuItem>
+            <MenuItem Header="_Help">
+                <MenuItem Header="_Check for Updates" Command="{Binding CheckForUpdatesCommand}" />
+                <MenuItem Header="_Install Update" Command="{Binding InstallUpdateCommand}" />
+            </MenuItem>
         </Menu>
 
         <Border DockPanel.Dock="Bottom" Padding="12,6"
