@@ -1,0 +1,13 @@
+{
+  "version": "9.9.9",
+  "date": "2026-01-01T00:00:00Z",
+  "notes": "https://github.com/turinglambdaai/autarx/releases/tag/v9.9.9",
+  "assets": {
+    "cli": {
+      "windows-x64": { "url": "https://example.invalid/Autarx-cli-windows-x64.zip", "sha256": "0000000000000000000000000000000000000000000000000000000000000000", "size": 1 }
+    },
+    "gui": {
+      "windows-x64": { "url": "https://example.invalid/Autarx-gui-windows-x64.zip", "sha256": "0000000000000000000000000000000000000000000000000000000000000000", "size": 1 }
+    }
+  }
+}

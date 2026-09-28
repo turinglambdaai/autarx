@@ -1,10 +1,12 @@
 using System.Collections.ObjectModel;
+using System.Runtime.InteropServices;
 using System.Text;
 using Autarx.Core.Communication;
 using Autarx.Core.Diff;
 using Autarx.Core.Index;
 using Autarx.Core.Models;
 using Autarx.Core.Parsing;
+using Autarx.Core.Update;
 using Autarx.Core.Validation;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -199,10 +201,96 @@ public partial class MainViewModel : ObservableObject
         AnalysisText = sb.ToString();
     }
 
+    // ---- self-update ----
+
+    private UpdateCheck? _pendingUpdate;
+
+    /// <summary>Quiet startup check: reports through the status bar only,
+    /// never blocks and never pops anything.</summary>
+    public void CheckForUpdatesQuietly()
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var check = await UpdateService.CheckAsync(UpdateFeed.DefaultFeedUrl, VersionText(), "gui", PlatformId());
+                if (!check.UpdateAvailable)
+                    return;
+                _pendingUpdate = check;
+                StatusText = $"update available: v{check.LatestVersion} — Help → Install Update";
+                InstallUpdateCommand.NotifyCanExecuteChanged();
+            }
+            catch (Exception)
+            {
+                // a failed background check must never bother the user
+            }
+        });
+    }
+
+    [RelayCommand]
+    private async Task CheckForUpdatesAsync()
+    {
+        StatusText = "checking for updates…";
+        try
+        {
+            var check = await Task.Run(() => UpdateService.CheckAsync(
+                UpdateFeed.DefaultFeedUrl, VersionText(), "gui", PlatformId()));
+            _pendingUpdate = check.UpdateAvailable ? check : null;
+            InstallUpdateCommand.NotifyCanExecuteChanged();
+            StatusText = check.UpdateAvailable
+                ? $"update available: v{check.LatestVersion} — Help → Install Update"
+                : $"Autarx v{VersionText()} is up to date.";
+        }
+        catch (UpdateException ex)
+        {
+            StatusText = $"update check failed: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private async Task InstallUpdateAsync()
+    {
+        var check = _pendingUpdate;
+        if (check?.Asset is null)
+        {
+            StatusText = "no pending update — run Help → Check for Updates first.";
+            return;
+        }
+
+        StatusText = $"downloading v{check.LatestVersion}…";
+        try
+        {
+            var payloadRoot = await Task.Run(() => UpdateService.DownloadAndExtractAsync(
+                check.Asset!, Path.Combine(Path.GetTempPath(), "autarx-update"), "Autarx.Gui.exe"));
+            var replaced = UpdateInstaller.Apply(payloadRoot, AppContext.BaseDirectory);
+            StatusText = $"v{check.LatestVersion} installed ({replaced} file(s)) — restart Autarx to apply.";
+            _pendingUpdate = null;
+            InstallUpdateCommand.NotifyCanExecuteChanged();
+        }
+        catch (Exception ex) when (ex is UpdateException or IOException)
+        {
+            StatusText = $"update failed: {ex.Message}";
+        }
+    }
+
+    private static string VersionText()
+    {
+        var v = typeof(MainViewModel).Assembly.GetName().Version;
+        return v is null ? "0.0.0" : $"{v.Major}.{v.Minor}.{v.Build}";
+    }
+
+    private static string PlatformId()
+    {
+        var arch = RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "arm64" : "x64";
+        var os = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "windows"
+            : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "macos"
+            : "linux";
+        return $"{os}-{arch}";
+    }
+
     [RelayCommand]
     private async Task CompareWithAsync()
-    {
-        if (_workspaceIndex is null)
+    {        if (_workspaceIndex is null)
         {
             AnalysisText = "Open a workspace first, then pick a second delivery to diff against.";
             return;

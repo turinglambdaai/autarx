@@ -137,6 +137,41 @@ jobs:
           fi
           cat notes.md
 
+      - name: Generate update feed (latest.json)
+        working-directory: dist
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          export FEED_VERSION="$VERSION"
+          python3 - <<'PY'
+          import hashlib, json, os, datetime
+
+          version = os.environ["FEED_VERSION"]
+          base = "https://github.com/turinglambdaai/autarx/releases/download/v" + version
+          assets = {}
+          for kind in ("cli", "gui"):
+              assets[kind] = {}
+              for platform in ("windows-x64", "macos-arm64", "linux-x64"):
+                  name = f"Autarx-{kind}-{platform}.zip"
+                  with open(name, "rb") as f:
+                      digest = hashlib.sha256(f.read()).hexdigest()
+                  assets[kind][platform] = {
+                      "url": f"{base}/{name}",
+                      "sha256": digest,
+                      "size": os.path.getsize(name),
+                  }
+          feed = {
+              "version": version,
+              "date": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+              "notes": f"https://github.com/turinglambdaai/autarx/releases/tag/v{version}",
+              "assets": assets,
+          }
+          with open("latest.json", "w") as f:
+              json.dump(feed, f, indent=2)
+              f.write("\n")
+          print(open("latest.json").read())
+          PY
+
       - name: Generate checksum manifest
         working-directory: dist
         run: |
@@ -156,6 +191,7 @@ jobs:
           body_path: notes.md
           files: |
             dist/*.zip
+            dist/latest.json
             dist/SHA256SUMS
           generate_release_notes: true
           fail_on_unmatched_files: true

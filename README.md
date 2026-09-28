@@ -40,6 +40,7 @@ Autarx **does not**: replace DaVinci/tresos/ISOLAR, generate production BSW/RTE/
 - **Vendor hand-off** — `vendor list` detects DaVinci/tresos/ISOLAR installations; `vendor validate` relays the vendor tool's own run with normalized diagnostics and the raw output preserved — never an Autarx verdict
 - **Reviewed editing** — `patch plan` previews every change as a semantic diff before anything is written; `patch apply` keeps backups and an undo manifest; renames rewrite incoming reference targets across the workspace
 - **AI agent surface** — `autarx mcp` runs a Model Context Protocol stdio server exposing the whole tool API; there is no raw-write tool, so an agent cannot bypass the plan/diff/review boundary, and every call is audit-logged
+- **Self-update** — `autarx update` checks the release feed (a `latest.json` asset published with every release), verifies the SHA-256 checksum, and swaps the new binaries in place; the GUI checks quietly on startup and offers Help → Install Update. Unhandled crashes leave a local log under `<TEMP>/autarx/crashes/` — nothing is sent anywhere
 - **Agent-friendly CLI** — camelCase JSON, deterministic exit codes, ambiguity is reported instead of guessed; a ready-made command chain for CI gates
 - **Avalonia workspace** — native GUI on Windows, macOS and Linux
 - **Self-contained builds** — single-file executables per platform, no .NET install needed
@@ -89,6 +90,10 @@ autarx patch undo ./OEM_Delivery/
 
 # MCP stdio server for AI agents (JSON-RPC 2.0, audit-logged)
 autarx mcp
+
+# self-update: check and apply newer builds from GitHub Releases
+autarx update --check        # report only (exit 1 when newer exists)
+autarx update                # download, verify SHA-256, swap in place
 
 # single-file ECUC commands (structural validation only — not vendor validation)
 autarx info Mcu.arxml

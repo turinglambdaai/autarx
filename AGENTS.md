@@ -16,8 +16,8 @@ generates BSW/RTE/MCAL code. Private commercial project.
 CLI commands: `inspect` `find` `refs` `trace` `ecus` `ecu` `unresolved`
 (workspace) · `diff` `impact` (two deliveries) · `comm` (communication
 projection) · `vendor list|validate` (hand-off only) · `patch plan|apply|undo`
-(reviewed editing) · `mcp` (MCP stdio server) · `info` `modules` `validate`
-(single file).
+(reviewed editing) · `mcp` (MCP stdio server) · `update` (self-update via the
+release feed) · `info` `modules` `validate` (single file).
 
 ## Layout
 
@@ -33,6 +33,8 @@ projection) · `vendor list|validate` (hand-off only) · `patch plan|apply|undo`
   - `Vendor/` — adapter detection + vendor hand-off relay (never a verdict)
   - `Patch/` — plan/apply/undo; writes gated by the mandatory semantic diff
   - `Mcp/` — MCP stdio server; no raw-write tool exists by design
+  - `Update/` — release-feed parsing + checksum-verified self-update;
+    exit code 3 = crash with a log under <TEMP>/autarx/crashes
   - `Validation/` — structural rules (ARX00NN)
 - `src/Autarx.Cli` — commands + `--json`; no domain logic in command files
 - `src/Autarx.Gui` — Avalonia MVVM (`Views/` + `ViewModels/`); no domain logic

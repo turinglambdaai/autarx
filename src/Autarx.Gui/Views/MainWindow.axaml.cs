@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using Autarx.Gui.ViewModels;
 
 namespace Autarx.Gui.Views;
@@ -16,8 +17,22 @@ public partial class MainWindow : Window
             {
                 vm.PickFile = PickFileAsync;
                 vm.PickFolder = PickFolderAsync;
+                ScheduleQuietUpdateCheck(vm);
             }
         };
+    }
+
+    /// <summary>One quiet update check shortly after startup — status-bar
+    /// output only, failures stay silent.</summary>
+    private void ScheduleQuietUpdateCheck(MainViewModel vm)
+    {
+        var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
+        timer.Tick += (_, _) =>
+        {
+            timer.Stop();
+            vm.CheckForUpdatesQuietly();
+        };
+        timer.Start();
     }
 
     private async Task<string?> PickFolderAsync()
