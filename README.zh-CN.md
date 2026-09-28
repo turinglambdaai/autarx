@@ -111,6 +111,25 @@ autarx validate Mcu.arxml
 ]
 ```
 
+## 安装
+
+从 [Releases](https://github.com/turinglambdaai/autarx/releases/latest) 下载最新 zip——每个平台提供 GUI 包（`Autarx-gui-<platform>.zip`）与 CLI 包（`Autarx-cli-<platform>.zip`），自包含单文件可执行，无需安装 .NET：
+
+| 平台 | 资产 |
+|---|---|
+| Windows x64 | `Autarx-{gui,cli}-windows-x64.zip` |
+| macOS（Apple 芯片） | `Autarx-{gui,cli}-macos-arm64.zip` |
+| Linux x64 | `Autarx-{gui,cli}-linux-x64.zip` |
+
+每个 Release 同时附带 `SHA256SUMS` 校验清单和 Sigstore 构建溯源证明，运行前建议先校验：
+
+```bash
+sha256sum --ignore-missing --check SHA256SUMS
+gh attestation verify Autarx-cli-linux-x64.zip -R turinglambdaai/autarx
+```
+
+macOS 构建未签名；首次启动前用 `xattr -cr Autarx`（GUI）或 `xattr -cr autarx`（CLI）移除 Gatekeeper 隔离标记。
+
 ## 快速开始
 
 ### 从源码构建

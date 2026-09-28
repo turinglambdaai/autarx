@@ -111,6 +111,25 @@ autarx validate Mcu.arxml
 ]
 ```
 
+## Install
+
+Download the latest zips from [Releases](https://github.com/turinglambdaai/autarx/releases/latest) — each platform ships a GUI zip (`Autarx-gui-<platform>.zip`) and a CLI zip (`Autarx-cli-<platform>.zip`), self-contained single-file executables, no .NET install needed:
+
+| Platform | Assets |
+|---|---|
+| Windows x64 | `Autarx-{gui,cli}-windows-x64.zip` |
+| macOS (Apple silicon) | `Autarx-{gui,cli}-macos-arm64.zip` |
+| Linux x64 | `Autarx-{gui,cli}-linux-x64.zip` |
+
+Every release also carries a `SHA256SUMS` manifest and Sigstore build provenance. Verify before running:
+
+```bash
+sha256sum --ignore-missing --check SHA256SUMS
+gh attestation verify Autarx-cli-linux-x64.zip -R turinglambdaai/autarx
+```
+
+macOS builds are unsigned; on first launch remove the Gatekeeper quarantine with `xattr -cr Autarx` (GUI) or `xattr -cr autarx` (CLI).
+
 ## Getting started
 
 ### Build from source

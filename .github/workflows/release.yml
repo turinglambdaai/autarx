@@ -3,8 +3,10 @@ name: release
 # Builds self-contained single-file binaries on GitHub's runners and ships
 # them via GitHub Releases — end users just download their platform's zip
 # and run, no .NET install needed.
-#   - workflow_dispatch : manual run, uploads build artifacts to the Actions run.
-#   - push tag v*        : creates a GitHub Release with the zips attached.
+#   - workflow_dispatch : manual run — preflight, tests and build artifacts only.
+#   - push tag v*        : after preflight + tests pass, creates a GitHub Release
+#                          with the zips, a verified SHA256SUMS manifest and
+#                          Sigstore build-provenance attestations.
 on:
   workflow_dispatch:
   push:
@@ -15,7 +17,39 @@ permissions:
   contents: write
 
 jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify tag matches Directory.Build.props version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          VERSION="$(sed -n 's:.*<Version>\([^<]*\)</Version>.*:\1:p' Directory.Build.props | head -n1 | tr -d '[:space:]')"
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          if [ -z "$VERSION" ] || [ "$TAG_VERSION" != "$VERSION" ]; then
+            echo "tag $GITHUB_REF_NAME does not match Directory.Build.props version '$VERSION'" >&2
+            exit 1
+          fi
+          echo "release preflight: version $VERSION verified"
+
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build
+        run: dotnet build Autarx.slnx -c Release
+      - name: Test
+        run: dotnet test Autarx.slnx -c Release --no-build
+
   build:
+    needs: [preflight, test]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -58,6 +92,13 @@ jobs:
           zip -r "Autarx-gui-${{ matrix.platform }}.zip" gui -x '*.pdb'
           zip -r "Autarx-cli-${{ matrix.platform }}.zip" cli -x '*.pdb'
 
+      - name: Attest build provenance
+        uses: actions/attest@v4
+        with:
+          subject-path: |
+            publish/Autarx-gui-${{ matrix.platform }}.zip
+            publish/Autarx-cli-${{ matrix.platform }}.zip
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -65,10 +106,56 @@ jobs:
           path: |
             publish/Autarx-gui-${{ matrix.platform }}.zip
             publish/Autarx-cli-${{ matrix.platform }}.zip
+          if-no-files-found: error
 
-      - name: Attach to Release
-        if: startsWith(github.ref, 'refs/tags/')
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Extract release notes from CHANGELOG
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk -v ver="$VERSION" '
+            $0 ~ "^## \\["ver"\\] " {flag=1; next}
+            /^## \[/ {flag=0}
+            flag {print}
+          ' CHANGELOG.md > notes.md
+          if [ ! -s notes.md ]; then
+            echo "See CHANGELOG.md for details." > notes.md
+          fi
+          cat notes.md
+
+      - name: Generate checksum manifest
+        working-directory: dist
+        run: |
+          set -euo pipefail
+          find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%f\0' | sort -z | xargs -0 sha256sum > SHA256SUMS
+          test -s SHA256SUMS
+          sha256sum --check SHA256SUMS
+
+      - name: Attest checksum manifest
+        uses: actions/attest@v4
+        with:
+          subject-path: dist/SHA256SUMS
+
+      - name: Create release
         uses: softprops/action-gh-release@v2
         with:
-          files: publish/Autarx-*.zip
+          body_path: notes.md
+          files: |
+            dist/*.zip
+            dist/SHA256SUMS
           generate_release_notes: true
+          fail_on_unmatched_files: true
