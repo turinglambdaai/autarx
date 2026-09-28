@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-09-28
+
+### Changed
+
+- Dependency updates: Avalonia 12.1.3; GitHub Actions (checkout v7, setup-dotnet v6, upload-artifact v7, download-artifact v8, action-gh-release v3). First release built entirely by the hardened release pipeline.
+
 ## [1.0.2] - 2026-09-28
 
 ### Added
@@ -32,7 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reviewed patching, MCP agent layer and the Avalonia workbench GUI (M7/M8).
 - Self-contained single-file builds for Windows, macOS (Apple silicon) and Linux.
 
-[Unreleased]: https://github.com/turinglambdaai/autarx/compare/v1.0.2...HEAD
+[Unreleased]: https://github.com/turinglambdaai/autarx/compare/v1.0.3...HEAD
+[1.0.3]: https://github.com/turinglambdaai/autarx/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/turinglambdaai/autarx/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/turinglambdaai/autarx/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/turinglambdaai/autarx/releases/tag/v1.0.0
