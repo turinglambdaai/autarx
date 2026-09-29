@@ -96,12 +96,46 @@ jobs:
           zip -r "Autarx-gui-${{ matrix.platform }}.zip" gui -x '*.pdb'
           zip -r "Autarx-cli-${{ matrix.platform }}.zip" cli -x '*.pdb'
 
+      - name: Build Debian packages
+        if: matrix.rid == 'linux-x64'
+        run: bash packaging/linux/build-deb.sh "${GITHUB_REF_NAME#v}" publish
+
+      - name: Install and remove Debian packages
+        if: matrix.rid == 'linux-x64'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ./publish/Autarx-cli-linux-x64.deb ./publish/Autarx-gui-linux-x64.deb
+          test -x /usr/bin/autarx
+          test -x /opt/autarx-gui/Autarx
+          test -L /usr/bin/autarx-gui
+          sudo apt-get remove -y autarx-cli autarx-gui
+
       - name: Attest build provenance
         uses: actions/attest@v4
         with:
           subject-path: |
             publish/Autarx-gui-${{ matrix.platform }}.zip
             publish/Autarx-cli-${{ matrix.platform }}.zip
+
+      - name: Attest Debian packages
+        if: matrix.rid == 'linux-x64'
+        uses: actions/attest@v4
+        with:
+          subject-path: |
+            publish/Autarx-cli-linux-x64.deb
+            publish/Autarx-gui-linux-x64.deb
+
+      - name: Upload Debian packages
+        if: matrix.rid == 'linux-x64'
+        uses: actions/upload-artifact@v7
+        with:
+          name: Autarx-linux-deb
+          path: |
+            publish/Autarx-cli-linux-x64.deb
+            publish/Autarx-cli-linux-x64.deb.sha256
+            publish/Autarx-gui-linux-x64.deb
+            publish/Autarx-gui-linux-x64.deb.sha256
+          if-no-files-found: error
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
@@ -195,6 +229,8 @@ jobs:
           body_path: notes.md
           files: |
             dist/*.zip
+            dist/*.deb
+            dist/*.deb.sha256
             dist/latest.json
             dist/SHA256SUMS
           generate_release_notes: true
