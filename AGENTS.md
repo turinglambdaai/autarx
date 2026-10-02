@@ -1,58 +1,84 @@
-# Autarx
+# AGENTS.md
 
-AUTOSAR Integration Workbench: UI-free semantic engine + Avalonia GUI + JSON
-CLI. Inspects, traces and automates OEM-to-supplier integration data. Sits
-above vendor generators — never replaces DaVinci/tresos/ISOLAR, never
-generates BSW/RTE/MCAL code. Private commercial project.
+Guidance for AI agents (and developers): how to understand, build, run and
+change Autarx.
 
-## Commands
+## What this is
 
-- Build: `dotnet build Autarx.slnx`
-- Test: `dotnet test`
-- Run CLI: `dotnet run --project src/Autarx.Cli -- <command> <args>`
-- Run GUI: `dotnet run --project src/Autarx.Gui`
-- Fixture workspace: `tests/Autarx.Tests/Fixtures/OemDelivery`
+Autarx is an AUTOSAR Integration Workbench (inspect, trace, diff and audit
+OEM-to-supplier AUTOSAR delivery data), rebuilt on the Rivet application
+framework: one Racket domain core (`racket/autarx/`), a JSON CLI + MCP
+server linking the core directly, and native GUI hosts speaking RVT1.
+Branch `experiment/autarx-rivet` is the development line; the archived
+.NET implementation (v1.0.3, `main`) is the behaviour and JSON oracle.
 
-CLI commands: `inspect` `find` `refs` `trace` `ecus` `ecu` `unresolved`
-(workspace) · `diff` `impact` (two deliveries) · `comm` (communication
-projection) · `vendor list|validate` (hand-off only) · `patch plan|apply|undo`
-(reviewed editing) · `mcp` (MCP stdio server) · `update` (self-update via the
-release feed) · `info` `modules` `validate` (single file).
+- Migration plan + stop-rule record: `docs/RIVET-MIGRATION.md`
+- Product boundaries: `docs/PRODUCT.md`
+
+## Quick commands
+
+```bash
+# 0) Prerequisite: Racket CS 9.x with rivet linked
+cd ../rivet && raco pkg install --auto --no-docs --name rivet --link file://$PWD
+
+# 1) Domain + contract tests (101 cases, RVT1 smoke included)
+raco test racket/
+
+# 2) CLI against a fixture
+racket racket/autarx/cli.rkt inspect shared/fixtures/OemDelivery --json
+
+# 3) Build the staged app (embedded backend + macOS SwiftUI host)
+raco rivet build
+raco rivet dev
+
+# 4) MCP server (newline-delimited JSON-RPC 2.0 on stdio)
+racket racket/autarx/backend.rkt   # RVT1 transport (GUI/dev)
+# mcp: racket racket/autarx/cli.rkt mcp
+
+# 5) Large-file benchmark (R0 stop-rule reproduction)
+racket scripts/gen-bench-ecuc.rkt -o "$TMPDIR/autarx-bench" -n 50000
+```
+
+## Contracts (read before changing behaviour; change both sides together)
+
+- **CLI JSON**: camelCase keys in declaration order, null omitted, string
+  enums, 2-space indent; exit codes 0/1/2/3 with per-command variants
+  (diff: 0 identical/1 differs; vendor validate: 0 clean/1 tool failed/
+  2 autarx-side; patch: 1 plan invalid). Byte-verified against v1.0.3.
+- **Rule codes**: ARX001–ARX006 (validation) and ARX-IMP-\* (impact) are
+  append-only, never renumbered.
+- **Content hashes**: FNV-1a subtree hashes are a cross-implementation
+  contract (UTF-16 code units, 2^64 wrap; see `hash.rkt`).
+- **MCP**: 12 tools, indented payloads, compact error envelopes with
+  explicit `"id":null`; every tools/call appends to
+  `<workspace>/.autarx/audit.jsonl`.
+- **Patch pipeline**: plan is read-only and produces a mandatory semantic
+  diff; apply writes `.autarx/` backups + `patch-history.jsonl`; no raw
+  write surface exists anywhere.
+- **RPC surface** (`racket/autarx/backend.rkt` define-rpc): open/close
+  workspace, summary, find/list objects, refs, trace, ecus, unresolved,
+  diff, impact, communication, validate, patch plan/apply + `progress`
+  event. Changing a signature requires regenerating host clients
+  (`raco rivet build`).
 
 ## Layout
 
-- `src/Autarx.Core` — semantic engine; no UI dependencies here
-  - `Models/` — SemanticObject, SemanticKind, references, documents
-  - `Parsing/` — ArxmlParser (streaming), EcucReader (ECUC projection),
-    AutosarReleaseParser
-  - `Index/` — WorkspaceIndex builder, reference graphs, trace, summary
-  - `Diff/` — semantic diff between two deliveries (path identity + content
-    hashes; property detail re-reads source files)
-  - `Impact/` — ECU-scoped relevance closure + deterministic ARX-IMP-* rules
-  - `Communication/` — cluster→frame→PDU→signal projection from the graph
-  - `Vendor/` — adapter detection + vendor hand-off relay (never a verdict)
-  - `Patch/` — plan/apply/undo; writes gated by the mandatory semantic diff
-  - `Mcp/` — MCP stdio server; no raw-write tool exists by design
-  - `Update/` — release-feed parsing + checksum-verified self-update;
-    exit code 3 = crash with a log under <TEMP>/autarx/crashes
-  - `Validation/` — structural rules (ARX00NN)
-- `src/Autarx.Cli` — commands + `--json`; no domain logic in command files
-- `src/Autarx.Gui` — Avalonia MVVM (`Views/` + `ViewModels/`); no domain logic
-  in ViewModels
-- `tests/Autarx.Tests` — xunit + fixtures (ECUC and non-ECUC, incl. the
-  DiffBefore/DiffAfter delivery pair)
+```
+autarx/
+├── rivet.rktd              Rivet manifest (backend/module/entry/protocol)
+├── racket/autarx/          domain core + cli.rkt + mcp.rkt + backend.rkt
+├── racket/tests/           101 contract tests + RVT1 smoke
+├── macos-host/             SwiftUI workbench (SwiftPM; builds via rivet)
+├── shared/fixtures/        synthetic deliveries (ECUC + System/Comm)
+├── scripts/                bench generator
+└── docs/                   RIVET-MIGRATION / PRODUCT / site
+```
 
-## Rules
+## Conventions
 
-- net10.0, nullable enabled
-- Core's top-level model is Workspace / SemanticObject / reference graph —
-  ECUC stays a projection; never promote ECUC types to the Core top level
-- Identity = AUTOSAR absolute short-name path; never XML line numbers
-- CLI JSON: camelCase keys, enums as camelCase strings, additive changes only;
-  exit codes 0/1/2 are documented contracts
-- Diagnostic codes ARX00NN never renumbered (table in ARCHITECTURE.md)
-- ARXML matching is LocalName-based; no namespace-aware matching
-- Validation wording: `validate` is structural only — never write "AUTOSAR
-  compliant", "production valid", or vendor-validation equivalent; vendor
-  adapters belong under `autarx vendor ...` (M6)
-- Commit style: imperative summary line + bulleted detail
+- Domain logic lives in `racket/autarx/` only; hosts render, CLI/MCP translate.
+- Unknown AUTOSAR element types degrade to `unknown` — never a parse
+  failure. Ambiguity is a first-class outcome, never silently resolved.
+- Rivet framework gaps go upstream (issue/PR to turinglambdaai/rivet);
+  this repo pins a commit.
+- `raco test racket/` must stay green on every change.

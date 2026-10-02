@@ -4,8 +4,7 @@
 Point it at an OEM delivery or ECU extract directory and get a semantic workspace: inventories, reference graphs, ECU discovery and unresolved-reference checks — scriptable end to end from an agent-friendly JSON CLI. Autarx sits **above** the vendor generators; it does not replace DaVinci, tresos or ISOLAR.
 
 [![CI](https://github.com/turinglambdaai/autarx/actions/workflows/ci.yml/badge.svg)](https://github.com/turinglambdaai/autarx/actions/workflows/ci.yml)
-[![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
-[![Avalonia](https://img.shields.io/badge/UI-Avalonia-12-9B4FBE?logo=avaloniaui&logoColor=white)](https://avaloniaui.net/)
+[![Racket](https://img.shields.io/badge/Racket-CS-9F1D20?logo=racket&logoColor=white)](https://racket-lang.org)
 [![License](https://img.shields.io/badge/License-Proprietary-red)](LICENSE)
 
 [中文](README.zh-CN.md) · English
@@ -42,8 +41,8 @@ Autarx **does not**: replace DaVinci/tresos/ISOLAR, generate production BSW/RTE/
 - **AI agent surface** — `autarx mcp` runs a Model Context Protocol stdio server exposing the whole tool API; there is no raw-write tool, so an agent cannot bypass the plan/diff/review boundary, and every call is audit-logged
 - **Self-update** — `autarx update` checks the release feed (a `latest.json` asset published with every release), verifies the SHA-256 checksum, and swaps the new binaries in place; the GUI checks quietly on startup and offers Help → Install Update. Unhandled crashes leave a local log under `<TEMP>/autarx/crashes/` — nothing is sent anywhere
 - **Agent-friendly CLI** — camelCase JSON, deterministic exit codes, ambiguity is reported instead of guessed; a ready-made command chain for CI gates
-- **Avalonia workspace** — native GUI on Windows, macOS and Linux
-- **Self-contained builds** — single-file executables per platform, no .NET install needed
+- **Native macOS workbench** — SwiftUI host over the embedded Racket core (Windows/Linux hosts planned)
+- **Single binary core** — one Racket executable carries CLI + MCP; the GUI embeds it
 
 ## Command line
 
@@ -161,23 +160,26 @@ The suite covers the parser (namespace stripping, attributes, error line numbers
 
 ```text
 autarx/
-├── src/
-│   ├── Autarx.Core/            # semantic engine (no UI dependencies)
-│   │   ├── Models/             # SemanticObject, SemanticKind, references, documents
-│   │   ├── Parsing/            # ArxmlParser (streaming), EcucReader, release parser
-│   │   ├── Index/              # WorkspaceIndex builder, graphs, trace, summary
-│   │   ├── Diff/               # semantic diff (path identity + content hashes)
-│   │   ├── Impact/             # ECU relevance closure, ARX-IMP-* findings
-│   │   ├── Communication/      # cluster→frame→PDU→signal projection
-│   │   ├── Vendor/             # adapter detection + vendor hand-off relay
-│   │   ├── Patch/              # plan/apply/undo, canonical ARXML writer
-│   │   ├── Mcp/                # MCP stdio server + tool registry
-│   │   └── Validation/         # ValidationEngine, ARX00NN diagnostics
-│   ├── Autarx.Cli/             # workspace + single-file commands, --json
-│   └── Autarx.Gui/             # Avalonia workbench — workspace explorer, trace, comm, diff
-├── tests/Autarx.Tests/         # unit suites + synthetic fixtures (ECUC and non-ECUC)
+├── rivet.rktd                  Rivet application manifest
+├── racket/
+│   ├── autarx/                 # semantic engine (Racket; no UI dependencies)
+│   │   ├── arxml.rkt           # streaming parser + canonical writer
+│   │   ├── index.rkt           # workspace index, graphs, trace, summary
+│   │   ├── hash.rkt            # FNV-1a content hashes (cross-impl contract)
+│   │   ├── diff.rkt            # semantic diff (path identity + content hashes)
+│   │   ├── impact.rkt          # ECU relevance closure, ARX-IMP-* findings
+│   │   ├── comm.rkt            # cluster→frame→PDU→signal projection
+│   │   ├── vendor.rkt          # adapter detection + vendor hand-off relay
+│   │   ├── patch.rkt           # plan/apply/undo, reviewed editing
+│   │   ├── cli.rkt             # workspace + single-file commands, --json
+│   │   ├── mcp.rkt             # MCP stdio server + tool registry
+│   │   └── backend.rkt         # Rivet RPC surface (GUI hosts)
+│   └── tests/                  # 101 contract tests + RVT1 smoke
+├── macos-host/                 # SwiftUI workbench
+├── shared/fixtures/            # synthetic workspaces (ECUC and non-ECUC)
+├── docs/RIVET-MIGRATION.md     # the R0–R8 rebuild plan and stop-rule record
 ├── docs/PRODUCT.md             # positioning, boundaries, non-goals
-└── docs/ROADMAP.md             # M0–M8
+└── ARCHITECTURE.md             # architecture decisions
 ```
 
 ## Design notes

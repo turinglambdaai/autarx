@@ -1,3 +1,20 @@
+## 2.0.0 (unreleased) — Rivet rebuild
+
+The semantic engine, CLI, MCP server and (new) macOS workbench are now one
+Racket codebase; the .NET/Avalonia implementation (v1.0.3) is archived as
+the behaviour oracle. JSON output, exit codes, rule codes and content
+hashes are contract-compatible — verified byte-level against the v1.0.3
+CLI and by 101 ported contract tests. Indexing performance on a 1.2M-line
+ECUC workspace is ~2.5× the .NET baseline (R0 stop-rule passed).
+
+### Added
+- `autarx mcp` unchanged (12 tools, audit logging); CLI unchanged
+- Native macOS workbench (SwiftUI) over the embedded Racket core via RVT1
+- `progress` RPC event during long indexing/diff operations
+
+### Removed
+- .NET/Avalonia implementation tree (`src/`, `tests/`, `Autarx.slnx`)
+
 # Changelog
 
 All notable changes to autarx are documented in this file.

@@ -15,3 +15,5 @@ TestResults/
 
 *.DS_Store
 Thumbs.db
+.rivet/
+compiled/

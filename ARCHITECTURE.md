@@ -32,30 +32,38 @@ CLI · GUI · CI · AI
 
 ## Stack
 
-C# / .NET 10, Avalonia for the GUI. One UI-free core, two frontends.
+Racket CS 9 for the semantic engine and agent surfaces (CLI + MCP), Rivet
+for the GUI transport, SwiftUI for the macOS workbench. One UI-free core,
+two frontends — the .NET/Avalonia implementation (v1.0.3) served as the
+behaviour and JSON oracle for the rebuild; see
+[docs/RIVET-MIGRATION.md](docs/RIVET-MIGRATION.md) for the migration
+record, including the R0 performance stop-rule result (Racket indexes a
+1.2M-line ECUC workspace in ~2.5× the .NET time, well inside the 5×
+budget).
 
-- **One core, two frontends from day one.** The GUI and the CLI are thin
-  shells over `Autarx.Core`; neither contains domain logic.
-- **The BCL XML/JSON stack is production-grade** — streaming `XmlReader`
-  handles the 10M+ line ECUC files real projects ship, and
-  `System.Text.Json` powers the CLI's machine interface.
-- **Self-contained single-file distribution** — customers install nothing.
-- **IP protection is tractable** — compiled IL can be obfuscated for
-  commercial release.
-- Alternatives considered and rejected: Electron/TypeScript (weakest IP
-  protection, no precedent in our toolchain) and our own Racket stack
-  (pre-1.0 — a commercial product should not ride on framework risk).
+- **One core, two frontends.** The CLI/MCP link the domain core directly;
+  GUI hosts speak RVT1 over Rivet.
+- **The CLI JSON is byte-compatible with v1.0.3** — camelCase keys in
+  declaration order, null-omitted, string enums, exit codes 0/1/2/3 —
+  verified by byte-level diffing against the .NET CLI during the rebuild.
+- **Content hashes are a cross-implementation contract** — the FNV-1a
+  subtree hashes match the .NET values, so diffs remain stable across the
+  implementation boundary.
 
 ## Layering
 
 ```text
-Autarx.Core
-   ├── Parsing/       ArxmlParser (streaming), EcucReader, AutosarReleaseParser
-   ├── Models/        ArxmlElement, SemanticObject, SemanticKind, references, documents
-   ├── Index/         WorkspaceIndexBuilder, WorkspaceIndex, WorkspaceSummary
-   └── Validation/    ValidationEngine (structural, ARX00NN)
-   ├── Autarx.Cli     workspace + single-file commands, --json
-   └── Autarx.Gui     Avalonia workspace (MVVM)
+racket/autarx
+   ├── arxml.rkt      streaming parser, canonical writer
+   ├── index.rkt      WorkspaceIndex builder/queries/trace/summary
+   ├── diff.rkt       semantic diff + property explanations
+   ├── impact.rkt     ECU closure, ARX-IMP-* findings
+   ├── comm.rkt       communication projection
+   ├── vendor.rkt     adapters + hand-off relay
+   ├── patch.rkt      plan/apply/undo
+   ├── cli.rkt        workspace + single-file commands, --json
+   ├── mcp.rkt        MCP stdio server
+   └── backend.rkt    Rivet RPC surface for GUI hosts
 ```
 
 Nothing outside Core re-parses ARXML. ViewModels and CLI commands hold no
@@ -101,7 +109,7 @@ communication projection — nothing is hardcoded into the CLI.
 
 ## Semantic diff
 
-`Diff/SemanticDiff` compares two workspaces by **path identity**. Modified
+the semantic diff (`diff.rkt`) compares two workspaces by **path identity**. Modified
 detection uses FNV-1a content hashes captured per object at index time, so
 "did anything change" needs nothing beyond the two indexes. Property-level
 explanations re-read the affected source files on demand and compare subtrees
@@ -113,7 +121,7 @@ between files is not a change.
 
 ## Impact analysis
 
-`Impact/ImpactAnalysis` seeds a breadth-first closure at the ECU instance
+the impact analysis (`impact.rkt`) seeds a breadth-first closure at the ECU instance
 over the **union** reference graph of both deliveries, then classifies every
 diff entry relevant/unrelated. Findings carry stable rule ids (ARX-IMP-*,
 append only): removed-referenced, type-changed and ECU-touching
@@ -123,7 +131,7 @@ clusters/frames/PDUs/signals.
 
 ## Communication projection
 
-`Communication/CommunicationProjection` derives chains purely from the
+the communication projection (`comm.rkt`) derives chains purely from the
 reference graph: ECU connectors (`*CHANNEL-REF`), frame triggerings nested
 under clusters (attributed to the cluster), PDU-to-frame mapping objects
 (holding both `*FRAME-REF` and `*PDU-REF`), signal-to-PDU mappings nested
@@ -133,7 +141,7 @@ does not carry it reliably.
 
 ## Vendor hand-off
 
-`Vendor/` detects DaVinci / EB tresos / ISOLAR through HOME env vars and
+the vendor adapters detect DaVinci / EB tresos / ISOLAR through HOME env vars and
 PATH (probes injected for testability) and runs a **hand-off**: the vendor
 tool executes, Autarx normalizes its output (loose error/warning line
 heuristic) and preserves the raw output under `.autarx/`. The report relays
@@ -142,7 +150,7 @@ reimplemented.
 
 ## Reviewed patching
 
-`Patch/PatchEngine` is plan → apply → undo. Planning runs operations against
+the patch engine (`patch.rkt`) is plan → apply → undo. Planning runs operations against
 in-memory trees, materializes the full patched workspace into a temp
 directory and computes the mandatory before/after **semantic diff** —
 nothing is written. Apply writes only files the diff proved changed, keeps
@@ -154,7 +162,7 @@ semantically equivalent, deliberately not byte-faithful.
 
 ## Self-update
 
-`Update/` implements the update channel. The release pipeline publishes a
+the updater implements the update channel. The release pipeline publishes a
 `latest.json` asset with every release (version, per-platform download URL,
 SHA-256, size); `UpdateFeed` parses it (URL or local file — local files keep
 CI gated without network), `UpdateService` checks and downloads,
@@ -167,7 +175,7 @@ Help. Unhandled exceptions write a local crash log under
 
 ## AI layer (MCP)
 
-`Mcp/McpServer` is a newline-delimited JSON-RPC 2.0 stdio server exposing
+the MCP server (`mcp.rkt`) is a newline-delimited JSON-RPC 2.0 stdio server exposing
 the full tool API (inspect/find/refs/trace/ecus/unresolved/diff/impact/
 comm/validate/patch_plan/patch_apply). The review boundary is structural:
 no raw-write tool exists, both patch tools run the plan/diff gate, and every

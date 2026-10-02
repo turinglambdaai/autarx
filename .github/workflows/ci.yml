@@ -1,120 +1,66 @@
 name: ci
 
-# Build + test on every push/PR to main.
+# Contract tests + CLI smoke on every push/PR to the migration line.
 on:
   push:
-    branches: [main]
+    branches: [main, experiment/autarx-rivet]
   pull_request:
-    branches: [main]
+    branches: [main, experiment/autarx-rivet]
 
 jobs:
-  build-and-test:
+  test:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [macos-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v6
+      - name: Setup Racket
+        uses: Bogdanp/racket-setup@v1
         with:
-          dotnet-version: '10.0.x'
+          variant: CS
+          version: stable
 
-      - name: Build
-        run: dotnet build Autarx.slnx -c Release
-
-      - name: Test
-        run: dotnet test -c Release --no-build
-
-      - name: CLI smoke test
-        if: runner.os == 'Linux'
+      - name: Link rivet
         run: |
-          dotnet run --project src/Autarx.Cli -c Release --no-build -- info tests/Autarx.Tests/Fixtures/minimal.arxml
-          dotnet run --project src/Autarx.Cli -c Release --no-build -- validate tests/Autarx.Tests/Fixtures/minimal.arxml --json
-          dotnet run --project src/Autarx.Cli -c Release --no-build -- inspect tests/Autarx.Tests/Fixtures/OemDelivery --json
-          dotnet run --project src/Autarx.Cli -c Release --no-build -- find VehicleSpeed tests/Autarx.Tests/Fixtures/OemDelivery --json
-          dotnet run --project src/Autarx.Cli -c Release --no-build -- ecus tests/Autarx.Tests/Fixtures/OemDelivery
-          dotnet run --project src/Autarx.Cli -c Release --no-build -- ecu tests/Autarx.Tests/Fixtures/OemDelivery RadarFL --json
-          dotnet run --project src/Autarx.Cli -c Release --no-build -- refs VehicleSpeed tests/Autarx.Tests/Fixtures/OemDelivery --incoming
-          dotnet run --project src/Autarx.Cli -c Release --no-build -- trace Pdu_VehicleSpeed tests/Autarx.Tests/Fixtures/OemDelivery --depth 2 --json
-          # the fixture intentionally contains one unresolved reference —
-          # the gate is the exit code, not just the output (bash -e would
-          # abort on the expected failure, so disable it for the check)
-          set +e
-          dotnet run --project src/Autarx.Cli -c Release --no-build -- unresolved tests/Autarx.Tests/Fixtures/OemDelivery --json
-          code=$?
-          set -e
-          test "$code" -eq 1
-          # diff between different deliveries exits 1 (findings), between
-          # identical ones exits 0 — gate both via exit codes
-          set +e
-          dotnet run --project src/Autarx.Cli -c Release --no-build -- diff tests/Autarx.Tests/Fixtures/DiffBefore tests/Autarx.Tests/Fixtures/DiffAfter --detail --json
-          code=$?
-          set -e
-          test "$code" -eq 1
-          dotnet run --project src/Autarx.Cli -c Release --no-build -- diff tests/Autarx.Tests/Fixtures/DiffBefore tests/Autarx.Tests/Fixtures/DiffBefore --json
-          # impact with relevant changes exits 1, unknown ECU exits 2
-          set +e
-          dotnet run --project src/Autarx.Cli -c Release --no-build -- impact tests/Autarx.Tests/Fixtures/DiffBefore tests/Autarx.Tests/Fixtures/DiffAfter --ecu RadarFL --json
-          code=$?
-          set -e
-          test "$code" -eq 1
-          set +e
-          dotnet run --project src/Autarx.Cli -c Release --no-build -- impact tests/Autarx.Tests/Fixtures/DiffBefore tests/Autarx.Tests/Fixtures/DiffAfter --ecu NoSuch
-          code=$?
-          set -e
-          test "$code" -eq 2
-          dotnet run --project src/Autarx.Cli -c Release --no-build -- comm tests/Autarx.Tests/Fixtures/CommDelivery --json
-          # no communication content anywhere → exit 1
-          set +e
-          dotnet run --project src/Autarx.Cli -c Release --no-build -- comm tests/Autarx.Tests/Fixtures/minimal.arxml
-          code=$?
-          set -e
-          test "$code" -eq 1
-          # reviewed patching: plan → apply → undo on a throwaway copy
-          rm -rf /tmp/autarx-patch-ws && cp -r tests/Autarx.Tests/Fixtures/DiffBefore /tmp/autarx-patch-ws
-          printf '%s\n' '{ "operations": [ { "op": "set-parameter", "target": "/Config/Diag", "definition": "/AURIX2G/Diag/DiagGeneral/DiagParamA", "value": "42" } ] }' > /tmp/autarx-ops.json
-          dotnet run --project src/Autarx.Cli -c Release --no-build -- patch plan /tmp/autarx-patch-ws --file /tmp/autarx-ops.json
-          dotnet run --project src/Autarx.Cli -c Release --no-build -- patch apply /tmp/autarx-patch-ws --file /tmp/autarx-ops.json
-          dotnet run --project src/Autarx.Cli -c Release --no-build -- patch undo /tmp/autarx-patch-ws
-          # unknown patch target → plan reports failure, nothing written, exit 1
-          set +e
-          printf '%s\n' '{ "operations": [ { "op": "rename", "target": "/No/Such", "newName": "X" } ] }' > /tmp/autarx-ops-bad.json
-          dotnet run --project src/Autarx.Cli -c Release --no-build -- patch plan /tmp/autarx-patch-ws --file /tmp/autarx-ops-bad.json
-          code=$?
-          set -e
-          test "$code" -eq 1
-          # vendor: unknown tool exits 2; no vendor tools on CI runners exits 1
-          set +e
-          dotnet run --project src/Autarx.Cli -c Release --no-build -- vendor validate nope proj.dvcfg
-          code=$?
-          set -e
-          test "$code" -eq 2
-          set +e
-          dotnet run --project src/Autarx.Cli -c Release --no-build -- vendor list
-          code=$?
-          set -e
-          test "$code" -eq 1
-          # MCP server: initialize handshake + one tool call, single-line envelopes
-          printf '%s\n%s\n' \
-            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}' \
-            '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"ecus","arguments":{"workspace":"tests/Autarx.Tests/Fixtures/OemDelivery"}}}' \
-            | dotnet run --project src/Autarx.Cli -c Release --no-build -- mcp > /tmp/autarx-mcp.out
-          test "$(wc -l < /tmp/autarx-mcp.out)" -eq 2
-          grep -q '"serverInfo"' /tmp/autarx-mcp.out
-          grep -q 'RadarFL' /tmp/autarx-mcp.out
-          # self-update: check against a local feed fixture — newer version
-          # with a matching asset exits 1, no matching asset exits 0
-          set +e
-          dotnet run --project src/Autarx.Cli -c Release --no-build -- update --check --feed tests/Autarx.Tests/Fixtures/UpdateFeed/latest.json --kind cli --platform windows-x64
-          code=$?
-          set -e
-          test "$code" -eq 1
-          dotnet run --project src/Autarx.Cli -c Release --no-build -- update --check --feed tests/Autarx.Tests/Fixtures/UpdateFeed/latest.json --kind cli --platform linux-x64
-          set +e
-          dotnet run --project src/Autarx.Cli -c Release --no-build -- update --check --feed tests/Autarx.Tests/Fixtures/UpdateFeed/latest.json --kind cli --platform windows-x64 --json
-          code=$?
-          set -e
-          test "$code" -eq 1
+          git clone --depth 1 https://github.com/turinglambdaai/rivet.git /tmp/rivet
+          cd /tmp/rivet
+          raco pkg install --auto --no-docs --name rivet --link "file://$PWD"
+
+      - name: Install autarx core
+        run: raco pkg install --auto --no-docs --name autarx-core --link "file://$PWD/racket"
+
+      - name: Contract tests (101 + RVT1 smoke)
+        run: raco test racket/
+
+      - name: CLI exit-code smoke
+        run: |
+          racket racket/autarx/cli.rkt inspect shared/fixtures/OemDelivery --json > /dev/null
+          test $? -eq 0
+          racket racket/autarx/cli.rkt unresolved shared/fixtures/OemDelivery --json > /dev/null
+          test $? -eq 1
+          racket racket/autarx/cli.rkt diff shared/fixtures/DiffBefore shared/fixtures/DiffAfter --json > /dev/null
+          test $? -eq 1
+
+  macos-host:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Racket
+        uses: Bogdanp/racket-setup@v1
+        with:
+          variant: CS
+          version: stable
+
+      - name: Link rivet + build staged app
+        run: |
+          git clone --depth 1 https://github.com/turinglambdaai/rivet.git /tmp/rivet
+          cd /tmp/rivet
+          raco pkg install --auto --no-docs --name rivet --link "file://$PWD"
+          cd "$GITHUB_WORKSPACE"
+          raco pkg install --auto --no-docs --name autarx-core --link "file://$PWD/racket"
+          raco rivet doctor --json
+          raco rivet build
