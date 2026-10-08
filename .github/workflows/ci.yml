@@ -39,12 +39,18 @@ jobs:
 
       - name: CLI exit-code smoke
         run: |
+          # expected non-zero exits below must not trip bash -e
+          set +e
           racket racket/autarx/cli.rkt inspect shared/fixtures/OemDelivery --json > /dev/null
-          test $? -eq 0
+          inspect_rc=$?
           racket racket/autarx/cli.rkt unresolved shared/fixtures/OemDelivery --json > /dev/null
-          test $? -eq 1
+          unresolved_rc=$?
           racket racket/autarx/cli.rkt diff shared/fixtures/DiffBefore shared/fixtures/DiffAfter --json > /dev/null
-          test $? -eq 1
+          diff_rc=$?
+          set -e
+          test "$inspect_rc" -eq 0
+          test "$unresolved_rc" -eq 1
+          test "$diff_rc" -eq 1
 
   macos-host:
     runs-on: macos-latest
