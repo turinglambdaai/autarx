@@ -49,6 +49,11 @@ final class AppModel: @unchecked Sendable {
             })
             api = RivetAPI(client: backend.client)
             statusMessage = "Backend ready — open a delivery to begin"
+            // AUTARX_OPEN=<path> pre-opens a workspace (dev convenience)
+            if let preset = ProcessInfo.processInfo.environment["AUTARX_OPEN"], !preset.isEmpty {
+                let url = URL(fileURLWithPath: preset)
+                Swift.Task { await openWorkspace(at: url) }
+            }
         } catch {
             statusMessage = "Backend error: \(error)"
         }

@@ -37,15 +37,15 @@ RPC 面（`app/backend.rkt`）只为 GUI 壳存在，是 R6 新增面，不是�
 
 ## 给 Rivet 带来的新框架面（dogfood 产出）
 
-Taskly 不需要、autarx 需要的能力，缺口一律 PR 到 `turinglambdaai/rivet`
-（先在 `docs/RIVET-LIB-BACKLOG.md` 记一笔）：
+Taskly 不需要、autarx 需要的能力，缺口一律 issue/PR 到 `turinglambdaai/rivet`：
 
-1. **长操作进度/取消** — workspace 索引与 patch apply 是秒级长操作；RPC
-   需要进度事件与取消语义（对照：rivet `changed` 事件是单向通知）
+1. **长操作进度/取消** — workspace 索引与 patch apply 是秒级长操作；
+   autarx 已用 stringly-typed `progress` 事件先行消费（backend.rkt），
+   上游化 → [rivet#131](https://github.com/turinglambdaai/rivet/issues/131)
 2. **懒加载树子节点** — GUI 的 workspace 树按需展开子包（ARXML 包层级深、
-   单包可达数万子节点，一次性下发不可行）
+   单包可达数万子节点，一次性下发不可行）→ [rivet#132](https://github.com/turinglambdaai/rivet/issues/132)
 3. **大报表分页** — diff/impact 的 findings 列表分页拉取（10M 行交付的
-   diff 可达数千条）
+   diff 可达数千条）→ [rivet#133](https://github.com/turinglambdaai/rivet/issues/133)
 
 ## 停止规则（R0 出口条件）✅ 已裁决（2026-10-02）
 
