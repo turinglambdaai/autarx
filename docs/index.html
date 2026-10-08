@@ -102,22 +102,39 @@
   <footer><div class="container"><p data-en="Autarx · AUTOSAR Integration Workbench · turinglambdaai" data-zh="Autarx · AUTOSAR 集成工作台 · turinglambdaai">Autarx · AUTOSAR Integration Workbench · turinglambdaai</p></div></footer>
 
   <script>
-    var LANGUAGE_OVERRIDE_KEY = 'autarx-lang-override-v1';
+    // Unified language policy: explicit choice wins; otherwise follow system/browser locale.
+    var LANGUAGE_OVERRIDE_KEY = 'autarx-lang-override-v2';
+    var LANGUAGE_LEGACY_KEYS = ['autarx-lang-override-v1', 'site-lang'];
     var pageMetadata = {
       en: { title:'Autarx — AUTOSAR Integration Workbench', description:'AUTOSAR Integration Workbench that opens OEM deliveries directly: inspect, search, trace references and validate ARXML before entering the vendor toolchain.' },
       zh: { title:'Autarx — AUTOSAR 集成工作台', description:'AUTOSAR 集成工作台：直接打开 OEM 交付物，在进入 vendor 工具链之前完成检查、检索、引用追踪与 ARXML 校验。' }
     };
-    function readLanguageOverride(){ try { var v=localStorage.getItem(LANGUAGE_OVERRIDE_KEY); return v==='zh'||v==='en'?v:null; } catch(e){ return null; } }
+    function readLanguageOverride(){
+      try {
+        var v=localStorage.getItem(LANGUAGE_OVERRIDE_KEY);
+        if(v!=='zh'&&v!=='en'){
+          for(var i=0;i<LANGUAGE_LEGACY_KEYS.length;i++){
+            var legacy=localStorage.getItem(LANGUAGE_LEGACY_KEYS[i]);
+            if(legacy==='zh'||legacy==='en'){ v=legacy; try{localStorage.setItem(LANGUAGE_OVERRIDE_KEY,v);}catch(e){} break; }
+          }
+        }
+        return v==='zh'||v==='en'?v:null;
+      } catch(e){ return null; }
+    }
     function detectBrowserLanguage(){ var locale=(navigator.languages&&navigator.languages[0])||navigator.language||''; return String(locale).toLowerCase().indexOf('zh')===0?'zh':'en'; }
     function applyLanguage(lang,persist){
       if(persist){ try { localStorage.setItem(LANGUAGE_OVERRIDE_KEY,lang); } catch(e){} }
       document.querySelectorAll('[data-en]').forEach(function(el){ var text=el.getAttribute('data-'+lang); if(text!==null) el.textContent=text; });
       document.documentElement.lang=lang==='zh'?'zh-CN':'en';
+      document.documentElement.setAttribute('data-language',lang);
+      var label=document.getElementById('current-lang-label');
+      if(label) label.textContent=lang==='zh'?'简体中文':'English';
       var metadata=pageMetadata[lang];
       if(metadata){ document.title=metadata.title; var d=document.querySelector('meta[name="description"]'); if(d)d.setAttribute('content',metadata.description); }
     }
     function setLanguage(lang){ if(lang==='zh'||lang==='en') applyLanguage(lang,true); }
     applyLanguage(readLanguageOverride()||detectBrowserLanguage(),false);
+    LANGUAGE_LEGACY_KEYS.forEach(function(k){ try{ localStorage.removeItem(k); }catch(e){} });
     window.addEventListener('languagechange',function(){ if(!readLanguageOverride()) applyLanguage(detectBrowserLanguage(),false); });
   </script>
 </body>
