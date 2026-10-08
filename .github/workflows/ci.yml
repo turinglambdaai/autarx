@@ -17,11 +17,13 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Setup Racket
-        uses: Bogdanp/racket-setup@v1
+      - name: Set up Racket CS
+        uses: Bogdanp/setup-racket@v1.15
         with:
+          architecture: x64
+          distribution: full
           variant: CS
-          version: stable
+          version: '9.3'
 
       - name: Link rivet
         run: |
@@ -49,11 +51,13 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Setup Racket
-        uses: Bogdanp/racket-setup@v1
+      - name: Set up Racket CS
+        uses: Bogdanp/setup-racket@v1.15
         with:
+          architecture: x64
+          distribution: full
           variant: CS
-          version: stable
+          version: '9.3'
 
       - name: Link rivet + build staged app
         run: |
