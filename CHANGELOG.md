@@ -1,62 +1,33 @@
-## 2.0.0 (unreleased) — Rivet rebuild
-
-The semantic engine, CLI, MCP server and (new) macOS workbench are now one
-Racket codebase; the .NET/Avalonia implementation (v1.0.3) is archived as
-the behaviour oracle. JSON output, exit codes, rule codes and content
-hashes are contract-compatible — verified byte-level against the v1.0.3
-CLI and by 101 ported contract tests. Indexing performance on a 1.2M-line
-ECUC workspace is ~2.5× the .NET baseline (R0 stop-rule passed).
-
-### Added
-- `autarx mcp` unchanged (12 tools, audit logging); CLI unchanged
-- Native macOS workbench (SwiftUI) over the embedded Racket core via RVT1
-- `progress` RPC event during long indexing/diff operations
-
-### Removed
-- .NET/Avalonia implementation tree (`src/`, `tests/`, `Autarx.slnx`)
-
 # Changelog
 
 All notable changes to autarx are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The v1.x (.NET/Avalonia) line's history lives in git tags; the Rivet rebuild
+restarts numbering at 1.0.0 per the release-history reset policy.
+
+## 1.0.0 - 2026-10-08
+
+First release of the Rivet rebuild: the semantic engine, CLI, MCP server and
+the native macOS workbench are one Racket codebase. Ships macOS (Apple
+silicon, macOS 14+); the Windows and Linux hosts are in development.
+
+### Added
+
+- One Racket codebase replacing the .NET/Avalonia implementation (v1.0.3,
+  archived as the behaviour oracle): JSON output, exit codes, rule codes and
+  content hashes are contract-compatible — verified byte-level against the
+  v1.0.3 CLI and by 101 ported contract tests. Indexing on a 1.2M-line ECUC
+  workspace is ~2.5× the .NET baseline (R0 stop-rule passed).
+- `autarx mcp` unchanged (12 tools, audit logging); CLI unchanged
+- Native macOS workbench (SwiftUI) over the embedded Racket core via RVT1
+- `progress` RPC event during long indexing/diff operations
+- In-place self-update (`autarx update`): checksum-verified feed, previous
+  binaries kept as `.autarx-update.old`
+
+### Removed
+
+- .NET/Avalonia implementation tree (`src/`, `tests/`, `Autarx.slnx`)
 
 ## [Unreleased]
-
-## [1.0.3] - 2026-09-28
-
-### Changed
-
-- Dependency updates: Avalonia 12.1.3; GitHub Actions (checkout v7, setup-dotnet v6, upload-artifact v7, download-artifact v8, action-gh-release v3). First release built entirely by the hardened release pipeline.
-
-## [1.0.2] - 2026-09-28
-
-### Added
-
-- Online self-update: `autarx update` checks the release feed and applies newer builds in place (checksum-verified, previous binaries kept as `.autarx-update.old`); `--check` reports availability for CI, `--json` for agents.
-- Update feed asset: the release pipeline publishes `latest.json` (version, per-platform download URLs, SHA-256, sizes) with every release.
-- GUI update menu: quiet startup check plus Help → Check for Updates / Install Update.
-- Local crash logs: unhandled failures in CLI and GUI write a log under `<TEMP>/autarx/crashes/` (exit code 3); nothing is sent anywhere.
-
-## [1.0.1] - 2026-09-27
-
-### Fixed
-
-- MCP error responses no longer drop `"id": null`, restoring the JSON-RPC 2.0 contract.
-
-## [1.0.0] - 2026-09-27
-
-### Added
-
-- Workspace semantic index and OEM delivery inspection (M1/M2): System Description, System Extract, ECU Extract, ECUC and communication ARXML.
-- Semantic diff and ECU impact analysis (M3/M4).
-- Communication projection and vendor hand-off (M5/M6).
-- Reviewed patching, MCP agent layer and the Avalonia workbench GUI (M7/M8).
-- Self-contained single-file builds for Windows, macOS (Apple silicon) and Linux.
-
-[Unreleased]: https://github.com/turinglambdaai/autarx/compare/v1.0.3...HEAD
-[1.0.3]: https://github.com/turinglambdaai/autarx/compare/v1.0.2...v1.0.3
-[1.0.2]: https://github.com/turinglambdaai/autarx/compare/v1.0.1...v1.0.2
-[1.0.1]: https://github.com/turinglambdaai/autarx/compare/v1.0.0...v1.0.1
-[1.0.0]: https://github.com/turinglambdaai/autarx/releases/tag/v1.0.0

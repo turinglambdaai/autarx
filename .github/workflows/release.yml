@@ -1,0 +1,116 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  validate:
+    name: Validate release tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install Racket
+        uses: Bogdanp/setup-racket@v1.15
+        with:
+          version: stable
+          distribution: full
+      - name: Check tag matches rivet.rktd and CHANGELOG
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          VERSION=$(racket -e '(begin (require racket/file) (hash-ref (file->value "rivet.rktd") (quote version) #f))' | tr -d '"')
+          echo "tag=$TAG rivet.rktd=$VERSION"
+          test "$TAG" = "$VERSION" || { echo "::error::tag $TAG != rivet.rktd version $VERSION"; exit 1; }
+          grep -q "^## $TAG" CHANGELOG.md || { echo "::error::CHANGELOG.md has no '## $TAG' section"; exit 1; }
+
+  macos:
+    name: macOS DMG
+    needs: validate
+    # macos-15: decoupled from the macos-latest pool (runner queue lesson).
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout Rivet
+        uses: actions/checkout@v4
+        with:
+          repository: turinglambdaai/rivet
+          path: rivet
+      - name: Install Racket
+        uses: Bogdanp/setup-racket@v1.15
+        with:
+          # arm64-native packaging: without this the runner builds under
+          # Rosetta and ships an x86_64 app (the PodLens release bug).
+          architecture: arm64
+          version: stable
+          distribution: full
+      - name: Install crypto package (rivet/distribution dependency)
+        run: raco pkg install --auto --no-docs crypto
+        shell: bash
+      - name: Link Rivet
+        run: raco pkg install --auto --no-docs --link "$GITHUB_WORKSPACE/rivet/rivet" "$GITHUB_WORKSPACE/rivet/rivet-cli"
+      - name: Link autarx core
+        run: raco pkg install --auto --no-docs --name autarx-core --link "file://$GITHUB_WORKSPACE/racket"
+      - name: Package
+        run: raco rivet package
+      - name: Human installer (DMG, drag to Applications)
+        run: |
+          volname=Autarx
+          dmg="Autarx-${{ github.ref_name }}-macos.dmg"
+          staging="$(mktemp -d)/dmg-stage"
+          mkdir -p "$staging"
+          cp -R dist/autarx.app "$staging/"
+          ln -s /Applications "$staging/Applications"
+          hdiutil create -volname "$volname" -srcfolder "$staging" -ov -format UDZO "$dmg"
+          hdiutil attach "$dmg" -mountpoint /tmp/autarx-dmg-verify -readonly
+          test -d /tmp/autarx-dmg-verify/Autarx.app
+          hdiutil detach /tmp/autarx-dmg-verify
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: Autarx-*-macos.dmg
+          if-no-files-found: error
+
+  release:
+    name: Publish
+    needs: [macos]
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+      - name: Flatten artifact dirs
+        run: |
+          find dist -mindepth 2 -maxdepth 2 -type f -exec mv {} dist/ \;
+          find dist -mindepth 1 -maxdepth 1 -type d -empty -delete
+          ls -la dist/
+      - name: Ensure SHA256SUMS
+        run: |
+          cd dist
+          [ -f SHA256SUMS ] || {
+            find . -maxdepth 1 -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 shasum -a 256 > SHA256SUMS
+          }
+          shasum -a 256 --check SHA256SUMS
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "${{ github.ref_name }}" -R turinglambdaai/autarx >/dev/null 2>&1; then
+            gh release upload "${{ github.ref_name }}" dist/* --clobber -R turinglambdaai/autarx
+          else
+            gh release create "${{ github.ref_name }}" dist/* \
+              -R turinglambdaai/autarx \
+              --title "Autarx ${{ github.ref_name }}" \
+              --notes "First release of the Rivet rebuild. macOS (Apple silicon, macOS 14+); the CLI and MCP surface is contract-identical to the v1.0.3 line. Windows and Linux hosts are in development. Ad-hoc signed — on first launch, right-click the app and choose Open."
+          fi
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: dist/*
