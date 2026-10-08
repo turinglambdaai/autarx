@@ -4,11 +4,10 @@
 把 OEM 交付包或 ECU Extract 目录交给它，得到一个语义化工作区：对象清单、引用图、ECU 发现、未解析引用检查——全程可通过 agent 友好的 JSON CLI 脚本化。Autarx 位于厂商生成器**上层**；它不替代达芬奇、tresos 或 ISOLAR。
 
 [![CI](https://github.com/turinglambdaai/autarx/actions/workflows/ci.yml/badge.svg)](https://github.com/turinglambdaai/autarx/actions/workflows/ci.yml)
-[![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
-[![Avalonia](https://img.shields.io/badge/UI-Avalonia-12-9B4FBE?logo=avaloniaui&logoColor=white)](https://avaloniaui.net/)
+![Racket](https://img.shields.io/badge/Racket-CS-9F1D20?logo=racket&logoColor=white)
 [![License](https://img.shields.io/badge/License-Proprietary-red)](LICENSE)
 
-中文 · [English](README.md)
+**中文** · [English](README.md)
 
 ---
 
@@ -19,7 +18,7 @@
 - **没有自动化接口**——CI 无法 diff、追溯或体检交付包，因为没有厂商工具提供稳定的机器接口
 - **Agent 帮不上忙**——LLM agent 依赖文本界面和结构化反馈，厂商工具两者皆无
 
-Autarx 解决这些问题：一个无 UI 的语义引擎直接读取 ARXML，给人一个原生 Avalonia GUI，给脚本、CI 和 AI agent 一个 JSON 优先的 CLI。
+Autarx 解决这些问题：一个无 UI 的语义引擎直接读取 ARXML，给人一个原生 macOS 工作台，给脚本、CI 和 AI agent 一个 JSON 优先的 CLI。
 
 ## Autarx 是什么、不是什么
 
@@ -42,8 +41,8 @@ Autarx **不会**：替代达芬奇/tresos/ISOLAR、生成量产 BSW/RTE/MCAL �
 - **AI Agent 接口**——`autarx mcp` 启动 Model Context Protocol stdio 服务器暴露完整工具 API；不存在裸写文件工具，agent 无法绕过 plan/diff/审阅边界，且每次调用都进审计日志
 - **在线自更新**——`autarx update` 检查随每个版本发布的 `latest.json` 更新清单，校验 SHA-256 后就地替换二进制；GUI 启动时静默检查，Help 菜单一键安装。未处理崩溃会在 `<TEMP>/autarx/crashes/` 留本地日志——不上传任何数据
 - **Agent 友好 CLI**——camelCase JSON、确定性退出码、歧义显式上报而非猜测；现成的 CI 门禁命令链
-- **Avalonia 工作区**——Windows/macOS/Linux 原生 GUI
-- **自包含构建**——每平台单文件可执行，无需安装 .NET
+- **原生 macOS 工作台**——SwiftUI 壳跑在嵌入式 Racket 核心之上（Windows/Linux 宿主排期中）
+- **单一核心二进制**——CLI 与 MCP 同体；GUI 内嵌同一核心
 
 ## 命令行
 
@@ -118,66 +117,67 @@ autarx validate Mcu.arxml
 
 ## 安装
 
-从 [Releases](https://github.com/turinglambdaai/autarx/releases/latest) 下载最新 zip——每个平台提供 GUI 包（`Autarx-gui-<platform>.zip`）与 CLI 包（`Autarx-cli-<platform>.zip`），自包含单文件可执行，无需安装 .NET：
-
-| 平台 | 资产 |
-|---|---|
-| Windows x64 | `Autarx-{gui,cli}-windows-x64.zip` |
-| macOS（Apple 芯片） | `Autarx-{gui,cli}-macos-arm64.zip` |
-| Linux x64 | `Autarx-{gui,cli}-linux-x64.zip` |
-
-每个 Release 同时附带 `SHA256SUMS` 校验清单和 Sigstore 构建溯源证明，运行前建议先校验：
+2.0 重建线目前从源码构建；打包下载随 2.0 发布回归（见
+[CHANGELOG](CHANGELOG.md)）。在那之前：
 
 ```bash
-sha256sum --ignore-missing --check SHA256SUMS
-gh attestation verify Autarx-cli-linux-x64.zip -R turinglambdaai/autarx
+git clone https://github.com/turinglambdaai/autarx.git
+cd autarx
+raco rivet build          # staged 应用 + CLI 运行时
+racket racket/autarx/cli.rkt --version
 ```
 
-macOS 构建未签名；首次启动前用 `xattr -cr Autarx`（GUI）或 `xattr -cr autarx`（CLI）移除 Gatekeeper 隔离标记。
+前置：Racket CS 9.x 并 link [Rivet](https://github.com/turinglambdaai/rivet)——完整路径见下方「快速开始」。
 
 ## 快速开始
 
 ### 从源码构建
 
-依赖：[.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)。
+依赖：Racket CS 9.x，并以 linked 方式装好 [Rivet](https://github.com/turinglambdaai/rivet)
+（在 rivet 检出内执行 `raco pkg install --auto --no-docs --name rivet --link file://$PWD`），
+macOS 宿主另需 Xcode。
 
 ```bash
 git clone https://github.com/turinglambdaai/autarx.git
 cd autarx
-dotnet build Autarx.slnx
-dotnet run --project src/Autarx.Gui
-dotnet run --project src/Autarx.Cli -- inspect tests/Autarx.Tests/Fixtures/OemDelivery
+raco rivet build          # staged 布局：嵌入式后端 + macOS 宿主
+racket racket/autarx/cli.rkt inspect shared/fixtures/OemDelivery --json
+raco rivet dev            # 开发循环：重建 + 启动工作台
 ```
 
 ### 测试
 
 ```bash
-dotnet test
+raco test racket/
 ```
 
-测试覆盖解析器、语义分类、工作区索引、引用图、汇总追溯、语义 diff、影响分析、通信投影、厂商适配器归一化、补丁 plan/apply/undo 往返和 MCP 协议——基于合成工作区与 DiffBefore/DiffAfter 交付对 fixture，包含刻意构造的未解析引用和歧义/重复路径。
+101 项契约测试自 .NET 测试套件逐条移植（另加 7 项更新通道测试），覆盖解析器（命名空间剥离、属性、错误行号）、语义分类、工作区索引、引用图、追溯、语义 diff、影响分析、通信投影、校验、补丁管线、厂商交接归一化、版本比较与 RVT1 传输——基于 `shared/fixtures/` 下的同一套合成工作区（含刻意构造的未解析引用与歧义/重复路径）。
 
 ## 项目结构
 
 ```text
 autarx/
-├── src/
-│   ├── Autarx.Core/            # 语义引擎（无 UI 依赖）
-│   │   ├── Models/             # SemanticObject、SemanticKind、引用、文档
-│   │   ├── Parsing/            # ArxmlParser（流式）、EcucReader、release 解析
-│   │   ├── Index/              # WorkspaceIndex 构建、引用图、trace、summary
-│   │   ├── Diff/               # 语义 diff（路径身份 + 内容哈希）
-│   │   ├── Impact/             # ECU 相关性闭包、ARX-IMP-* 规则
-│   │   ├── Communication/      # Cluster→Frame→PDU→Signal 投影
-│   │   ├── Vendor/             # 适配器探测 + 厂商交接中继
-│   │   ├── Patch/              # plan/apply/undo、规范化 ARXML 写出
-│   │   ├── Mcp/                # MCP stdio 服务器 + 工具注册表
-│   │   └── Validation/         # ValidationEngine、ARX00NN 诊断
-│   ├── Autarx.Cli/             # 工作区 + 单文件命令，--json
-│   └── Autarx.Gui/             # Avalonia 工作台——工作区浏览器、trace、comm、diff
-├── tests/Autarx.Tests/         # 单元测试 + 合成 fixture（ECUC 与非 ECUC）
+├── rivet.rktd                  Rivet 应用清单
+├── racket/
+│   ├── autarx/                 # 语义引擎（Racket；无 UI 依赖）
+│   │   ├── arxml.rkt           # 流式解析器 + 规范化写出
+│   │   ├── index.rkt           # 工作区索引、引用图、trace、summary
+│   │   ├── hash.rkt            # FNV-1a 内容哈希（跨实现契约）
+│   │   ├── diff.rkt            # 语义 diff（路径身份 + 内容哈希）
+│   │   ├── impact.rkt          # ECU 相关性闭包、ARX-IMP-* 规则
+│   │   ├── comm.rkt            # Cluster→Frame→PDU→Signal 投影
+│   │   ├── vendor.rkt          # 适配器探测 + 厂商交接中继
+│   │   ├── patch.rkt           # plan/apply/undo、受控编辑
+│   │   ├── update.rkt          # 更新清单、SHA-256 校验、就地换装
+│   │   ├── cli.rkt             # 工作区 + 单文件命令，--json
+│   │   ├── mcp.rkt             # MCP stdio 服务器 + 工具注册表
+│   │   └── backend.rkt         # Rivet RPC 面（GUI 宿主）
+│   └── tests/                  # 108 项契约测试 + RVT1 冒烟
+├── macos-host/                 # SwiftUI 工作台
+├── shared/fixtures/            # 合成交付包（ECUC 与非 ECUC）
+├── docs/RIVET-MIGRATION.md     # R0–R8 重建计划与停止规则记录
 ├── docs/PRODUCT.md             # 定位、边界、非目标
-└── docs/ROADMAP.md             # M0–M9
+└── ARCHITECTURE.md             # 架构决策
 ```
 
 ## 设计说明
@@ -190,7 +190,8 @@ autarx/
 
 ## 路线图
 
-M0–M8 已全部落地：语义引擎、语义 diff、ECU 影响分析、通信追溯、厂商交接、受控编辑、AI agent 接口（MCP）。剩余为 M9 商业化加固（安装器、授权、遥测、性能画像）——见 [docs/ROADMAP.md](docs/ROADMAP.md)。
+2.0 Rivet 重建（R0–R8）已完成：Racket 语义核心、字节兼容 JSON 的 CLI/MCP、原生 macOS 工作台，以及 R0 性能停止规则记录——见
+[docs/RIVET-MIGRATION.md](docs/RIVET-MIGRATION.md)。剩余：Windows/Linux 宿主与 2.0 打包发布。
 
 ## 许可证
 

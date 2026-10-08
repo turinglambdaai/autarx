@@ -4,10 +4,10 @@
 Point it at an OEM delivery or ECU extract directory and get a semantic workspace: inventories, reference graphs, ECU discovery and unresolved-reference checks — scriptable end to end from an agent-friendly JSON CLI. Autarx sits **above** the vendor generators; it does not replace DaVinci, tresos or ISOLAR.
 
 [![CI](https://github.com/turinglambdaai/autarx/actions/workflows/ci.yml/badge.svg)](https://github.com/turinglambdaai/autarx/actions/workflows/ci.yml)
-[![Racket](https://img.shields.io/badge/Racket-CS-9F1D20?logo=racket&logoColor=white)](https://racket-lang.org)
+![Racket](https://img.shields.io/badge/Racket-CS-9F1D20?logo=racket&logoColor=white)
 [![License](https://img.shields.io/badge/License-Proprietary-red)](LICENSE)
 
-[中文](README.zh-CN.md) · English
+**English** · [中文](README.zh-CN.md)
 
 ---
 
@@ -18,7 +18,7 @@ Point it at an OEM delivery or ECU extract directory and get a semantic workspac
 - **No automation surface** — CI cannot diff, trace or sanity-check deliveries because no vendor tool exposes a stable machine interface
 - **Agents cannot help** — LLM agents work on text surfaces with structured feedback; vendor tools offer neither
 
-Autarx fixes that: one UI-free semantic engine that reads ARXML directly, a native Avalonia GUI for humans, and a JSON-first CLI for scripts, CI and AI agents.
+Autarx fixes that: one UI-free semantic engine that reads ARXML directly, a native macOS workbench for humans, and a JSON-first CLI for scripts, CI and AI agents.
 
 ## What Autarx is — and is not
 
@@ -117,22 +117,18 @@ autarx validate Mcu.arxml
 
 ## Install
 
-Download the latest zips from [Releases](https://github.com/turinglambdaai/autarx/releases/latest) — each platform ships a GUI zip (`Autarx-gui-<platform>.zip`) and a CLI zip (`Autarx-cli-<platform>.zip`), self-contained single-file executables, no .NET install needed:
-
-| Platform | Assets |
-|---|---|
-| Windows x64 | `Autarx-{gui,cli}-windows-x64.zip` |
-| macOS (Apple silicon) | `Autarx-{gui,cli}-macos-arm64.zip` |
-| Linux x64 | `Autarx-{gui,cli}-linux-x64.zip` |
-
-Every release also carries a `SHA256SUMS` manifest and Sigstore build provenance. Verify before running:
+The 2.0 rebuild ships from source today; packaged downloads return with
+the 2.0 release (see [CHANGELOG](CHANGELOG.md)). Until then:
 
 ```bash
-sha256sum --ignore-missing --check SHA256SUMS
-gh attestation verify Autarx-cli-linux-x64.zip -R turinglambdaai/autarx
+git clone https://github.com/turinglambdaai/autarx.git
+cd autarx
+raco rivet build          # staged app + CLI runtime
+racket racket/autarx/cli.rkt --version
 ```
 
-macOS builds are unsigned; on first launch remove the Gatekeeper quarantine with `xattr -cr Autarx` (GUI) or `xattr -cr autarx` (CLI).
+Prerequisites: Racket CS 9.x with [Rivet](https://github.com/turinglambdaai/rivet)
+linked — see [Getting started](#getting-started) below for the full path.
 
 ## Getting started
 
@@ -192,7 +188,10 @@ autarx/
 
 ## Roadmap
 
-M0–M8 are shipped: semantic engine, semantic diff, ECU impact, communication trace, vendor hand-off, reviewed editing, and the AI agent surface (MCP). What remains is M9 commercial hardening (installer, licensing, telemetry, performance profiling) — see [docs/ROADMAP.md](docs/ROADMAP.md).
+The 2.0 Rivet rebuild (R0–R8) is complete: Racket semantic core, CLI/MCP
+with byte-compatible JSON, native macOS workbench, and the R0 performance
+stop-rule record — see [docs/RIVET-MIGRATION.md](docs/RIVET-MIGRATION.md).
+What remains: Windows/Linux hosts and the 2.0 packaged release.
 
 ## License
 
