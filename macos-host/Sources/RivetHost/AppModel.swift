@@ -39,7 +39,7 @@ final class AppModel: @unchecked Sendable {
             self.backend = backend
             try backend.start(onEvent: { [weak self] name, value in
                 guard let event = try? RivetEvent.decode(name: name, value: value) else { return }
-                Swift.Task { @MainActor [weak self] in
+                Task { @MainActor [weak self] in
                     switch event {
                     case .progress(let payload):
                         guard case .string(let text) = payload else { return }
@@ -52,7 +52,7 @@ final class AppModel: @unchecked Sendable {
             // AUTARX_OPEN=<path> pre-opens a workspace (dev convenience)
             if let preset = ProcessInfo.processInfo.environment["AUTARX_OPEN"], !preset.isEmpty {
                 let url = URL(fileURLWithPath: preset)
-                Swift.Task { await openWorkspace(at: url) }
+                Task { await openWorkspace(at: url) }
             }
         } catch {
             statusMessage = "Backend error: \(error)"
