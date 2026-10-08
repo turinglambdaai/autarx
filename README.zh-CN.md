@@ -3,9 +3,7 @@
 **面向 OEM-Tier1 集成数据的现代 AUTOSAR 工程工作台：检查、理解、比较、追溯、自动化。**
 把 OEM 交付包或 ECU Extract 目录交给它，得到一个语义化工作区：对象清单、引用图、ECU 发现、未解析引用检查——全程可通过 agent 友好的 JSON CLI 脚本化。Autarx 位于厂商生成器**上层**；它不替代达芬奇、tresos 或 ISOLAR。
 
-[![CI](https://github.com/turinglambdaai/autarx/actions/workflows/ci.yml/badge.svg)](https://github.com/turinglambdaai/autarx/actions/workflows/ci.yml)
-![Racket](https://img.shields.io/badge/Racket-CS-9F1D20?logo=racket&logoColor=white)
-[![License](https://img.shields.io/badge/License-Proprietary-red)](LICENSE)
+[![CI](https://github.com/turinglambdaai/autarx/actions/workflows/ci.yml/badge.svg)](https://github.com/turinglambdaai/autarx/actions/workflows/ci.yml) ![Racket](https://img.shields.io/badge/Racket-CS-9F1D20?logo=racket&logoColor=white) [![License](https://img.shields.io/badge/License-Proprietary-red)](LICENSE)
 
 **中文** · [English](README.md)
 
