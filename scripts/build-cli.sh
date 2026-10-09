@@ -26,19 +26,23 @@ rm -rf "$DIST"
 mkdir -p "$OUT_DIR"
 
 echo "build-cli: launcher…"
-raco exe -o "$OUT_DIR/launcher-staging" racket/autarx/cli.rkt
+# windows launchers carry a mandatory .exe suffix (raco exe appends it)
+EXE=""
+if [ "$OS" = "windows" ]; then EXE=".exe"; fi
+LAUNCHER="$OUT_DIR/launcher-staging$EXE"
+raco exe -o "$LAUNCHER" racket/autarx/cli.rkt
 
 echo "build-cli: collect runtime (raco distribute)…"
 # raco exe writes the launcher read-only; distribute patches it in place
-chmod u+w "$OUT_DIR/launcher-staging"
+chmod u+w "$LAUNCHER" 2>/dev/null || true
 # distribute's rpath expects bin/ + lib/ siblings — keep that layout, the
 # update payload swaps over the same shape
-raco distribute "$OUT_DIR/collect" "$OUT_DIR/launcher-staging"
+raco distribute "$OUT_DIR/collect" "$LAUNCHER"
 rm -rf "$DIST"
 mv "$OUT_DIR/collect" "$DIST"
-mv "$DIST/bin/launcher-staging" "$DIST/bin/autarx"
-chmod 555 "$DIST/bin/autarx"
-rm -f "$OUT_DIR/launcher-staging"
+mv "$DIST/bin/launcher-staging$EXE" "$DIST/bin/autarx$EXE"
+chmod 555 "$DIST/bin/autarx$EXE" 2>/dev/null || true
+rm -f "$OUT_DIR/launcher-staging$EXE"
 
 echo "build-cli: write rivet-app-info.rktd…"
 racket -e "(begin (require racket/file) (write-to-file (file->value \"rivet.rktd\") \"rivet-app-info.rktd\" #:exists 'truncate/replace))"

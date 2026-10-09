@@ -1782,7 +1782,11 @@
                     (path->string (build-path (find-system-path 'temp-dir)
                                               "autarx-update"))))
   (define marker
-    (if (string=? (hash-ref parsed 'kind "cli") "gui") "RivetHost" "autarx"))
+    (cond
+      [(string=? (hash-ref parsed 'kind "cli") "gui") "RivetHost"]
+      ;; the windows payload's launcher carries the .exe suffix
+      [(eq? (system-type 'os) 'windows) "autarx.exe"]
+      [else "autarx"]))
   (define payload-root (extract-verified zip-path (hash-ref asset 'sha256) marker))
   (define explicit-dir (hash-ref parsed 'install-dir #f))
   (define app-dir
