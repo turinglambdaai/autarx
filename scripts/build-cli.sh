@@ -40,7 +40,9 @@ chmod u+w "$LAUNCHER" 2>/dev/null || true
 raco distribute "$OUT_DIR/collect" "$LAUNCHER"
 rm -rf "$DIST"
 mv "$OUT_DIR/collect" "$DIST"
-mv "$DIST/bin/launcher-staging$EXE" "$DIST/bin/autarx$EXE"
+# locate the distributed launcher wherever the platform put it
+DIST_LAUNCHER=$(find "$DIST/bin" -name 'launcher-staging*' -print -quit)
+mv "$DIST_LAUNCHER" "$DIST/bin/autarx$EXE"
 chmod 555 "$DIST/bin/autarx$EXE" 2>/dev/null || true
 rm -f "$OUT_DIR/launcher-staging$EXE"
 
