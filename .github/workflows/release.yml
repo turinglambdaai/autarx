@@ -77,12 +77,54 @@ jobs:
           path: Autarx-*-macos.dmg
           if-no-files-found: error
 
+  cli:
+    name: CLI zip (${{ matrix.platform }})
+    needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-arm64
+            os: macos-latest
+            racket-arch: arm64
+          - platform: linux-x64
+            os: ubuntu-latest
+            racket-arch: x64
+          - platform: windows-x64
+            os: windows-latest
+            racket-arch: x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Racket
+        uses: Bogdanp/setup-racket@v1.15
+        with:
+          architecture: ${{ matrix.racket-arch }}
+          version: stable
+          distribution: full
+      - name: Link autarx core
+        run: raco pkg install --auto --no-docs --name autarx-core --link "file://$GITHUB_WORKSPACE/racket"
+        shell: bash
+      - name: Build CLI distribution
+        run: bash scripts/build-cli.sh dist-cli
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cli-${{ matrix.platform }}
+          path: dist-cli/autarx-cli-*.zip
+          if-no-files-found: error
+
   release:
     name: Publish
-    needs: [macos]
+    needs: [macos, cli]
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install Racket
+        uses: Bogdanp/setup-racket@v1.15
+        with:
+          architecture: arm64
+          version: stable
+          distribution: full
       - uses: actions/download-artifact@v4
         with:
           path: dist
@@ -91,6 +133,11 @@ jobs:
           find dist -mindepth 2 -maxdepth 2 -type f -exec mv {} dist/ \;
           find dist -mindepth 1 -maxdepth 1 -type d -empty -delete
           ls -la dist/
+      - name: Compose the update feed (latest.json)
+        run: |
+          racket scripts/make-update-feed.rkt \
+            "${{ github.ref_name }}" dist \
+            "https://github.com/turinglambdaai/autarx/releases/download/${{ github.ref_name }}"
       - name: Ensure SHA256SUMS
         run: |
           cd dist
@@ -108,7 +155,7 @@ jobs:
             gh release create "${{ github.ref_name }}" dist/* \
               -R turinglambdaai/autarx \
               --title "Autarx ${{ github.ref_name }}" \
-              --notes "First release of the Rivet rebuild. macOS (Apple silicon, macOS 14+); the CLI and MCP surface is contract-identical to the v1.0.3 line. Windows and Linux hosts are in development. Ad-hoc signed — on first launch, right-click the app and choose Open."
+              --notes "Rivet rebuild, with self-updating CLI. macOS workbench (Apple silicon, macOS 14+) via DMG; the CLI ships as self-contained zips for macOS (arm64), Linux (x64) and Windows (x64) and updates itself through a checksum-verified feed (\`autarx update\`). Windows and Linux GUI hosts are in development. Ad-hoc signed — on first launch, right-click the app and choose Open."
           fi
       - name: Attest build provenance
         uses: actions/attest-build-provenance@v1

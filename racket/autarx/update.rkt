@@ -119,6 +119,18 @@
 
 ;; Verifies the checksum BEFORE anything is extracted, expands the zip and
 ;; returns the payload root — the directory containing marker-file-name.
+(define (unzip-archive zip-path dest)
+  (case (system-type 'os)
+    [(windows)
+     ;; Windows runners and end-user machines ship PowerShell, not unzip
+     (system*/exit-code (find-executable-path "powershell") "-NoProfile"
+                        "-Command"
+                        (format "Expand-Archive -LiteralPath '~a' -DestinationPath '~a' -Force"
+                                (path->string zip-path) dest))]
+    [else
+     (system*/exit-code (find-executable-path "unzip")
+                        "-q" zip-path "-d" dest)]))
+
 (define (extract-verified zip-path expected-sha256 marker-file-name)
   (define actual (sha256-file zip-path))
   (unless (string-ci=? actual expected-sha256)
@@ -126,9 +138,7 @@
            "checksum mismatch: expected ~a, got ~a" expected-sha256 actual))
   (define extract-dir
     (make-temporary-file "autarx-update-~a" 'directory))
-  (define unzipped?
-    (zero? (system*/exit-code (find-executable-path "unzip")
-                              "-q" zip-path "-d" (path->string extract-dir))))
+  (define unzipped? (unzip-archive zip-path (path->string extract-dir)))
   (unless unzipped?
     (delete-directory* extract-dir)
     (error 'extract-verified "cannot extract update package"))

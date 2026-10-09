@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The v1.x (.NET/Avalonia) line's history lives in git tags; the Rivet rebuild
 restarts numbering at 1.0.0 per the release-history reset policy.
 
+## 1.1.0 - 2026-10-09
+
+### Added
+
+- **Self-updating CLI**: `autarx update` now has a live feed. Releases ship
+  self-contained CLI zips (launcher + embedded Racket runtime) for macOS
+  (arm64), Linux (x64) and Windows (x64), and a checksum-verified
+  `latest.json` feed; check compares versions, apply downloads, verifies
+  SHA-256 before touching anything, and swaps in place with
+  `.autarx-update.old` backups. The feed is the contract documented in
+  `racket/autarx/update.rkt`; the GUI leg stays manual (DMG drag-install)
+  until the Windows/Linux hosts land.
+- The CLI reports its true version: distributed builds carry
+  `rivet-app-info.rktd` beside the launcher and read it at startup
+  (source checkouts fall back to the rivet.rktd literal). The shipped 1.0.0
+  launcher reported a stale internal constant.
+
+### Fixed
+
+- `autarx update` extraction works on Windows (PowerShell
+  `Expand-Archive`) instead of assuming `unzip`.
+
 ## 1.0.0 - 2026-10-08
 
 First release of the Rivet rebuild: the semantic engine, CLI, MCP server and

@@ -25,7 +25,31 @@
          "update.rkt"
          "jsonout.rkt")
 
-(define autarx-version "2.0.0")
+;; Look for rivet-app-info.rktd next to the running executable (or its
+;; parent, for lib/-style layouts) and return its version field.
+(define (version-from-app-info)
+  (define run-file (find-system-path 'run-file))
+  (define exe-dir (if (path? run-file) (path-only run-file) #f))
+  (define candidate-dirs
+    (if exe-dir
+        (list exe-dir (simplify-path (build-path exe-dir 'up)))
+        (list)))
+  (for/or ([dir (in-list candidate-dirs)])
+    (define info (build-path dir "rivet-app-info.rktd"))
+    (and (directory-exists? dir)
+         (file-exists? info)
+         (call-with-input-file info
+           (lambda (in)
+             (define doc (read in))
+             (define v (if (hash? doc) (hash-ref doc 'version #f) #f))
+             (and (string? v) v))))))
+
+;; Release identity. Distributed CLI builds carry a rivet-app-info.rktd
+;; beside the launcher (scripts/build-cli.sh writes it from rivet.rktd), so
+;; the binary reports the version it was cut from. Source checkouts have no
+;; metadata file and fall back to this literal, which must track rivet.rktd.
+(define autarx-version
+  (or (version-from-app-info) "1.1.0"))
 
 (module+ main
   (exit (run (vector->list (current-command-line-arguments)))))
