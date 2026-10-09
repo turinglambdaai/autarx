@@ -40,10 +40,13 @@ chmod u+w "$LAUNCHER" 2>/dev/null || true
 raco distribute "$OUT_DIR/collect" "$LAUNCHER"
 rm -rf "$DIST"
 mv "$OUT_DIR/collect" "$DIST"
-# locate the distributed launcher wherever the platform put it
-DIST_LAUNCHER=$(find "$DIST/bin" -name 'launcher-staging*' -print -quit)
-mv "$DIST_LAUNCHER" "$DIST/bin/autarx$EXE"
-chmod 555 "$DIST/bin/autarx$EXE" 2>/dev/null || true
+# locate the distributed launcher wherever the platform put it (unix: bin/
+# next to lib/; windows: flat next to the dlls) and rename it in place so
+# relative library positions never change
+DIST_LAUNCHER=$(find "$DIST" -name 'launcher-staging*' -print -quit)
+test -n "$DIST_LAUNCHER" || { echo "build-cli: distribute produced no launcher" >&2; exit 1; }
+mv "$DIST_LAUNCHER" "$(dirname "$DIST_LAUNCHER")/autarx$EXE"
+chmod 555 "$(dirname "$DIST_LAUNCHER")/autarx$EXE" 2>/dev/null || true
 rm -f "$OUT_DIR/launcher-staging$EXE"
 
 echo "build-cli: write rivet-app-info.rktd…"
