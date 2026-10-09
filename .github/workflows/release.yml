@@ -107,6 +107,9 @@ jobs:
           architecture: ${{ matrix.racket-arch }}
           version: stable
           distribution: full
+      - name: Install crypto package (rivet dependency)
+        run: raco pkg install --auto --no-docs crypto
+        shell: bash
       - name: Link Rivet
         run: raco pkg install --auto --no-docs --link "$GITHUB_WORKSPACE/rivet/rivet" "$GITHUB_WORKSPACE/rivet/rivet-cli"
         shell: bash
