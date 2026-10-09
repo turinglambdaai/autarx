@@ -96,12 +96,20 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - name: Checkout Rivet
+        uses: actions/checkout@v4
+        with:
+          repository: turinglambdaai/rivet
+          path: rivet
       - name: Install Racket
         uses: Bogdanp/setup-racket@v1.15
         with:
           architecture: ${{ matrix.racket-arch }}
           version: stable
           distribution: full
+      - name: Link Rivet
+        run: raco pkg install --auto --no-docs --link "$GITHUB_WORKSPACE/rivet/rivet" "$GITHUB_WORKSPACE/rivet/rivet-cli"
+        shell: bash
       - name: Link autarx core
         run: raco pkg install --auto --no-docs --name autarx-core --link "file://$GITHUB_WORKSPACE/racket"
         shell: bash
