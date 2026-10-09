@@ -11,6 +11,9 @@ set -eu
 
 OUT_DIR="${1:?usage: build-cli.sh <output-dir>}"
 cd "$(dirname "$0")/.."
+mkdir -p "$OUT_DIR"
+# resolve to an absolute path: the zip step cds into the dist directory
+OUT_DIR=$(cd "$OUT_DIR" && pwd)
 
 VERSION=$(racket -e '(begin (require racket/file) (display (hash-ref (file->value "rivet.rktd") (quote version))))')
 UNAME_S=$(uname -s)
