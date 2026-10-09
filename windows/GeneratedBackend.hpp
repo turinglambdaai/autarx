@@ -18,8 +18,8 @@ namespace rivet_app {
 inline constexpr char kModuleName[] = "backend";
 inline constexpr char kEntryName[] = "start";
 inline constexpr char kDisplayName[] = "Autarx";
-inline constexpr char kVersion[] = "2.0.0";
-inline constexpr std::int64_t kBuild = 1;
+inline constexpr char kVersion[] = "1.1.0";
+inline constexpr std::int64_t kBuild = 2;
 inline constexpr char kIdentifier[] = "site.jrtx.autarx.Autarx";
 inline constexpr char kReleaseChannel[] = "stable";
 

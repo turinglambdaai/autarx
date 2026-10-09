@@ -7,8 +7,8 @@ public enum RivetGeneratedConfig {
     public static let moduleName = "backend"
     public static let entryName = "start"
     public static let displayName = "Autarx"
-    public static let version = "2.0.0"
-    public static let build: Int64 = 1
+    public static let version = "1.1.0"
+    public static let build: Int64 = 2
     public static let identifier = "site.jrtx.autarx.Autarx"
     public static let releaseChannel = "stable"
 }
