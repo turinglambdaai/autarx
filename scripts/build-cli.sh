@@ -6,7 +6,7 @@
 #
 # Usage: scripts/build-cli.sh <output-dir>
 # Produces <output-dir>/autarx/ (the distributable) and
-#         <output-dir>/autarx-cli-<version>-<platform>.zip
+#         <output-dir>/autarx-<version>-<os>-<arch>.zip
 set -eu
 
 OUT_DIR="${1:?usage: build-cli.sh <output-dir>}"
@@ -56,7 +56,7 @@ mv rivet-app-info.rktd "$DIST/rivet-app-info.rktd"
 echo "build-cli: smoke (version must read from the metadata file)…"
 "$DIST/bin/autarx" --help | head -1
 
-ZIP="$OUT_DIR/autarx-cli-$VERSION-$OS-$ARCH.zip"
+ZIP="$OUT_DIR/autarx-$VERSION-$OS-$ARCH.zip"
 if command -v zip >/dev/null 2>&1; then
   (cd "$DIST" && zip -qry "$ZIP" .)
 else

@@ -37,7 +37,7 @@ Autarx **不会**：替代达芬奇/tresos/ISOLAR、生成量产 BSW/RTE/MCAL �
 - **厂商交接**——`vendor list` 探测达芬奇/tresos/ISOLAR 安装；`vendor validate` 中继厂商工具自身的运行结果（归一化诊断 + 保留原始输出）——这永远是厂商的结论，不是 Autarx 的
 - **受控编辑**——`patch plan` 把每次修改先转成语义 diff 供审阅，未审阅不落盘；`patch apply` 保留备份和撤销清单；重命名会同步重写全工作区的入向引用
 - **AI Agent 接口**——`autarx mcp` 启动 Model Context Protocol stdio 服务器暴露完整工具 API；不存在裸写文件工具，agent 无法绕过 plan/diff/审阅边界，且每次调用都进审计日志
-- **在线自更新**——`autarx update` 检查随每个版本发布的 `latest.json` 更新清单，校验 SHA-256 后就地替换二进制；GUI 启动时静默检查，Help 菜单一键安装。未处理崩溃会在 `<TEMP>/autarx/crashes/` 留本地日志——不上传任何数据
+- **在线自更新（CLI）**——`autarx update` 检查随每个版本发布的 `latest.json` 更新清单，校验 SHA-256 后就地替换二进制。GUI 没有更新器：新版本发布后从 [Releases](https://github.com/turinglambdaai/autarx/releases) 下载 DMG 拖装。未处理崩溃会在 `<TEMP>/autarx/crashes/` 留本地日志——不上传任何数据
 - **Agent 友好 CLI**——camelCase JSON、确定性退出码、歧义显式上报而非猜测；现成的 CI 门禁命令链
 - **原生 macOS 工作台**——SwiftUI 壳跑在嵌入式 Racket 核心之上（Windows/Linux 宿主排期中）
 - **单一核心二进制**——CLI 与 MCP 同体；GUI 内嵌同一核心
@@ -115,8 +115,19 @@ autarx validate Mcu.arxml
 
 ## 安装
 
-2.0 重建线目前从源码构建；打包下载随 2.0 发布回归（见
-[CHANGELOG](CHANGELOG.md)）。在那之前：
+发布产物统一按 `autarx-<version>-<os>-<arch>.<ext>` 命名，从
+[GitHub Releases](https://github.com/turinglambdaai/autarx/releases) 下载：
+
+| 下载 | 平台 | 形态 |
+| --- | --- | --- |
+| `autarx-0.1.0-macos-arm64.dmg` | macOS 14+，Apple silicon | GUI 工作台 |
+| `autarx-0.1.0-macos-arm64.zip` | macOS（arm64） | CLI（自包含） |
+| `autarx-0.1.0-linux-x64.zip` | Linux（x64） | CLI（自包含） |
+| `autarx-0.1.0-windows-x64.zip` | Windows（x64） | CLI（自包含） |
+
+CLI zip 就是自更新的载荷：装好后 `autarx update` 会从校验和保护的更新源拉取新版本。DMG 为 ad-hoc 签名——首次启动请右键应用并选「打开」。
+
+也可以从源码构建：
 
 ```bash
 git clone https://github.com/turinglambdaai/autarx.git
@@ -188,8 +199,8 @@ autarx/
 
 ## 路线图
 
-2.0 Rivet 重建（R0–R8）已完成：Racket 语义核心、字节兼容 JSON 的 CLI/MCP、原生 macOS 工作台，以及 R0 性能停止规则记录——见
-[docs/RIVET-MIGRATION.md](docs/RIVET-MIGRATION.md)。剩余：Windows/Linux 宿主与 2.0 打包发布。
+Rivet 重建（R0–R8）已完成：Racket 语义核心、字节兼容 JSON 的 CLI/MCP、原生 macOS 工作台，以及 R0 性能停止规则记录——见
+[docs/RIVET-MIGRATION.md](docs/RIVET-MIGRATION.md)。项目现进入 0.x 功能验证阶段（0.1.0 为新纪元首个版本）。剩余：Windows/Linux 宿主。
 
 ## 许可证
 

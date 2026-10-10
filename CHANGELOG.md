@@ -4,8 +4,32 @@ All notable changes to autarx are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-The v1.x (.NET/Avalonia) line's history lives in git tags; the Rivet rebuild
-restarts numbering at 1.0.0 per the release-history reset policy.
+
+## [Unreleased]
+
+## [0.1.0] - 2026-10-10
+
+Version epoch reset. The technical rewrite is settled, so the project enters
+a 0.x functional-validation phase: the first release of the new epoch is
+0.1.0. The 1.x-era releases and tags (v1.0.0, v1.1.0 of the Rivet rebuild)
+were deleted from GitHub Releases and the tag list; the sections below stay
+as the historical record of that era.
+
+### Changed
+
+- Release artifacts follow `autarx-<version>-<os>-<arch>.<ext>` (lowercase,
+  with architecture): `autarx-0.1.0-macos-arm64.dmg` for the macOS
+  workbench and `autarx-0.1.0-{macos-arm64,linux-x64,windows-x64}.zip` for
+  the CLI. The old `Autarx-*-macos.dmg` and `autarx-cli-*` names are gone;
+  the update-feed contract and release workflow were updated to match.
+- The version is single-sourced on `rivet.rktd`. The CLI no longer carries
+  a version literal — source checkouts read the repo manifest, distributed
+  builds read `rivet-app-info.rktd`; a build that finds neither fails
+  instead of reporting a stale version. `scripts/check-release-version.sh`
+  (release-gate, taskly-style) enforces tag == rivet.rktd ==
+  GeneratedBackend.swift and that the CHANGELOG announces the release.
+- The rivet generator is pinned in CI/release workflows (the RivetTypes
+  namespace change in rivet breaks this SwiftUI host until it is adopted).
 
 ## 1.1.0 - 2026-10-09
 
@@ -52,4 +76,3 @@ silicon, macOS 14+); the Windows and Linux hosts are in development.
 
 - .NET/Avalonia implementation tree (`src/`, `tests/`, `Autarx.slnx`)
 
-## [Unreleased]

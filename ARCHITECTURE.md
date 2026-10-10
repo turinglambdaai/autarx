@@ -162,16 +162,17 @@ semantically equivalent, deliberately not byte-faithful.
 
 ## Self-update
 
-the updater implements the update channel. The release pipeline publishes a
+the updater (`update.rkt` + the `update` command in `cli.rkt`) implements
+the update channel for the CLI. The release pipeline publishes a
 `latest.json` asset with every release (version, per-platform download URL,
-SHA-256, size); `UpdateFeed` parses it (URL or local file — local files keep
-CI gated without network), `UpdateService` checks and downloads,
-`UpdateInstaller` verifies the checksum BEFORE touching anything, then swaps
-files in place: current files move to `<name>.autarx-update.old` (allowed
-while the executable runs on Windows), stale backups are cleaned on the next
-update. The GUI checks quietly on startup and offers the install under
-Help. Unhandled exceptions write a local crash log under
-`<TEMP>/autarx/crashes/` and exit 3 — nothing is sent anywhere.
+SHA-256); the CLI parses it (URL or local file — local files keep CI gated
+without network), checks versions, downloads, and verifies the checksum
+BEFORE touching anything, then swaps files in place: current files move to
+`<name>.autarx-update.old` (allowed while the executable runs on Windows),
+stale backups are cleaned on the next update. The GUI has no updater — new
+workbench releases are installed manually from the release DMG. Unhandled
+exceptions write a local crash log under `<TEMP>/autarx/crashes/` and exit
+3 — nothing is sent anywhere.
 
 ## AI layer (MCP)
 

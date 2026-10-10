@@ -27,8 +27,9 @@ jobs:
 
       - name: Link rivet
         run: |
-          git clone --depth 1 https://github.com/turinglambdaai/rivet.git /tmp/rivet
+          git clone https://github.com/turinglambdaai/rivet.git /tmp/rivet
           cd /tmp/rivet
+          git checkout 2fcdd091ddd7fd157fa934ac6053cdf4f9ab6100  # release generator pin, matches release.yml
           raco pkg install --auto --no-docs --name rivet --link "file://$PWD"
 
       - name: Install autarx core
@@ -67,8 +68,9 @@ jobs:
 
       - name: Link rivet + build staged app
         run: |
-          git clone --depth 1 https://github.com/turinglambdaai/rivet.git /tmp/rivet
+          git clone https://github.com/turinglambdaai/rivet.git /tmp/rivet
           cd /tmp/rivet
+          git checkout 2fcdd091ddd7fd157fa934ac6053cdf4f9ab6100  # last generator without the RivetTypes namespace (breaks this host)
           raco pkg install --auto --no-docs --name rivet --link "file://$PWD"
           cd "$GITHUB_WORKSPACE"
           raco pkg install --auto --no-docs --name autarx-core --link "file://$PWD/racket"

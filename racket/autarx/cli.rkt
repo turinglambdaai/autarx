@@ -44,12 +44,40 @@
              (define v (if (hash? doc) (hash-ref doc 'version #f) #f))
              (and (string? v) v))))))
 
-;; Release identity. Distributed CLI builds carry a rivet-app-info.rktd
-;; beside the launcher (scripts/build-cli.sh writes it from rivet.rktd), so
-;; the binary reports the version it was cut from. Source checkouts have no
-;; metadata file and fall back to this literal, which must track rivet.rktd.
+;; Source checkouts: read the version from the repo-root rivet.rktd — three
+;; directories above this source file (racket/autarx/cli.rkt). Resolved
+;; through the running module's source path (works for source and compiled
+;; checkouts; an embedded raco-exe build reports a symbol instead of a path,
+;; which lands on #f — there the rivet-app-info.rktd branch above is the one
+;; that must succeed).
+(define (version-from-manifest)
+  (define src
+    (with-handlers ([exn:fail? (lambda (_) #f)])
+      (variable-reference->module-source (#%variable-reference))))
+  (and (path? src)
+       (file-exists? src)
+       (let* ([manifest (with-handlers ([exn:fail? (lambda (_) #f)])
+                          (simplify-path (build-path src 'up 'up 'up "rivet.rktd")))]
+              [v (and manifest
+                      (file-exists? manifest)
+                      (call-with-input-file manifest
+                        (lambda (in)
+                          (define doc (read in))
+                          (define v (if (hash? doc) (hash-ref doc 'version #f) #f))
+                          (and (string? v) v))))])
+         v)))
+
+;; Release identity, single-sourced on rivet.rktd. Distributed CLI builds
+;; carry a rivet-app-info.rktd beside the launcher (scripts/build-cli.sh
+;; writes it from rivet.rktd); source checkouts read the repo manifest.
+;; There is deliberately no version literal here — a build that cannot find
+;; either file is a packaging bug and must fail loudly instead of reporting
+;; a stale version (scripts/check-release-version.sh guards the source).
 (define autarx-version
-  (or (version-from-app-info) "1.1.0"))
+  (or (version-from-app-info)
+      (version-from-manifest)
+      (error 'autarx
+             "cannot determine version: no rivet-app-info.rktd beside the launcher and no source rivet.rktd")))
 
 (module+ main
   (exit (run (vector->list (current-command-line-arguments)))))

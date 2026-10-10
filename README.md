@@ -37,7 +37,7 @@ Autarx **does not**: replace DaVinci/tresos/ISOLAR, generate production BSW/RTE/
 - **Vendor hand-off** — `vendor list` detects DaVinci/tresos/ISOLAR installations; `vendor validate` relays the vendor tool's own run with normalized diagnostics and the raw output preserved — never an Autarx verdict
 - **Reviewed editing** — `patch plan` previews every change as a semantic diff before anything is written; `patch apply` keeps backups and an undo manifest; renames rewrite incoming reference targets across the workspace
 - **AI agent surface** — `autarx mcp` runs a Model Context Protocol stdio server exposing the whole tool API; there is no raw-write tool, so an agent cannot bypass the plan/diff/review boundary, and every call is audit-logged
-- **Self-update** — `autarx update` checks the release feed (a `latest.json` asset published with every release), verifies the SHA-256 checksum, and swaps the new binaries in place; the GUI checks quietly on startup and offers Help → Install Update. Unhandled crashes leave a local log under `<TEMP>/autarx/crashes/` — nothing is sent anywhere
+- **Self-update (CLI)** — `autarx update` checks the release feed (a `latest.json` asset published with every release), verifies the SHA-256 checksum, and swaps the new binaries in place. The GUI has no updater: when a new workbench release ships, download its DMG from [Releases](https://github.com/turinglambdaai/autarx/releases) and drag-install. Unhandled crashes leave a local log under `<TEMP>/autarx/crashes/` — nothing is sent anywhere
 - **Agent-friendly CLI** — camelCase JSON, deterministic exit codes, ambiguity is reported instead of guessed; a ready-made command chain for CI gates
 - **Native macOS workbench** — SwiftUI host over the embedded Racket core (Windows/Linux hosts planned)
 - **Single binary core** — one Racket executable carries CLI + MCP; the GUI embeds it
@@ -115,8 +115,21 @@ autarx validate Mcu.arxml
 
 ## Install
 
-The 2.0 rebuild ships from source today; packaged downloads return with
-the 2.0 release (see [CHANGELOG](CHANGELOG.md)). Until then:
+Releases follow `autarx-<version>-<os>-<arch>.<ext>` and ship from
+[GitHub Releases](https://github.com/turinglambdaai/autarx/releases):
+
+| Download | Platform | Kind |
+| --- | --- | --- |
+| `autarx-0.1.0-macos-arm64.dmg` | macOS 14+, Apple silicon | GUI workbench |
+| `autarx-0.1.0-macos-arm64.zip` | macOS (arm64) | CLI (self-contained) |
+| `autarx-0.1.0-linux-x64.zip` | Linux (x64) | CLI (self-contained) |
+| `autarx-0.1.0-windows-x64.zip` | Windows (x64) | CLI (self-contained) |
+
+The CLI zips are the self-update payload: once installed, `autarx update`
+pulls newer builds from the checksum-verified feed. The DMG is ad-hoc
+signed — on first launch, right-click the app and choose Open.
+
+To build from source instead:
 
 ```bash
 git clone https://github.com/turinglambdaai/autarx.git
@@ -132,23 +145,32 @@ linked — see [Getting started](#getting-started) below for the full path.
 
 ### Build from source
 
-Requirements: [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0).
+Requirements: Racket CS 9.x with [Rivet](https://github.com/turinglambdaai/rivet)
+linked (inside a rivet checkout: `raco pkg install --auto --no-docs --name rivet --link file://$PWD`);
+the macOS host additionally needs Xcode.
 
 ```bash
 git clone https://github.com/turinglambdaai/autarx.git
 cd autarx
-dotnet build Autarx.slnx
-dotnet run --project src/Autarx.Gui
-dotnet run --project src/Autarx.Cli -- inspect tests/Autarx.Tests/Fixtures/OemDelivery
+raco rivet build          # staged layout: embedded backend + macOS host
+racket racket/autarx/cli.rkt inspect shared/fixtures/OemDelivery --json
+raco rivet dev            # dev loop: rebuild + launch the workbench
 ```
 
 ### Tests
 
 ```bash
-dotnet test
+raco test racket/
 ```
 
-The suite covers the parser (namespace stripping, attributes, error line numbers), semantic classification, workspace indexing, forward/reverse reference graphs, summaries and traces — over a synthetic non-ECUC System/Communication workspace plus ECUC fixtures, including deliberate unresolved references and ambiguous/duplicate paths.
+The 108-test suite (101 contract tests ported one-to-one from the .NET
+suite plus the update-channel tests) covers the parser (namespace
+stripping, attributes, error line numbers), semantic classification,
+workspace indexing, forward/reverse reference graphs, traces, semantic
+diff, impact analysis, the communication projection, validation, the patch
+pipeline, vendor hand-off normalization and version comparison — over the
+same synthetic workspaces in `shared/fixtures/`, including deliberate
+unresolved references and ambiguous/duplicate paths.
 
 ## Project structure
 
@@ -165,6 +187,7 @@ autarx/
 │   │   ├── comm.rkt            # cluster→frame→PDU→signal projection
 │   │   ├── vendor.rkt          # adapter detection + vendor hand-off relay
 │   │   ├── patch.rkt           # plan/apply/undo, reviewed editing
+│   │   ├── update.rkt          # update feed, SHA-256 verification, in-place swap
 │   │   ├── cli.rkt             # workspace + single-file commands, --json
 │   │   ├── mcp.rkt             # MCP stdio server + tool registry
 │   │   └── backend.rkt         # Rivet RPC surface (GUI hosts)
@@ -186,10 +209,11 @@ autarx/
 
 ## Roadmap
 
-The 2.0 Rivet rebuild (R0–R8) is complete: Racket semantic core, CLI/MCP
+The Rivet rebuild (R0–R8) is complete: Racket semantic core, CLI/MCP
 with byte-compatible JSON, native macOS workbench, and the R0 performance
 stop-rule record — see [docs/RIVET-MIGRATION.md](docs/RIVET-MIGRATION.md).
-What remains: Windows/Linux hosts and the 2.0 packaged release.
+The project is now in a 0.x functional-validation phase (0.1.0 is the
+first epoch release). What remains: Windows/Linux hosts.
 
 ## License
 

@@ -22,13 +22,8 @@ jobs:
         with:
           version: stable
           distribution: full
-      - name: Check tag matches rivet.rktd and CHANGELOG
-        run: |
-          TAG="${GITHUB_REF_NAME#v}"
-          VERSION=$(racket -e '(begin (require racket/file) (hash-ref (file->value "rivet.rktd") (quote version) #f))' | tr -d '"')
-          echo "tag=$TAG rivet.rktd=$VERSION"
-          test "$TAG" = "$VERSION" || { echo "::error::tag $TAG != rivet.rktd version $VERSION"; exit 1; }
-          grep -q "^## $TAG" CHANGELOG.md || { echo "::error::CHANGELOG.md has no '## $TAG' section"; exit 1; }
+      - name: Check release tag against the version single source
+        run: bash scripts/check-release-version.sh "$GITHUB_REF_NAME"
 
   macos:
     name: macOS DMG
@@ -41,6 +36,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: turinglambdaai/rivet
+          ref: 2fcdd091ddd7fd157fa934ac6053cdf4f9ab6100  # last generator without the RivetTypes namespace (breaks this host)
           path: rivet
       - name: Install Racket
         uses: Bogdanp/setup-racket@v1.15
@@ -62,7 +58,7 @@ jobs:
       - name: Human installer (DMG, drag to Applications)
         run: |
           volname=Autarx
-          dmg="Autarx-${{ github.ref_name }}-macos.dmg"
+          dmg="autarx-${{ github.ref_name }}-macos-arm64.dmg"
           staging="$(mktemp -d)/dmg-stage"
           mkdir -p "$staging"
           cp -R dist/autarx.app "$staging/"
@@ -74,7 +70,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: macos
-          path: Autarx-*-macos.dmg
+          path: autarx-*-macos-arm64.dmg
           if-no-files-found: error
 
   cli:
@@ -100,6 +96,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: turinglambdaai/rivet
+          ref: 2fcdd091ddd7fd157fa934ac6053cdf4f9ab6100  # last generator without the RivetTypes namespace (breaks this host)
           path: rivet
       - name: Install Racket
         uses: Bogdanp/setup-racket@v1.15
@@ -121,7 +118,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: cli-${{ matrix.platform }}
-          path: dist-cli/autarx-cli-*.zip
+          path: dist-cli/autarx-*.zip
           if-no-files-found: error
 
   release:
@@ -166,7 +163,7 @@ jobs:
             gh release create "${{ github.ref_name }}" dist/* \
               -R turinglambdaai/autarx \
               --title "Autarx ${{ github.ref_name }}" \
-              --notes "Rivet rebuild, with self-updating CLI. macOS workbench (Apple silicon, macOS 14+) via DMG; the CLI ships as self-contained zips for macOS (arm64), Linux (x64) and Windows (x64) and updates itself through a checksum-verified feed (\`autarx update\`). Windows and Linux GUI hosts are in development. Ad-hoc signed — on first launch, right-click the app and choose Open."
+              --notes "0.1.0 epoch reset of the Rivet rebuild. Assets follow the autarx-<version>-<os>-<arch> naming: the macOS workbench (Apple silicon, macOS 14+) ships as autarx-*-macos-arm64.dmg; the CLI ships as self-contained zips — autarx-*-macos-arm64.zip, autarx-*-linux-x64.zip, autarx-*-windows-x64.zip — and updates itself through a checksum-verified feed (\`autarx update\`). Windows and Linux GUI hosts are in development. Ad-hoc signed — on first launch, right-click the app and choose Open."
           fi
       - name: Attest build provenance
         uses: actions/attest-build-provenance@v1

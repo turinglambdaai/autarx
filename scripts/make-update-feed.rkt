@@ -32,10 +32,10 @@
 (define entries
   (for/hash ([path (in-directory dist)]
              #:when (and (file-exists? path)
-                         (regexp-match? #rx"autarx-cli-[0-9][^-]*-(macos-arm64|linux-x64|windows-x64)\\.zip$"
+                         (regexp-match? #rx"autarx-[0-9][^-]*-(macos-arm64|linux-x64|windows-x64)\\.zip$"
                                         (path->string path))))
     (define name (path->string (file-name-from-path path)))
-    (define platform (cadr (regexp-match #rx"autarx-cli-[0-9][^-]*-(macos-arm64|linux-x64|windows-x64)\\.zip$" name)))
+    (define platform (cadr (regexp-match #rx"autarx-[0-9][^-]*-(macos-arm64|linux-x64|windows-x64)\\.zip$" name)))
     (values (string->symbol platform)
             (hasheq 'url (string-append base-url "/" name)
                     'sha256 (sha256-file path)))))
