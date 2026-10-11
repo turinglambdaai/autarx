@@ -1,13 +1,13 @@
 #lang racket/base
 
-;; Compose the `autarx update` feed (latest.json) from the release
+;; Compose the `autarx update` feed (update-manifest.json) from the release
 ;; directory. Feed shape is the contract in racket/autarx/update.rkt +
 ;; cli.rkt: {"version": …, "assets": {"cli": {"<platform>": {"url": …,
 ;; "sha256": …}}}}. The gui leg ships the DMG for manual install and is
 ;; deliberately not in the feed — self-update covers the CLI.
 ;;
 ;; Usage: racket scripts/make-update-feed.rkt <version> <dist-dir> <base-url>
-;; Writes <dist-dir>/latest.json.
+;; Writes <dist-dir>/update-manifest.json.
 
 (require racket/file
          racket/format
@@ -29,24 +29,27 @@
           (error 'make-update-feed "shasum failed for ~a" path)))))
   (string-trim (car (string-split out))))
 
+(define platform-regexp
+  #rx"autarx-[0-9][^-]*-(macos-arm64|macos-x64|linux-x64|linux-arm64|windows-x64)\\.zip$")
+
 (define entries
   (for/hash ([path (in-directory dist)]
              #:when (and (file-exists? path)
-                         (regexp-match? #rx"autarx-[0-9][^-]*-(macos-arm64|linux-x64|windows-x64)\\.zip$"
+                         (regexp-match? platform-regexp
                                         (path->string path))))
     (define name (path->string (file-name-from-path path)))
-    (define platform (cadr (regexp-match #rx"autarx-[0-9][^-]*-(macos-arm64|linux-x64|windows-x64)\\.zip$" name)))
+    (define platform (cadr (regexp-match platform-regexp name)))
     (values (string->symbol platform)
             (hasheq 'url (string-append base-url "/" name)
                     'sha256 (sha256-file path)))))
 
 (when (hash-empty? entries)
-  (error 'make-update-feed "no autarx-cli-*.zip artifacts found in ~a" dist))
+  (error 'make-update-feed "no autarx-*.zip artifacts found in ~a" dist))
 
 (define feed (hasheq 'version version
                      'assets (hasheq 'cli entries)))
 
-(define out-path (build-path dist "latest.json"))
+(define out-path (build-path dist "update-manifest.json"))
 (with-output-to-file out-path
   (lambda () (write-json feed))
   #:exists 'truncate/replace)

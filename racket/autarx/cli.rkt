@@ -1745,7 +1745,7 @@
 ;; ---------------------------------------------------------------- update
 
 (define default-feed-url
-  "https://github.com/turinglambdaai/autarx/releases/latest/download/latest.json")
+  "https://github.com/turinglambdaai/autarx/releases/latest/download/update-manifest.json")
 
 (define (cmd-update args)
   (define parsed (parse-update-args args))

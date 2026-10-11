@@ -120,10 +120,13 @@ Releases follow `autarx-<version>-<os>-<arch>.<ext>` and ship from
 
 | Download | Platform | Kind |
 | --- | --- | --- |
-| `autarx-0.1.0-macos-arm64.dmg` | macOS 14+, Apple silicon | GUI workbench |
-| `autarx-0.1.0-macos-arm64.zip` | macOS (arm64) | CLI (self-contained) |
-| `autarx-0.1.0-linux-x64.zip` | Linux (x64) | CLI (self-contained) |
-| `autarx-0.1.0-windows-x64.zip` | Windows (x64) | CLI (self-contained) |
+| `autarx-0.2.0-macos-arm64.dmg` | macOS 14+, Apple silicon | GUI workbench |
+| `autarx-0.2.0-macos-x64.dmg` | macOS 14+, Intel | GUI workbench |
+| `autarx-0.2.0-macos-arm64.zip` | macOS (arm64) | CLI (self-contained) |
+| `autarx-0.2.0-macos-x64.zip` | macOS (x64) | CLI (self-contained) |
+| `autarx-0.2.0-linux-x64.zip` | Linux (x64) | CLI (self-contained) |
+| `autarx-0.2.0-linux-arm64.zip` | Linux (arm64) | CLI (self-contained) |
+| `autarx-0.2.0-windows-x64.zip` | Windows (x64) | CLI (self-contained) |
 
 The CLI zips are the self-update payload: once installed, `autarx update`
 pulls newer builds from the checksum-verified feed. The DMG is ad-hoc

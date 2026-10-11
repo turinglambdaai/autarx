@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-11
+
+Packaging-parity release: the asset set closes every gap that does not
+require the still-in-development Windows and Linux GUI hosts.
+
+### Added
+
+- The macOS workbench ships an Intel build: `autarx-<version>-macos-x64.dmg`
+  joins the Apple-silicon DMG (native per-arch Racket, no Rosetta)
+- CLI zips for `macos-x64` and `linux-arm64` — the CLI now covers
+  `{macos-arm64, macos-x64, linux-x64, linux-arm64, windows-x64}`, built on
+  native per-arch runners
+- Every release asset ships a per-asset `.sha256` sidecar beside the
+  aggregated `SHA256SUMS`
+
+### Changed
+
+- The update feed is published as `update-manifest.json` (family
+  convention) and carries the two new CLI platforms; a byte-identical
+  `latest.json` rides along so pre-0.2.0 CLI builds keep self-updating —
+  the alias will be dropped once the field has moved on
+
 ## [0.1.0] - 2026-10-10
 
 Version epoch reset. The technical rewrite is settled, so the project enters

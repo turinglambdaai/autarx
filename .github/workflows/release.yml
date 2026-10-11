@@ -26,10 +26,20 @@ jobs:
         run: bash scripts/check-release-version.sh "$GITHUB_REF_NAME"
 
   macos:
-    name: macOS DMG
+    name: macOS DMG (${{ matrix.arch }})
     needs: validate
-    # macos-15: decoupled from the macos-latest pool (runner queue lesson).
-    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # macos-15: decoupled from the macos-latest pool (runner queue lesson).
+          - arch: arm64
+            os: macos-15
+            racket-arch: arm64
+          - arch: x64
+            os: macos-15-intel
+            racket-arch: x64
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - name: Checkout Rivet
@@ -41,9 +51,9 @@ jobs:
       - name: Install Racket
         uses: Bogdanp/setup-racket@v1.15
         with:
-          # arm64-native packaging: without this the runner builds under
+          # arch-native packaging: without this the runner builds under
           # Rosetta and ships an x86_64 app (the PodLens release bug).
-          architecture: arm64
+          architecture: ${{ matrix.racket-arch }}
           version: stable
           distribution: full
       - name: Install crypto package (rivet/distribution dependency)
@@ -59,7 +69,7 @@ jobs:
         run: |
           volname=Autarx
           # strip the tag's v prefix: the filename carries the bare version
-          dmg="autarx-${GITHUB_REF_NAME#v}-macos-arm64.dmg"
+          dmg="autarx-${GITHUB_REF_NAME#v}-macos-${{ matrix.arch }}.dmg"
           staging="$(mktemp -d)/dmg-stage"
           mkdir -p "$staging"
           cp -R dist/autarx.app "$staging/"
@@ -70,8 +80,8 @@ jobs:
           hdiutil detach /tmp/autarx-dmg-verify
       - uses: actions/upload-artifact@v4
         with:
-          name: macos
-          path: autarx-*-macos-arm64.dmg
+          name: macos-${{ matrix.arch }}
+          path: autarx-*-macos-${{ matrix.arch }}.dmg
           if-no-files-found: error
 
   cli:
@@ -84,9 +94,15 @@ jobs:
           - platform: macos-arm64
             os: macos-latest
             racket-arch: arm64
+          - platform: macos-x64
+            os: macos-15-intel
+            racket-arch: x64
           - platform: linux-x64
             os: ubuntu-latest
             racket-arch: x64
+          - platform: linux-arm64
+            os: ubuntu-24.04-arm
+            racket-arch: arm64
           - platform: windows-x64
             os: windows-latest
             racket-arch: x64
@@ -142,11 +158,23 @@ jobs:
           find dist -mindepth 2 -maxdepth 2 -type f -exec mv {} dist/ \;
           find dist -mindepth 1 -maxdepth 1 -type d -empty -delete
           ls -la dist/
-      - name: Compose the update feed (latest.json)
+      - name: Per-asset .sha256 sidecars
+        run: |
+          cd dist
+          for f in autarx-*; do
+            case "$f" in
+              *.sha256) ;;
+              *) [ -f "$f" ] || continue; [ -f "$f.sha256" ] || shasum -a 256 "$f" > "$f.sha256" ;;
+            esac
+          done
+      - name: Compose the update feed (update-manifest.json)
         run: |
           racket scripts/make-update-feed.rkt \
             "${{ github.ref_name }}" dist \
             "https://github.com/turinglambdaai/autarx/releases/download/${{ github.ref_name }}"
+          # byte-identical alias: pre-0.2.0 CLI builds poll latest.json —
+          # keep them updating until the field has moved on
+          cp dist/update-manifest.json dist/latest.json
       - name: Ensure SHA256SUMS
         run: |
           cd dist
@@ -164,7 +192,7 @@ jobs:
             gh release create "${{ github.ref_name }}" dist/* \
               -R turinglambdaai/autarx \
               --title "Autarx ${{ github.ref_name }}" \
-              --notes "0.1.0 epoch reset of the Rivet rebuild. Assets follow the autarx-<version>-<os>-<arch> naming: the macOS workbench (Apple silicon, macOS 14+) ships as autarx-*-macos-arm64.dmg; the CLI ships as self-contained zips — autarx-*-macos-arm64.zip, autarx-*-linux-x64.zip, autarx-*-windows-x64.zip — and updates itself through a checksum-verified feed (\`autarx update\`). Windows and Linux GUI hosts are in development. Ad-hoc signed — on first launch, right-click the app and choose Open."
+              --notes "0.2.0 packaging-parity release. Assets follow the autarx-<version>-<os>-<arch> naming: the macOS workbench (macOS 14+, Apple silicon and Intel) ships as autarx-*-macos-*.dmg; the CLI ships as self-contained zips — autarx-*-macos-arm64.zip, autarx-*-macos-x64.zip, autarx-*-linux-x64.zip, autarx-*-linux-arm64.zip, autarx-*-windows-x64.zip — and updates itself through a checksum-verified feed (\`autarx update\`). Every asset carries a .sha256 sidecar. Windows and Linux GUI hosts are in development. Ad-hoc signed — on first launch, right-click the app and choose Open."
           fi
       - name: Attest build provenance
         uses: actions/attest-build-provenance@v1
