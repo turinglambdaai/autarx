@@ -42,12 +42,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - name: Checkout Rivet
-        uses: actions/checkout@v4
-        with:
-          repository: turinglambdaai/rivet
-          ref: 53487b31a24b4bd0c747235ee204e540a9410cdf  # generator with RivetTypes namespace (host migrated)
-          path: rivet
       - name: Install Racket
         uses: Bogdanp/setup-racket@v1.15
         with:
@@ -56,11 +50,8 @@ jobs:
           architecture: ${{ matrix.racket-arch }}
           version: stable
           distribution: full
-      - name: Install crypto package (rivet/distribution dependency)
-        run: raco pkg install --auto --no-docs crypto
-        shell: bash
-      - name: Link Rivet
-        run: raco pkg install --auto --no-docs --link "$GITHUB_WORKSPACE/rivet/rivet" "$GITHUB_WORKSPACE/rivet/rivet-cli"
+      - name: Install Rivet (catalog)
+        run: raco pkg install --auto --no-docs rivet
       - name: Link autarx core
         run: raco pkg install --auto --no-docs --name autarx-core --link "file://$GITHUB_WORKSPACE/racket"
       - name: Package
@@ -120,23 +111,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - name: Checkout Rivet
-        uses: actions/checkout@v4
-        with:
-          repository: turinglambdaai/rivet
-          ref: 53487b31a24b4bd0c747235ee204e540a9410cdf  # generator with RivetTypes namespace (host migrated)
-          path: rivet
       - name: Install Racket
         uses: Bogdanp/setup-racket@v1.15
         with:
           architecture: ${{ matrix.racket-arch }}
           version: stable
           distribution: full
-      - name: Install crypto package (rivet dependency)
-        run: raco pkg install --auto --no-docs crypto
-        shell: bash
-      - name: Link Rivet
-        run: raco pkg install --auto --no-docs --link "$GITHUB_WORKSPACE/rivet/rivet" "$GITHUB_WORKSPACE/rivet/rivet-cli"
+      - name: Install Rivet (catalog)
+        run: raco pkg install --auto --no-docs rivet
         shell: bash
       - name: Link autarx core
         run: raco pkg install --auto --no-docs --name autarx-core --link "file://$GITHUB_WORKSPACE/racket"
@@ -155,22 +137,14 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Checkout Rivet
-        uses: actions/checkout@v4
-        with:
-          repository: turinglambdaai/rivet
-          ref: 53487b31a24b4bd0c747235ee204e540a9410cdf  # release generator pin, matches the build legs
-          path: rivet
       - name: Install Racket
         uses: Bogdanp/setup-racket@v1.15
         with:
           architecture: arm64
           version: stable
           distribution: full
-      - name: Install crypto package (rivet/distribution dependency)
-        run: raco pkg install --auto --no-docs crypto
-      - name: Link Rivet
-        run: raco pkg install --auto --no-docs --link "$GITHUB_WORKSPACE/rivet/rivet" "$GITHUB_WORKSPACE/rivet/rivet-cli"
+      - name: Install Rivet (catalog)
+        run: raco pkg install --auto --no-docs rivet
       - uses: actions/download-artifact@v4
         with:
           path: dist
