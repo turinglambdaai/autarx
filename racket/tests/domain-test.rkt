@@ -63,11 +63,13 @@
   (define relevant
     (map object-change-absolute-path (impact-report-relevant-changes report)))
   (for ([p '("/Vehicle/Ecus/Display" "/Vehicle/Ecus/Legacy"
-             "/Vehicle/Clusters/SpareCan" "/Config/Diag")])
+             "/Vehicle/Clusters/SpareCan" "/Config/Diag/DiagGeneral")])
     (check-true (and (member p relevant) #t) p))
   (check-false (member "/SwCs/AdaptiveApp" relevant))
   (check-equal? (impact-report-relevant-count report) 4)
-  (check-equal? (impact-report-unrelated-count report) 1))
+  ;; the module and the modified container both surface as changes since
+  ;; containers became identifiables; only the container is relevant
+  (check-equal? (impact-report-unrelated-count report) 2))
 
 (test-case "Removed_objects_that_were_referenced_break_the_ecu"
   (define report (analyze-ecu "RadarFL"))
@@ -83,7 +85,7 @@
   (check-true
    (for/or ([f (in-list (impact-report-findings report))])
      (and (string=? (impact-finding-rule f) "ARX-IMP-REF-ADDED")
-          (string=? (impact-finding-object-path f) "/Config/Diag")
+          (string=? (impact-finding-object-path f) "/Config/Diag/DiagGeneral")
           (string-contains? (impact-finding-detail f) "/Vehicle/Ecus/RadarFL")))))
 
 (test-case "Communication_impact_counts_cluster_level_changes"
@@ -118,6 +120,32 @@
 ;; ---------------------------------------------------------------- comm
 
 (define comm-model (build-communication (build-workspace-index comm-dir)))
+(define cluster-ref-model
+  (build-communication
+   (build-workspace-index (fixture "ClusterRefDelivery"))))
+
+(test-case "Ecu_reaches_the_cluster_through_COMMUNICATION-CLUSTER-REF"
+  ;; the CAN/LIN/Ethernet connector shape in vendor system extracts
+  (check-equal? (length (communication-model-clusters cluster-ref-model)) 1)
+  (define cluster (car (communication-model-clusters cluster-ref-model)))
+  (check-equal? (cluster-projection-cluster-path cluster)
+                "/Vehicle/Clusters/PowertrainCan")
+  (check-equal? (cluster-projection-connected-ecus cluster)
+                '("/Vehicle/Ecus/EngMcu")))
+
+(define nm-model
+  (build-communication (build-workspace-index (fixture "NmDelivery"))))
+
+(test-case "Ecu_membership_recovered_through_the_nm_config"
+  ;; DaVinci-style extracts: no direct ECU<->cluster edge; the NM-CLUSTER
+  ;; holds the cluster ref and each NM-NODE a controller ref into the ECU.
+  ;; The two are paired by nested element-path prefix under the NM module.
+  (check-equal? (length (communication-model-clusters nm-model)) 1)
+  (define cluster (car (communication-model-clusters nm-model)))
+  (check-equal? (cluster-projection-cluster-path cluster)
+                "/Cluster/PowertrainCan")
+  (check-equal? (cluster-projection-connected-ecus cluster)
+                '("/ECU/EngMcu")))
 
 (test-case "Walks_the_full_chain_from_cluster_to_signals"
   (check-equal? (length (communication-model-clusters comm-model)) 1)
@@ -263,13 +291,13 @@
   (define added-path?
     (for/or ([r (in-list refs)])
       (and (eq? (reference-change-change-type r) 'added)
-           (string=? (reference-change-source-path r) "/Config/Diag")
+           (string=? (reference-change-source-path r) "/Config/Diag/DiagGeneral")
            (string=? (reference-change-target-path r) "/Vehicle/Ecus/LegacyNew"))))
   (check-true added-path?)
   (define removed-path?
     (for/or ([r (in-list refs)])
       (and (eq? (reference-change-change-type r) 'removed)
-           (string=? (reference-change-source-path r) "/Config/Diag")
+           (string=? (reference-change-source-path r) "/Config/Diag/DiagGeneral")
            (string=? (reference-change-target-path r) "/Vehicle/Ecus/Legacy"))))
   (check-true removed-path?)
   (delete-directory/files ws))

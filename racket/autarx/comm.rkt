@@ -39,6 +39,30 @@
   (define m (string-length suffix))
   (and (>= n m) (string=? (substring s (- n m)) suffix)))
 
+(define (path-prefix? s p)
+  (define m (string-length p))
+  (and (>= (string-length s) m) (string=? (substring s 0 m) p)))
+
+;; Longest indexed prefix of a nested controller path that is an ECU
+;; (/ECU/CGM/CT_BB -> /ECU/CGM), or #f when no ECU encloses the target.
+(define (owning-ecu objects-by-path target-path)
+  (define (parent-end pos)
+    ;; position of the segment boundary before pos (the leading '/' is
+    ;; never a boundary), or #f
+    (let loop ([i (sub1 pos)])
+      (cond [(<= i 0) #f]
+            [(char=? (string-ref target-path i) #\/) i]
+            [else (loop (sub1 i))])))
+  (let loop ([end (string-length target-path)])
+    (cond
+      [(<= end 1) #f]
+      [else
+       (define candidate (substring target-path 0 end))
+       (define o (hash-ref objects-by-path candidate #f))
+       (cond
+         [(and o (eq? (semantic-object-kind o) 'ecu)) candidate]
+         [else (loop (or (parent-end end) 0))])])))
+
 (define (build-communication index)
   (define objects-by-path (make-hash))
   (for ([o (in-list (workspace-index-objects index))])
@@ -57,15 +81,48 @@
           (hash-set! map key s)
           s)))
 
-  ;; ECU -> cluster/channel edges (connectors are nested under the ECU, so
-  ;; CHANNEL-REF is attributed to the ECU-INSTANCE)
+  ;; ECU -> cluster/channel edges. FlexRay connectors reference their
+  ;; channel directly (*CHANNEL-REF); CAN/LIN/Ethernet system extracts
+  ;; reference the cluster from the connector via COMMUNICATION-CLUSTER-REF.
+  ;; Both connector shapes are nested under the ECU-INSTANCE, so the
+  ;; references are attributed to the ECU object.
   (for ([r (in-list (workspace-index-references index))])
     (define source (hash-ref objects-by-path (arx-reference-source-path r) #f))
     (when (and source
                (eq? (semantic-object-kind source) 'ecu)
-               (ends-with? (arx-reference-kind r) "CHANNEL-REF"))
+               (or (ends-with? (arx-reference-kind r) "CHANNEL-REF")
+                   (ends-with? (arx-reference-kind r)
+                               "COMMUNICATION-CLUSTER-REF")))
       (hash-set! (connected connected-ecus (arx-reference-target-path r))
                  (arx-reference-source-path r) #t)))
+
+  ;; NM-config inference: vendor system extracts (DaVinci/PATAC shape) keep
+  ;; cluster membership in NM-CONFIG — the NM-CLUSTER carries the
+  ;; COMMUNICATION-CLUSTER-REF, each NM-NODE carries a CONTROLLER-REF into
+  ;; the owning ECU. Both attribute to the NM module (flat reference
+  ;; attribution), so cluster and node are paired by nested element-path
+  ;; prefix, and the controller target rides back to its owning ECU object.
+  (define nm-cluster-refs '())   ; (element-path cluster-target)
+  (for ([r (in-list (workspace-index-references index))])
+    (define source (hash-ref objects-by-path (arx-reference-source-path r) #f))
+    (when (and (ends-with? (arx-reference-kind r) "COMMUNICATION-CLUSTER-REF")
+               (or (not source)
+                   (not (eq? (semantic-object-kind source) 'ecu))))
+      (set! nm-cluster-refs
+            (cons (cons (arx-reference-source-element-path r)
+                        (arx-reference-target-path r))
+                  nm-cluster-refs))))
+  (unless (null? nm-cluster-refs)
+    (for ([r (in-list (workspace-index-references index))]
+          #:when (ends-with? (arx-reference-kind r) "CONTROLLER-REF"))
+      (define ecu-path
+        (owning-ecu objects-by-path (arx-reference-target-path r)))
+      (when ecu-path
+        (for ([entry (in-list nm-cluster-refs)]
+              #:when (path-prefix? (string-append (arx-reference-source-element-path r)
+                                                  "/")
+                                   (car entry)))
+          (hash-set! (connected connected-ecus (cdr entry)) ecu-path #t)))))
 
   ;; frame mappings: one object holding FRAME-REF + *PDU-REF pairs the two
   ;; endpoints; the mapping object itself stays anonymous

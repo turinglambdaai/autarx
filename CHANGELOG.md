@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-12
+
+Real-delivery hardening release: every fix below was driven by running the
+workbench against genuine OEM deliveries (hundreds of ARXML files, up to
+322 MB) for the first time.
+
+### Fixed
+
+- **ECUC container values are identifiables** — nested
+  `ECUC-CONTAINER-VALUE` elements are indexed with their absolute paths and
+  take over reference attribution, so the `VALUE-REF`s that point at them
+  resolve inside a single ECUC file. On a real 97 MB DaVinci ECUC this
+  turns 49,068 unresolved references into 21,374 (the remainder are
+  genuinely cross-file); the container count (45,186) matches the file's
+  XML exactly
+- **XSD revision numbers map to releases** — vendor files carrying
+  `AUTOSAR_00044.xsd`-style schema locations reported the raw revision;
+  known revisions now translate to the classic version (00043 → 4.3.0,
+  00044 → 4.3.1, 00047 → 4.4.0, 00048 → 4.5.0, 00049 → 4.6.0,
+  00050 → 4.7.0), unknown ones stay raw rather than guessing
+- **Constants classify** — `CONSTANT-SPECIFICATION` elements report as the
+  new `constant` semantic kind instead of `unknown` (539/539 classified on
+  a real 322 MB constants delivery)
+- **ECU membership recovered through NM config** — DaVinci-style system
+  extracts carry no direct ECU↔cluster edge: the NM-CLUSTER holds the
+  `COMMUNICATION-CLUSTER-REF` and each NM-NODE a controller ref into the
+  ECU. The communication projection pairs the two by nested element-path
+  prefix and rides the controller target back to its owning ECU, so real
+  clusters list their ECUs (verified: 5/5 clusters on a real extract)
+- `I-SIGNAL-I-GROUP` classifies as `signal` (the table carried a
+  misspelled `I-SIGNAL-GROUP` that never matched)
+
+### Changed
+
+- Semantic kinds are append-only: `ecuc-container` and `constant` join the
+  inventory, the CLI/JSON contracts and the GUI inventory rows
+
 ## [0.3.0] - 2026-10-12
 
 In-app update release: the macOS workbench now updates itself through

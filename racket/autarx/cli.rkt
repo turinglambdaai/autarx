@@ -323,7 +323,8 @@
   (out-ln "semantic inventory:")
   (define counts (workspace-summary-semantic-counts summary))
   (for ([kind '(system ecu communication-cluster frame pdu signal
-                        software-component port port-interface ecuc-module)])
+                        software-component port port-interface ecuc-module
+                        ecuc-container constant)])
     (define entry (assq kind counts))
     (out-ln "  " (pad-left-str (kind-text kind) 22)
             (pad-left-fmt6 (if entry (cdr entry) 0))))

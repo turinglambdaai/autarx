@@ -210,7 +210,11 @@
 
 ;; Walks everything below an identifiable: *REF children become references
 ;; attributed to the owning object; nested SHORT-NAMEs lengthen the
-;; attribution chain and add semantic counts.
+;; attribution chain and add semantic counts. Nested ECUC container values
+;; are identifiables in their own right (their absolute paths are the
+;; targets VALUE-REFs point at — real DaVinci/tresos ECUC files carry tens
+;; of thousands of them), so they become objects and take over as the
+;; reference owner.
 (define (visit-content! element owner-path nested-chain st)
   (for ([child (in-list (arxml-element-children element))])
     (cond
@@ -225,6 +229,23 @@
                                             #f)
                              l))
                      '())]
+      [(ecuc-container-value? child)
+       (define short-name (element-child-text child "SHORT-NAME"))
+       (when short-name
+         (define path (string-append owner-path nested-chain "/" short-name))
+         (hash-update! st 'objects
+                       (λ (l)
+                         (cons (semantic-object short-name
+                                                 (arxml-element-name child)
+                                                 'ecuc-container
+                                                 path
+                                                 (hash-ref st 'file)
+                                                 (content-hash child))
+                               l))
+                       '())
+         (hash-update! st 'named-count add1 0)
+         (hash-update! (hash-ref st 'kind-counts) 'ecuc-container add1 0)
+         (visit-content! child path "" st))]
       [else
        (define child-short-name (element-child-text child "SHORT-NAME"))
        (when child-short-name
@@ -237,6 +258,9 @@
                            (string-append nested-chain "/" child-short-name)
                            nested-chain)
                        st)])))
+
+(define (ecuc-container-value? element)
+  (string=? (arxml-element-name element) "ECUC-CONTAINER-VALUE"))
 
 (define (build-workspace-index path)
   (define full-path (simplify-path (path->complete-path path)))
@@ -462,7 +486,8 @@
 
   (define counts
     (for/list ([kind (in-list '(system ecu communication-cluster frame pdu signal
-                                       software-component port port-interface ecuc-module))])
+                                       software-component port port-interface ecuc-module
+                                       ecuc-container constant))])
       (define total
         (for/sum ([d (in-list documents)])
           (hash-ref (workspace-document-semantic-counts d) kind 0)))

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The vendor (DaVinci/PATAC) system-extract shape: the ECU-INSTANCE's
+     connectors reference only their own controllers, and cluster membership
+     lives in NM-CONFIG — the NM-CLUSTER carries the COMMUNICATION-CLUSTER-REF
+     while each CAN-NM-NODE carries a CONTROLLER-REF into the ECU. -->
+<AUTOSAR xmlns="http://autosar.org/schema/r4.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://autosar.org/schema/r4.0 AUTOSAR_4-3-0.xsd">
+  <AR-PACKAGES>
+    <AR-PACKAGE>
+      <SHORT-NAME>Cluster</SHORT-NAME>
+      <ELEMENTS>
+        <CAN-CLUSTER>
+          <SHORT-NAME>PowertrainCan</SHORT-NAME>
+        </CAN-CLUSTER>
+      </ELEMENTS>
+    </AR-PACKAGE>
+    <AR-PACKAGE>
+      <SHORT-NAME>ECU</SHORT-NAME>
+      <ELEMENTS>
+        <ECU-INSTANCE>
+          <SHORT-NAME>EngMcu</SHORT-NAME>
+          <COMM-CONTROLLERS>
+            <CAN-COMMUNICATION-CONTROLLER>
+              <SHORT-NAME>CT_EngMcu</SHORT-NAME>
+            </CAN-COMMUNICATION-CONTROLLER>
+          </COMM-CONTROLLERS>
+          <CONNECTORS>
+            <CAN-COMMUNICATION-CONNECTOR>
+              <SHORT-NAME>Conn_EngMcu</SHORT-NAME>
+              <COMM-CONTROLLER-REF DEST="CAN-COMMUNICATION-CONTROLLER">/ECU/EngMcu/CT_EngMcu</COMM-CONTROLLER-REF>
+            </CAN-COMMUNICATION-CONNECTOR>
+          </CONNECTORS>
+        </ECU-INSTANCE>
+      </ELEMENTS>
+    </AR-PACKAGE>
+    <AR-PACKAGE>
+      <SHORT-NAME>NM</SHORT-NAME>
+      <ELEMENTS>
+        <NM-CONFIG>
+          <SHORT-NAME>NmConfig</SHORT-NAME>
+          <NM-CLUSTERS>
+            <CAN-NM-CLUSTER>
+              <SHORT-NAME>PT_CAN</SHORT-NAME>
+              <COMMUNICATION-CLUSTER-REF DEST="CAN-CLUSTER">/Cluster/PowertrainCan</COMMUNICATION-CLUSTER-REF>
+              <NM-NODES>
+                <CAN-NM-NODE>
+                  <SHORT-NAME>EngMcu</SHORT-NAME>
+                  <CONTROLLER-REF DEST="CAN-COMMUNICATION-CONTROLLER">/ECU/EngMcu/CT_EngMcu</CONTROLLER-REF>
+                </CAN-NM-NODE>
+              </NM-NODES>
+            </CAN-NM-CLUSTER>
+          </NM-CLUSTERS>
+        </NM-CONFIG>
+      </ELEMENTS>
+    </AR-PACKAGE>
+  </AR-PACKAGES>
+</AUTOSAR>

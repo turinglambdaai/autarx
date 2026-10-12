@@ -112,8 +112,10 @@
 (test-case "Reads_reference_values"
   (define can (cadr minimal-modules))
   (define refs (ecuc-container-references (car (ecuc-module-containers can))))
-  (check-equal? (length refs) 1)
+  (check-equal? (length refs) 2)
   (check-equal? (ecuc-reference-value-value-ref (car refs))
+                "/Mcu/Mcu/McuGeneralConfiguration/McuModuleConfiguration")
+  (check-equal? (ecuc-reference-value-value-ref (cadr refs))
                 "/Mcu/Mcu/McuModuleConfiguration"))
 
 (test-case "Computes_totals"
@@ -138,6 +140,9 @@
     ("SENDER-RECEIVER-INTERFACE" port-interface)
     ("CLIENT-SERVER-INTERFACE" port-interface)
     ("ECUC-MODULE-CONFIGURATION-VALUES" ecuc-module)
+    ("ECUC-CONTAINER-VALUE" ecuc-container)
+    ("CONSTANT-SPECIFICATION" constant)
+    ("I-SIGNAL-I-GROUP" signal)
     ("PDU-TO-FRAME-MAPPING" unknown)
     ("ISIGNAL-TO-I-PDU-MAPPING" unknown)
     ("SOME-FUTURE-TYPE" unknown)))
@@ -218,13 +223,21 @@
                                (resolution-object (resolve-object idx "/Dup/DupEcu")))
                               "dup-a.arxml")))
 
-(test-case "Single_ecuc_file_indexes_modules_but_no_definition_refs"
+(test-case "Single_ecuc_file_indexes_modules_and_container_values"
   (define idx (build-workspace-index minimal))
-  (check-equal? (length (workspace-index-objects idx)) 2)
+  ;; two modules + three nested ECUC-CONTAINER-VALUEs — containers are
+  ;; identifiables since 0.4.0 (their paths are what VALUE-REFs target)
+  (check-equal? (length (workspace-index-objects idx)) 5)
+  (define container
+    (resolve-object idx "/Mcu/Mcu/McuGeneralConfiguration/McuModuleConfiguration"))
+  (check-eq? (resolution-status container) 'found)
+  (check-eq? (semantic-object-kind (resolution-object container)) 'ecuc-container)
   (define refs (workspace-index-references idx))
-  (check-equal? (length refs) 1)
-  (check-equal? (arx-reference-kind (car refs)) "VALUE-REF")
-  (check-false (arx-reference-resolved (car refs))))
+  (check-equal? (length refs) 2)
+  (check-true (andmap (λ (r) (string=? (arx-reference-kind r) "VALUE-REF")) refs))
+  ;; the container-path ref now resolves in-file; the stub path targeting a
+  ;; non-existent intermediate container stays unresolved
+  (check-equal? (length (filter arx-reference-resolved refs)) 1))
 
 ;; ---------------------------------------------------------------- refs
 
@@ -318,7 +331,10 @@
 (test-case "Release_parser_handles_known_patterns"
   (check-equal? (derive-autosar-release "AUTOSAR_4-3-0.xsd") "4.3.0")
   (check-equal? (derive-autosar-release "AUTOSAR_R24-11.xsd") "R24-11")
-  (check-equal? (derive-autosar-release "AUTOSAR_00050.xsd") "00050")
+  (check-equal? (derive-autosar-release "AUTOSAR_00050.xsd") "4.7.0")
+  (check-equal? (derive-autosar-release "AUTOSAR_00044.xsd") "4.3.1")
+  ;; unknown XSD revisions stay raw rather than guessing
+  (check-equal? (derive-autosar-release "AUTOSAR_00099.xsd") "00099")
   (check-false (derive-autosar-release "vendor-specific.xsd"))
   (check-false (derive-autosar-release #f)))
 
@@ -447,9 +463,9 @@
            (string=? (reference-change-target-path r) target)
            (or (not kind) (string=? (reference-change-kind r) kind)))))
   (check-true (has? 'removed "/Vehicle/Ecus/Legacy" "/Vehicle/Clusters/SpareCan"))
-  (check-true (has? 'removed "/Config/Diag" "/Vehicle/Ecus/Legacy" "VALUE-REF"))
+  (check-true (has? 'removed "/Config/Diag/DiagGeneral" "/Vehicle/Ecus/Legacy" "VALUE-REF"))
   (check-true (has? 'added "/Vehicle/Ecus/Display" "/Vehicle/Clusters/VehicleCan"))
-  (check-true (has? 'added "/Config/Diag" "/Vehicle/Ecus/RadarFL" "VALUE-REF")))
+  (check-true (has? 'added "/Config/Diag/DiagGeneral" "/Vehicle/Ecus/RadarFL" "VALUE-REF")))
 
 (test-case "Without_detail_modified_objects_carry_no_property_explanation"
   (define d (compare-workspaces (build-workspace-index diff-before)

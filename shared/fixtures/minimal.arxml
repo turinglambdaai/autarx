@@ -59,6 +59,10 @@
               <REFERENCE-VALUES>
                 <ECUC-REFERENCE-VALUE>
                   <DEFINITION-REF DEST="ECUC-REFERENCE-DEF">/AURIX2G/Can/CanGeneralConfiguration/CanFilterRef</DEFINITION-REF>
+                  <VALUE-REF DEST="IDENTIFIABLE">/Mcu/Mcu/McuGeneralConfiguration/McuModuleConfiguration</VALUE-REF>
+                </ECUC-REFERENCE-VALUE>
+                <ECUC-REFERENCE-VALUE>
+                  <DEFINITION-REF DEST="ECUC-REFERENCE-DEF">/AURIX2G/Can/CanGeneralConfiguration/CanMissingRef</DEFINITION-REF>
                   <VALUE-REF DEST="IDENTIFIABLE">/Mcu/Mcu/McuModuleConfiguration</VALUE-REF>
                 </ECUC-REFERENCE-VALUE>
               </REFERENCE-VALUES>

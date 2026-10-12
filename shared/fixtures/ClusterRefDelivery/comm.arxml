@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The CAN/LIN/Ethernet connector shape seen in vendor system extracts:
+     the ECU's connector references the cluster via COMMUNICATION-CLUSTER-REF
+     (FlexRay uses *CHANNEL-REF instead — covered by the OemDelivery fixture). -->
+<AUTOSAR xmlns="http://autosar.org/schema/r4.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://autosar.org/schema/r4.0 AUTOSAR_4-3-0.xsd">
+  <AR-PACKAGES>
+    <AR-PACKAGE>
+      <SHORT-NAME>Vehicle</SHORT-NAME>
+      <AR-PACKAGES>
+        <AR-PACKAGE>
+          <SHORT-NAME>Clusters</SHORT-NAME>
+          <ELEMENTS>
+            <CAN-CLUSTER>
+              <SHORT-NAME>PowertrainCan</SHORT-NAME>
+            </CAN-CLUSTER>
+          </ELEMENTS>
+        </AR-PACKAGE>
+        <AR-PACKAGE>
+          <SHORT-NAME>Ecus</SHORT-NAME>
+          <ELEMENTS>
+            <ECU-INSTANCE>
+              <SHORT-NAME>EngMcu</SHORT-NAME>
+              <CONNECTORS>
+                <CAN-COMMUNICATION-CONNECTOR>
+                  <SHORT-NAME>Conn_EngMcu</SHORT-NAME>
+                  <COMMUNICATION-CLUSTER-REF DEST="CAN-CLUSTER">/Vehicle/Clusters/PowertrainCan</COMMUNICATION-CLUSTER-REF>
+                </CAN-COMMUNICATION-CONNECTOR>
+              </CONNECTORS>
+            </ECU-INSTANCE>
+          </ELEMENTS>
+        </AR-PACKAGE>
+      </AR-PACKAGES>
+    </AR-PACKAGE>
+  </AR-PACKAGES>
+</AUTOSAR>

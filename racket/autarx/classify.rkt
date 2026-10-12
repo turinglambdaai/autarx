@@ -13,7 +13,8 @@
 
 (define semantic-kinds
   '(unknown system ecu communication-cluster frame pdu signal
-            software-component port port-interface ecuc-module))
+            software-component port port-interface ecuc-module
+            ecuc-container constant))
 
 (define (semantic-kind? v) (memq v semantic-kinds) #t)
 
@@ -30,10 +31,13 @@
          ("FLEXRAY-FRAME" . frame)
          ("I-SIGNAL" . signal)
          ("I-SIGNAL-GROUP" . signal)
+         ("I-SIGNAL-I-GROUP" . signal)
          ("SYSTEM-SIGNAL" . signal)
          ("APPLICATION-SW-COMPONENT-TYPE" . software-component)
          ("COMPOSITION-SW-COMPONENT-TYPE" . software-component)
-         ("ECUC-MODULE-CONFIGURATION-VALUES" . ecuc-module)))
+         ("ECUC-MODULE-CONFIGURATION-VALUES" . ecuc-module)
+         ("ECUC-CONTAINER-VALUE" . ecuc-container)
+         ("CONSTANT-SPECIFICATION" . constant)))
 
 (define (string-ends-with? s suffix)
   (define n (string-length s))
@@ -62,7 +66,9 @@
          (software-component . "softwareComponent")
          (port . "port")
          (port-interface . "portInterface")
-         (ecuc-module . "ecucModule")))
+         (ecuc-module . "ecucModule")
+         (ecuc-container . "ecucContainer")
+         (constant . "constant")))
 
 ;; Human-readable inventory labels (inspect text output), matching KindText.
 (define kind->text
@@ -76,4 +82,6 @@
          (port . "port")
          (port-interface . "port-interface")
          (ecuc-module . "ecuc-module")
+         (ecuc-container . "ecuc-container")
+         (constant . "constant")
          (unknown . "unknown")))
