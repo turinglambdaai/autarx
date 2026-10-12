@@ -71,7 +71,7 @@ struct WorkspaceSummaryView: View {
         .navigationTitle("Workspace")
     }
 
-    private func summaryRows(_ s: WorkspaceSummary) -> [(String, String)] {
+    private func summaryRows(_ s: RivetTypes.WorkspaceSummary) -> [(String, String)] {
         [
             ("Source", s.source_path),
             ("Files", "\(s.file_count)"),
@@ -91,8 +91,8 @@ struct ObjectListView: View {
     @Environment(AppModel.self) private var model
     @State private var filterText = ""
     @State private var selectedPath: String?
-    @State private var selectedObject: SemanticObjectDto?
-    @State private var detail: [ReferenceDto] = []
+    @State private var selectedObject: RivetTypes.SemanticObjectDto?
+    @State private var detail: [RivetTypes.ReferenceDto] = []
 
     var body: some View {
         VStack(spacing: 0) {
@@ -130,7 +130,7 @@ struct ObjectListView: View {
 }
 
 struct ObjectRow: View {
-    let object: SemanticObjectDto
+    let object: RivetTypes.SemanticObjectDto
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -157,8 +157,8 @@ struct ObjectRow: View {
 }
 
 struct RefInspector: View {
-    let object: SemanticObjectDto?
-    let refs: [ReferenceDto]
+    let object: RivetTypes.SemanticObjectDto?
+    let refs: [RivetTypes.ReferenceDto]
 
     var body: some View {
         List {
@@ -192,8 +192,8 @@ struct RefInspector: View {
 
 struct EcuListView: View {
     @Environment(AppModel.self) private var model
-    @State private var selectedObject: SemanticObjectDto?
-    @State private var refs: [ReferenceDto] = []
+    @State private var selectedObject: RivetTypes.SemanticObjectDto?
+    @State private var refs: [RivetTypes.ReferenceDto] = []
 
     var body: some View {
         List(model.ecus, id: \.absolute_path) { ecu in

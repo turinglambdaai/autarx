@@ -14,7 +14,16 @@ struct AutarxApp: App {
                 .environment(model)
                 .frame(minWidth: 860, idealWidth: 1180,
                        minHeight: 560, idealHeight: 780)
-                .task { model.start() }
+                .task {
+                    model.start()
+                    model.autoCheckForUpdates()
+                }
+                .sheet(isPresented: Binding(
+                    get: { model.updatePanelVisible },
+                    set: { model.updatePanelVisible = $0 })) {
+                    UpdatePanelView()
+                        .environment(model)
+                }
         }
         .defaultSize(width: 1180, height: 820)
         .commands {
@@ -34,6 +43,10 @@ struct AutarxCommands: Commands {
                 .disabled(model.api == nil)
             Button("Close Workspace") { Task { await model.closeWorkspace() } }
                 .disabled(!model.isConnected)
+        }
+        CommandGroup(after: .newItem) {
+            Button("Check for Updates…") { model.checkForUpdates() }
+                .keyboardShortcut("u", modifiers: [.command])
         }
     }
 

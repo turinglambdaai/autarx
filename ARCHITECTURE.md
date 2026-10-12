@@ -162,17 +162,33 @@ semantically equivalent, deliberately not byte-faithful.
 
 ## Self-update
 
-the updater (`update.rkt` + the `update` command in `cli.rkt`) implements
-the update channel for the CLI. The release pipeline publishes a
-`latest.json` asset with every release (version, per-platform download URL,
-SHA-256); the CLI parses it (URL or local file — local files keep CI gated
-without network), checks versions, downloads, and verifies the checksum
-BEFORE touching anything, then swaps files in place: current files move to
-`<name>.autarx-update.old` (allowed while the executable runs on Windows),
-stale backups are cleaned on the next update. The GUI has no updater — new
-workbench releases are installed manually from the release DMG. Unhandled
-exceptions write a local crash log under `<TEMP>/autarx/crashes/` and exit
-3 — nothing is sent anywhere.
+Two deliverables, two update channels (the contract is
+`shared/spec/UPDATE.md`):
+
+**Workbench (macOS).** `UpdateService.swift` fetches the signed workbench
+feed `update-app-manifest.json` — the family wrapper format
+(rivet/distribution): base64 inner manifest + Ed25519 signature over its
+exact bytes, verified with CryptoKit against the embedded raw key. The
+artifact (a portable app zip) is sha256-checked, unpacked, its bundle
+version compared to the manifest, then the running bundle swaps atomically
+(`.old` copy kept until relaunch) and the app relaunches. A silent check
+runs shortly after launch, throttled to one attempt per 4 hours
+(UserDefaults); the menu entry "Check for Updates…" (⌘U) bypasses the
+throttle. Only copies under `/Applications` or `~/Applications` can
+self-update. The release publish job signs the manifest with the
+`UPDATE_ED25519_PRIVATE_KEY_B64` secret.
+
+**CLI.** the updater (`update.rkt` + the `update` command in `cli.rkt`)
+implements the checksum channel. The release pipeline publishes
+`update-manifest.json` (with a `latest.json` alias) every release (version,
+per-platform download URL, SHA-256); the CLI parses it (URL or local file —
+local files keep CI gated without network), checks versions, downloads, and
+verifies the checksum BEFORE touching anything, then swaps files in place:
+current files move to `<name>.autarx-update.old` (allowed while the
+executable runs on Windows), stale backups are cleaned on the next update.
+
+Unhandled exceptions write a local crash log under `<TEMP>/autarx/crashes/`
+and exit 3 — nothing is sent anywhere.
 
 ## AI layer (MCP)
 

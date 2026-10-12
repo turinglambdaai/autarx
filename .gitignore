@@ -17,3 +17,7 @@ TestResults/
 Thumbs.db
 .rivet/
 compiled/
+
+# update signing keys (scripts/update-keys.sh)
+.keys/
+dist/

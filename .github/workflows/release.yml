@@ -46,7 +46,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: turinglambdaai/rivet
-          ref: 2fcdd091ddd7fd157fa934ac6053cdf4f9ab6100  # last generator without the RivetTypes namespace (breaks this host)
+          ref: 53487b31a24b4bd0c747235ee204e540a9410cdf  # generator with RivetTypes namespace (host migrated)
           path: rivet
       - name: Install Racket
         uses: Bogdanp/setup-racket@v1.15
@@ -78,10 +78,21 @@ jobs:
           hdiutil attach "$dmg" -mountpoint /tmp/autarx-dmg-verify -readonly
           test -d /tmp/autarx-dmg-verify/Autarx.app
           hdiutil detach /tmp/autarx-dmg-verify
+      - name: Portable app zip (workbench update payload)
+        run: |
+          # Canonical bundle name inside the archive: the workbench updater
+          # unpacks and swaps Autarx.app by exact path (UpdateService.swift).
+          appstage="$(mktemp -d)/Autarx.app"
+          cp -R dist/autarx.app "$appstage"
+          ditto -c -k --sequesterRsrc --keepParent "$appstage" \
+            "autarx-${GITHUB_REF_NAME#v}-macos-${{ matrix.arch }}-app.zip"
+          unzip -l "autarx-${GITHUB_REF_NAME#v}-macos-${{ matrix.arch }}-app.zip" | head -4
       - uses: actions/upload-artifact@v4
         with:
           name: macos-${{ matrix.arch }}
-          path: autarx-*-macos-${{ matrix.arch }}.dmg
+          path: |
+            autarx-*-macos-${{ matrix.arch }}.dmg
+            autarx-*-macos-${{ matrix.arch }}-app.zip
           if-no-files-found: error
 
   cli:
@@ -113,7 +124,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: turinglambdaai/rivet
-          ref: 2fcdd091ddd7fd157fa934ac6053cdf4f9ab6100  # last generator without the RivetTypes namespace (breaks this host)
+          ref: 53487b31a24b4bd0c747235ee204e540a9410cdf  # generator with RivetTypes namespace (host migrated)
           path: rivet
       - name: Install Racket
         uses: Bogdanp/setup-racket@v1.15
@@ -144,12 +155,22 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Checkout Rivet
+        uses: actions/checkout@v4
+        with:
+          repository: turinglambdaai/rivet
+          ref: 53487b31a24b4bd0c747235ee204e540a9410cdf  # release generator pin, matches the build legs
+          path: rivet
       - name: Install Racket
         uses: Bogdanp/setup-racket@v1.15
         with:
           architecture: arm64
           version: stable
           distribution: full
+      - name: Install crypto package (rivet/distribution dependency)
+        run: raco pkg install --auto --no-docs crypto
+      - name: Link Rivet
+        run: raco pkg install --auto --no-docs --link "$GITHUB_WORKSPACE/rivet/rivet" "$GITHUB_WORKSPACE/rivet/rivet-cli"
       - uses: actions/download-artifact@v4
         with:
           path: dist
@@ -175,6 +196,18 @@ jobs:
           # byte-identical alias: pre-0.2.0 CLI builds poll latest.json —
           # keep them updating until the field has moved on
           cp dist/update-manifest.json dist/latest.json
+      - name: Sign the workbench update manifest (update-app-manifest.json)
+        env:
+          UPDATE_ED25519_PRIVATE_KEY_B64: ${{ secrets.UPDATE_ED25519_PRIVATE_KEY_B64 }}
+        run: |
+          if [ -n "$UPDATE_ED25519_PRIVATE_KEY_B64" ]; then
+            keyder="$(mktemp /tmp/autarx-key-XXXXXX)"
+            printf '%s' "$UPDATE_ED25519_PRIVATE_KEY_B64" | base64 -d > "$keyder"
+            bash scripts/make-update-manifest.sh "${{ github.ref_name }}" dist "$keyder"
+            rm -f "$keyder"
+          else
+            echo "::warning::UPDATE_ED25519_PRIVATE_KEY_B64 is not set — publishing without the workbench update manifest; in-app updates will report 'release has no update manifest'"
+          fi
       - name: Ensure SHA256SUMS
         run: |
           cd dist
@@ -186,13 +219,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          ver="${GITHUB_REF_NAME#v}"
+          notes="Autarx ${ver}. The macOS workbench (macOS 14+, Apple silicon and Intel) ships as autarx-<version>-macos-<arch>.dmg for human install and as autarx-<version>-macos-<arch>-app.zip — the payload the workbench's built-in updater consumes (Ed25519-signed feed, in-app update with relaunch). The CLI ships as self-contained zips — autarx-<version>-macos-arm64.zip, -macos-x64.zip, -linux-x64.zip, -linux-arm64.zip, -windows-x64.zip — and updates itself through a checksum-verified feed (\`autarx update\`). Every asset carries a .sha256 sidecar. Windows and Linux GUI hosts are in development. Ad-hoc signed — on first launch, right-click the app and choose Open."
           if gh release view "${{ github.ref_name }}" -R turinglambdaai/autarx >/dev/null 2>&1; then
             gh release upload "${{ github.ref_name }}" dist/* --clobber -R turinglambdaai/autarx
           else
             gh release create "${{ github.ref_name }}" dist/* \
               -R turinglambdaai/autarx \
               --title "Autarx ${{ github.ref_name }}" \
-              --notes "0.2.0 packaging-parity release. Assets follow the autarx-<version>-<os>-<arch> naming: the macOS workbench (macOS 14+, Apple silicon and Intel) ships as autarx-*-macos-*.dmg; the CLI ships as self-contained zips — autarx-*-macos-arm64.zip, autarx-*-macos-x64.zip, autarx-*-linux-x64.zip, autarx-*-linux-arm64.zip, autarx-*-windows-x64.zip — and updates itself through a checksum-verified feed (\`autarx update\`). Every asset carries a .sha256 sidecar. Windows and Linux GUI hosts are in development. Ad-hoc signed — on first launch, right-click the app and choose Open."
+              --notes "$notes"
           fi
       - name: Attest build provenance
         uses: actions/attest-build-provenance@v1

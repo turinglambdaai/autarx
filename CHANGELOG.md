@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-12
+
+In-app update release: the macOS workbench now updates itself through
+the family's signed-feed updater, and the host moves to the current
+Rivet generator line.
+
+### Added
+
+- Workbench in-app updater (`shared/spec/UPDATE.md`): a silent check
+  shortly after launch (throttled to one attempt per 4 hours) plus a
+  manual `Check for Updates…` (⌘U) menu entry. The offer panel
+  downloads a portable app zip with progress, verifies the Ed25519
+  manifest signature, the artifact checksum and the unpacked bundle
+  version, swaps the bundle in place and relaunches — only copies under
+  `/Applications` (or `~/Applications`) can self-update
+- Signed workbench feed `update-app-manifest.json`: the release publish
+  job generates and signs it (`rivet/distribution` wrapper format, key
+  id `autarx-2026-10`, secret `UPDATE_ED25519_PRIVATE_KEY_B64`) and
+  re-verifies the signature before the release ships; a missing secret
+  publishes a warning and no manifest rather than an unsigned one
+- Portable app zips `autarx-<version>-macos-<arch>-app.zip` — the
+  updater's payload, beside the human-installer DMGs, with the usual
+  `.sha256` sidecars
+
+### Changed
+
+- Rivet pin 2fcdd09 → 53487b3: generated Swift DTOs moved into the
+  `RivetTypes` namespace (upstream #174); the host is migrated and back
+  on the current generator line. The CLI feed (`update-manifest.json`
+  + `latest.json` alias) is untouched — CLI builds up to 0.2.0 keep
+  updating through their checksum channel
+
 ## [0.2.0] - 2026-10-11
 
 Packaging-parity release: the asset set closes every gap that does not

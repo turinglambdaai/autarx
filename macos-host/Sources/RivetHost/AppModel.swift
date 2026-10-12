@@ -16,19 +16,150 @@ final class AppModel: @unchecked Sendable {
 
     var statusMessage = "Ready"
     var progressLabel: String?
-    var summary: WorkspaceSummary?
-    var objects: [SemanticObjectDto] = []
-    var ecus: [SemanticObjectDto] = []
-    var unresolved: [ReferenceDto] = []
-    var comm: CommunicationDto?
+    var summary: RivetTypes.WorkspaceSummary?
+    var objects: [RivetTypes.SemanticObjectDto] = []
+    var ecus: [RivetTypes.SemanticObjectDto] = []
+    var unresolved: [RivetTypes.ReferenceDto] = []
+    var comm: RivetTypes.CommunicationDto?
     var searchText = ""
     var selectedSection: Section = .workspace
+
+    // MARK: - Updates (shared/spec/UPDATE.md)
+
+    enum UpdatePhase: Equatable {
+        case idle, checking, available, downloading, upToDate, failed
+    }
+
+    var updatePhase: UpdatePhase = .idle
+    var updateProgressPercent = 0
+    var updateAvailableVersion = ""
+    var updateErrorMessage = ""
+    var updatePanelVisible = false
+
+    private var pendingUpdateManifest: UpdateService.Manifest?
+
+    /// Silent launch checks throttle to one attempt per 4 h (UserDefaults;
+    /// unix epoch seconds — a GUI-only concern, no backend round-trip).
+    static let updateThrottleInterval: TimeInterval = 4 * 60 * 60
+    private static let lastUpdateCheckKey = "last-update-check"
 
     private(set) var api: RivetAPI?
     private var backend: EmbeddedRacketBackend?
     private var started = false
 
     var isConnected: Bool { summary != nil }
+
+    /// Manual entry point: menu "Check for Updates…". The panel reports
+    /// every outcome (up to date, offer, failure, dev copy).
+    @MainActor
+    func checkForUpdates() {
+        guard updatePhase != .downloading else { return }
+        updatePanelVisible = true
+        updatePhase = .checking
+        Task { await runUpdateCheck(present: true) }
+    }
+
+    /// Silent launch check: once shortly after startup, throttled to one
+    /// attempt per 4 h; failures never nag.
+    func autoCheckForUpdates() {
+        Task {
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            await runUpdateCheck(present: false)
+        }
+    }
+
+    @MainActor
+    private func runUpdateCheck(present: Bool) async {
+        guard updatePhase != .downloading else { return }
+        if !present {
+            guard Self.updateThrottleElapsed() else { return }
+        }
+        do {
+            // Constructed per call: the service only carries a URLSession,
+            // and a @MainActor class instance must be built on the actor.
+            let result = try await UpdateService().check()
+            Self.recordUpdateCheck()
+            switch result {
+            case .available(let manifest):
+                pendingUpdateManifest = manifest
+                updateAvailableVersion = manifest.version
+                updatePhase = .available
+                updatePanelVisible = true
+            case .upToDate:
+                updatePhase = present ? .upToDate : .idle
+            }
+        } catch {
+            Self.recordUpdateCheck()
+            guard present else {
+                updatePhase = .idle
+                return
+            }
+            if case UpdateService.UpdateError.notInstalled = error {
+                updateErrorMessage = "This copy is not an installed app — download the DMG from the releases page."
+            } else {
+                updateErrorMessage = "Update check failed: \(Self.cleanError(error))"
+            }
+            updatePhase = .failed
+            updatePanelVisible = true
+        }
+    }
+
+    private static func updateThrottleElapsed() -> Bool {
+        let last = UserDefaults.standard.double(forKey: lastUpdateCheckKey)
+        return Date().timeIntervalSince1970 - last >= updateThrottleInterval
+    }
+
+    private static func recordUpdateCheck() {
+        UserDefaults.standard.set(
+            Date().timeIntervalSince1970, forKey: lastUpdateCheckKey)
+    }
+
+    /// Offer accepted: download (progress in the panel) → sha256 + Ed25519
+    /// already verified → in-place swap → relaunch. UpdateService terminates
+    /// the app on success; any earlier throw leaves this version running.
+    @MainActor
+    func installUpdate() {
+        guard updatePhase == .available, let manifest = pendingUpdateManifest else { return }
+        updatePhase = .downloading
+        updateProgressPercent = 0
+        updateErrorMessage = ""
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                try await UpdateService().downloadAndInstall(manifest) { [weak self] percent in
+                    // The download runs off the main actor; hop the write
+                    // back so SwiftUI sees it.
+                    Task { @MainActor [weak self] in
+                        self?.updateProgressPercent = percent
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    self.updateErrorMessage = "Update failed: \(Self.cleanError(error))"
+                    self.updatePhase = .failed
+                }
+            }
+        }
+    }
+
+    @MainActor
+    func dismissUpdatePanel() {
+        updatePanelVisible = false
+        if updatePhase != .downloading {
+            updatePhase = .idle
+            updateErrorMessage = ""
+            pendingUpdateManifest = nil
+        }
+    }
+
+    static func cleanError(_ error: Error) -> String {
+        let text = error.localizedDescription
+        // RVT1 failures arrive as "...error: <message>"; keep the message.
+        if let range = text.range(of: "error: ") {
+            return String(text[range.upperBound...])
+        }
+        return text
+    }
 
     func start() {
         guard !started else { return }
@@ -108,13 +239,13 @@ final class AppModel: @unchecked Sendable {
     // MARK: - Queries used by detail views
 
     @MainActor
-    func refs(for path: String) async -> [ReferenceDto] {
+    func refs(for path: String) async -> [RivetTypes.ReferenceDto] {
         guard let api else { return [] }
         return (try? await api.get_refs(name_or_path: path)) ?? []
     }
 
     @MainActor
-    func trace(from path: String, depth: Int64) async -> TraceDto? {
+    func trace(from path: String, depth: Int64) async -> RivetTypes.TraceDto? {
         guard let api else { return nil }
         return try? await api.trace_from(name_or_path: path, depth: depth)
     }
