@@ -1,22 +1,26 @@
-import AppKit
-import CryptoKit
 import Foundation
+import RivetUpdate
 
-/// Online update service for the macOS workbench (shared/spec/UPDATE.md),
-/// ported from brainfuel/taskly's UpdateService — the family feed/install
-/// split: feed = the single self-contained signed manifest wrapper
-/// (update-app-manifest.json — schema + base64 payload + Ed25519 signature
-/// block; the CLI's checksum feed update-manifest.json is a separate file);
-/// install = zip → sha256 → ditto → atomic in-place swap of the running
-/// bundle.
+/// Online update service for the macOS workbench (shared/spec/UPDATE.md) —
+/// a thin product adapter over rivet's `RivetUpdate` module (the family's
+/// shared host-side update client since rivet 0.8.1, the taskly ba3a54e
+/// pattern): this file only contributes the product facts (feed, signing
+/// key, key id, bundle name) and the error surface. Signed-manifest
+/// verification, the bounded delegate-driven download, size/SHA-256
+/// enforcement, the ditto unpack + version confirmation, the atomic swap
+/// with rollback, and the sheet-safe quit/relaunch handoff all live in the
+/// library now (the hand-rolled CryptoKit/bash client is retired).
 ///
 /// Only a copy under /Applications (or ~/Applications) can self-update —
 /// debug builds and random folders get the "not installed" answer.
 @MainActor
 public final class UpdateService {
     /// Ed25519 public key (base64, raw 32 bytes) — pair of the
-    /// UPDATE_ED25519_PRIVATE_KEY_B64 GitHub secret that signs release
-    /// manifests (generate: scripts/update-keys.sh, key id autarx-2026-10).
+    /// UPDATE_ED25519_PRIVATE_KEY_B64 GitHub secret that signs BOTH release
+    /// feeds: this workbench wrapper and the CLI channel's
+    /// update-manifest.json, which the Racket updater authenticates with
+    /// the same key in SubjectPublicKeyInfo form (racket/autarx/update.rkt).
+    /// Generate: scripts/update-keys.sh.
     nonisolated public static let publicKeyBase64 = "Ijm2Iqrres1BbLnx5DQCvZtbbKb4jBKRpUbGSQ9FWxM="
 
     /// The manifest must carry this key id — rotation ships a build that
@@ -49,161 +53,79 @@ public final class UpdateService {
         }
     }
 
-    /// The signed wrapper: the inner manifest travels base64-encoded so the
-    /// Ed25519 signature covers the exact bytes every client verifies
-    /// (rivet/distribution's signed-wrapper format).
-    struct SignedWrapper: Decodable {
-        struct SignatureBlock: Decodable {
-            let algorithm: String
-            let keyId: String
-            let value: String
-        }
-        let schema: Int
-        let payload: String
-        let signature: SignatureBlock
+    public typealias Manifest = RivetUpdateManifest
+
+    public enum CheckResult {
+        case upToDate
+        case available(Manifest)
     }
 
-    public struct Manifest: Decodable, Sendable {
-        public struct Artifact: Decodable, Sendable {
-            let platform: String
-            let architecture: String
-            let url: URL
-            let sha256: String
-            let size: Int
-        }
-        let version: String
-        let artifacts: [Artifact]
-
-        /// The release feed carries one artifact per platform × architecture;
-        /// each built host targets exactly one architecture, so the match is
-        /// compile-time ("x64" on Intel builds, "arm64" on Apple silicon).
-        nonisolated static let hostArchitecture: String = {
-            #if arch(x86_64)
-            return "x64"
-            #elseif arch(arm64)
-            return "arm64"
-            #else
-            #error("unsupported macOS architecture")
-            #endif
-        }()
-
-        func artifact(forPlatform platform: String) -> Artifact? {
-            artifacts.first { $0.platform == platform
-                && $0.architecture == Self.hostArchitecture }
-        }
-    }
-
-    /// Injectable only for tests (feed/keys/bundle overrides); production
-    /// callers use the defaults.
-    private var session: URLSession
-    private let feedURL: URL
-    private let injectedBundleURL: URL?
-    private let injectedCurrentVersion: String?
-    nonisolated private let injectedKeyBase64: String?
+    /// nil only when the (constant) product configuration failed the
+    /// library's fail-closed validation — surfaced as badPublicKey.
+    private let service: RivetUpdateService?
 
     init(feedURL: URL? = nil, bundleURL: URL? = nil,
-         currentVersion: String? = nil,
-         sessionConfiguration: URLSessionConfiguration? = nil,
-         keyOverride: String? = nil) {
-        let config = sessionConfiguration ?? URLSessionConfiguration.ephemeral
-        config.timeoutIntervalForRequest = 60
-        config.timeoutIntervalForResource = 600
-        self.session = URLSession(configuration: config)
-        self.feedURL = feedURL ?? Self.manifestURL
-        self.injectedBundleURL = bundleURL
-        self.injectedCurrentVersion = currentVersion
-        self.injectedKeyBase64 = keyOverride
+                currentVersion: String? = nil,
+                sessionConfiguration: URLSessionConfiguration? = nil,
+                keyOverride: String? = nil) {
+        let configuration = RivetUpdateConfiguration(
+            feedURL: feedURL ?? Self.manifestURL,
+            publicKeyBase64: keyOverride ?? Self.publicKeyBase64,
+            keyID: Self.expectedKeyID,
+            bundleName: "Autarx.app")
+        self.service = try? RivetUpdateService(
+            configuration: configuration,
+            bundlePath: bundleURL?.path,
+            currentVersion: currentVersion,
+            sessionConfiguration: sessionConfiguration)
+    }
+
+    /// Translates library errors into this product's error surface
+    /// (English-only strings, matching the workbench's single-language UI).
+    nonisolated private static func map(_ error: RivetUpdateError) -> UpdateError {
+        switch error {
+        case .notInstalled: return .notInstalled
+        case .badPublicKey: return .badPublicKey
+        case .invalidConfiguration: return .badPublicKey
+        case .manifestMissing: return .manifestMissing
+        case .signatureInvalid: return .signatureInvalid
+        case .checksumMismatch: return .checksumMismatch
+        case .sizeMismatch: return .checksumMismatch
+        case .versionMismatch(let expected, let got):
+            return .versionMismatch(expected: expected, got: got)
+        case .network(let message): return .network(message)
+        }
+    }
+
+    /// Removes swap work dirs older than 30 minutes — the swap script
+    /// cannot reliably delete its own directory while bash is still
+    /// reading it, so a later launch sweeps the leftovers.
+    nonisolated public static func sweepStaleWorkDirs() {
+        RivetUpdateService.cleanupStaleWorkDirectories(olderThan: 30 * 60)
     }
 
     // MARK: - Environment
 
     /// The installed bundle this copy can update in place, or nil for
     /// development copies (not under /Applications or ~/Applications).
-    public var installedBundleURL: URL? {
-        if let injectedBundleURL { return injectedBundleURL }
-        let path = Bundle.main.bundlePath
-        guard path.hasSuffix(".app"), path.hasPrefix("/Applications/")
-            || path.hasPrefix("/Users/") && path.contains("/Applications/") else {
-            return nil
-        }
-        return URL(fileURLWithPath: path)
-    }
+    public var installedBundleURL: URL? { service?.installedBundleURL }
 
-    public var canUpdate: Bool { installedBundleURL != nil }
-
-    private var currentVersion: String {
-        injectedCurrentVersion
-            ?? Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
-            ?? "0"
-    }
+    public var canUpdate: Bool { service?.canUpdate ?? false }
 
     // MARK: - Check
-
-    /// Result of a completed check.
-    public enum CheckResult {
-        case upToDate
-        case available(Manifest)
-    }
 
     /// Fetches the latest release manifest, verifies its Ed25519 signature
     /// and compares versions. Throws with a precise reason otherwise
     /// (presentation — silent swallow vs error dialog — is the caller's job).
     public func check() async throws -> CheckResult {
-        guard installedBundleURL != nil else {
-            throw UpdateError.notInstalled
-        }
-        let manifest = try await fetchSignedManifest()
-        if Self.isVersion(manifest.version, greaterThan: currentVersion) {
-            return .available(manifest)
-        }
-        return .upToDate
-    }
-
-    private func fetchSignedManifest() async throws -> Manifest {
-        guard let (data, response) = try? await session.data(from: feedURL) else {
-            throw UpdateError.network("update check failed")
-        }
-        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
-            throw UpdateError.network("HTTP \((response as? HTTPURLResponse)?.statusCode ?? -1)")
-        }
-        return try Self.verifyManifest(data, keyBase64: injectedKeyBase64)
-    }
-
-    // MARK: - Pure steps (unit-tested)
-
-    /// Verifies the signed wrapper (schema, key id, Ed25519 over the exact
-    /// payload bytes) and decodes the inner manifest.
-    nonisolated static func verifyManifest(_ wrapperBytes: Data,
-                                           keyBase64: String? = nil) throws -> Manifest {
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
-        let wrapper: SignedWrapper
+        guard let service else { throw UpdateError.badPublicKey }
         do {
-            wrapper = try decoder.decode(SignedWrapper.self, from: wrapperBytes)
-        } catch {
-            throw UpdateError.manifestMissing
-        }
-        guard wrapper.schema == 1 else { throw UpdateError.manifestMissing }
-        guard wrapper.signature.algorithm == "ed25519",
-              wrapper.signature.keyId == expectedKeyID else {
-            throw UpdateError.signatureInvalid
-        }
-        guard let payload = Data(base64Encoded: wrapper.payload),
-              let signature = Data(base64Encoded: wrapper.signature.value) else {
-            throw UpdateError.signatureInvalid
-        }
-        guard signature.count == 64 else { throw UpdateError.signatureInvalid }
-        guard let keyData = Data(base64Encoded: keyBase64 ?? publicKeyBase64),
-              let publicKey = try? Curve25519.Signing.PublicKey(rawRepresentation: keyData) else {
-            throw UpdateError.badPublicKey
-        }
-        guard publicKey.isValidSignature(signature, for: payload) else {
-            throw UpdateError.signatureInvalid
-        }
-        do {
-            return try decoder.decode(Manifest.self, from: payload)
-        } catch {
-            throw UpdateError.network("manifest unparsable")
+            switch try await service.check() {
+            case .upToDate: return .upToDate
+            case .available(let manifest): return .available(manifest)
+            }
+        } catch let error as RivetUpdateError {
+            throw Self.map(error)
         }
     }
 
@@ -212,161 +134,20 @@ public final class UpdateService {
     /// Downloads, verifies (sha256, then unpacked bundle version), swaps the
     /// bundle in place and relaunches. Throws before touching the running
     /// install when anything is off. `onProgress` reports download percent
-    /// (0…100) for the update panel.
+    /// (0…100) on a background thread for the update panel.
     public func downloadAndInstall(_ manifest: Manifest,
                                    onProgress: (@Sendable (Int) -> Void)? = nil) async throws {
-        guard let bundleURL = installedBundleURL else { throw UpdateError.notInstalled }
-        guard let artifact = manifest.artifact(forPlatform: "macos") else {
-            throw UpdateError.manifestMissing
-        }
-        try await Self.downloadAndSwap(artifact: artifact,
-                                       bundleURL: bundleURL,
-                                       expectedVersion: manifest.version,
-                                       onProgress: onProgress ?? { _ in })
-    }
-
-    /// The whole download → verify → swap sequence, deliberately off the
-    /// main actor: consuming AsyncBytes on the main actor starves the
-    /// transfer (every element hops through the main executor, the
-    /// connection stalls and URLSession times out — observed live against
-    /// the GitHub CDN in the taskly family).
-    nonisolated private static func downloadAndSwap(
-        artifact: Manifest.Artifact,
-        bundleURL: URL,
-        expectedVersion: String,
-        onProgress: @Sendable (Int) -> Void
-    ) async throws {
-        // Download to a temp directory.
-        let workDir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("autarx-update-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: workDir, withIntermediateDirectories: true)
-        let zipURL = workDir.appendingPathComponent("autarx-update.zip")
-        defer { try? FileManager.default.removeItem(at: workDir) }
-
-        let config = URLSessionConfiguration.ephemeral
-        config.timeoutIntervalForRequest = 60
-        config.timeoutIntervalForResource = 600
-        let session = URLSession(configuration: config)
-
+        guard let service else { throw UpdateError.badPublicKey }
         do {
-            let (bytes, response) = try await session.bytes(from: artifact.url)
-            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
-                throw UpdateError.network("artifact download failed")
-            }
-            var hasher = SHA256()
-            var data = Data()
-            data.reserveCapacity(artifact.size)
-            let total = max(artifact.size, 1)
-            var lastPercent = -1
-            // Consume AsyncBytes through a 64 KiB buffer: hashing/appending
-            // per byte (31M CryptoKit calls) is far slower than the wire.
-            var buffer = [UInt8]()
-            buffer.reserveCapacity(65_536)
-            func absorb(_ chunk: [UInt8]) {
-                hasher.update(data: chunk)
-                data.append(contentsOf: chunk)
-                let percent = min(100, data.count * 100 / total)
-                if percent != lastPercent {
-                    lastPercent = percent
-                    onProgress(percent)
-                }
-            }
-            for try await byte in bytes {
-                buffer.append(byte)
-                if buffer.count == buffer.capacity
-                    || data.count + buffer.count >= total {
-                    absorb(buffer)
-                    buffer.removeAll(keepingCapacity: true)
-                }
-                // The signed manifest pins the exact size — stop as soon as
-                // we have it. Waiting for the stream's own EOF can hang
-                // forever on responses whose end-of-stream flag never
-                // surfaces to AsyncBytes.
-                if data.count >= total { break }
-            }
-            if !buffer.isEmpty { absorb(buffer) }
-            let digest = hasher.finalize().map { String(format: "%02x", $0) }.joined()
-            guard digest == artifact.sha256.lowercased() else {
-                throw UpdateError.checksumMismatch
-            }
-            try data.write(to: zipURL)
-        } catch let error as UpdateError {
-            throw error
-        } catch {
-            throw UpdateError.network(error.localizedDescription)
+            try await service.downloadAndInstall(manifest, onProgress: onProgress)
+        } catch let error as RivetUpdateError {
+            throw Self.map(error)
         }
-
-        // Unzip and verify the payload really is the promised version.
-        let unpacked = workDir.appendingPathComponent("unpacked")
-        try FileManager.default.createDirectory(at: unpacked, withIntermediateDirectories: true)
-        let ditto = Process()
-        ditto.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
-        ditto.arguments = ["-x", "-k", zipURL.path, unpacked.path]
-        try ditto.run()
-        ditto.waitUntilExit()
-        guard ditto.terminationStatus == 0 else { throw UpdateError.checksumMismatch }
-
-        let newBundle = unpacked.appendingPathComponent("Autarx.app")
-        guard let newVersion = Bundle(url: newBundle)?
-            .infoDictionary?["CFBundleShortVersionString"] as? String else {
-            throw UpdateError.versionMismatch(expected: expectedVersion, got: "missing")
-        }
-        guard newVersion == expectedVersion else {
-            throw UpdateError.versionMismatch(expected: expectedVersion, got: newVersion)
-        }
-
-        // Swap: the shell script survives our exit; it also restores the
-        // old bundle if the new one fails to move in. User data (opened
-        // workspaces live on the OEM's own paths) is never touched
-        // (UPDATE.md rollout rules).
-        let old = bundleURL.path + ".old"
-        let script = """
-        #!/bin/bash
-        sleep 1
-        rm -rf \(Self.q(old))
-        if mv \(Self.q(bundleURL.path)) \(Self.q(old)); then
-          if mv \(Self.q(newBundle.path)) \(Self.q(bundleURL.path)); then
-            open \(Self.q(bundleURL.path))
-            rm -rf \(Self.q(old))
-            exit 0
-          fi
-          mv \(Self.q(old)) \(Self.q(bundleURL.path))
-        fi
-        exit 1
-        """
-        let swapPath = workDir.appendingPathComponent("swap.sh")
-        try script.write(to: swapPath, atomically: true, encoding: .utf8)
-        let chmod = Process()
-        chmod.executableURL = URL(fileURLWithPath: "/bin/chmod")
-        chmod.arguments = ["+x", swapPath.path]
-        try chmod.run()
-        chmod.waitUntilExit()
-
-        // Launch the swap, then leave through the normal exit path so
-        // AppKit tears the app down cleanly; the script's sleep 1 gives us
-        // time to quit before it moves the bundle.
-        let bash = Process()
-        bash.executableURL = URL(fileURLWithPath: "/bin/bash")
-        bash.arguments = [swapPath.path]
-        try bash.run()
-        await MainActor.run { NSApplication.shared.terminate(nil) }
-    }
-
-    nonisolated private static func q(_ path: String) -> String {
-        "'" + path.replacingOccurrences(of: "'", with: "'\\''") + "'"
     }
 
     // MARK: - Version compare (numeric per segment; 1.2 > 1.1.9)
 
     nonisolated public static func isVersion(_ a: String, greaterThan b: String) -> Bool {
-        let av = a.split(separator: ".").map { Int($0) ?? 0 }
-        let bv = b.split(separator: ".").map { Int($0) ?? 0 }
-        let length = max(av.count, bv.count)
-        for i in 0..<length {
-            let x = i < av.count ? av[i] : 0
-            let y = i < bv.count ? bv[i] : 0
-            if x != y { return x > y }
-        }
-        return false
+        RivetUpdateService.isVersion(a, greaterThan: b)
     }
 }

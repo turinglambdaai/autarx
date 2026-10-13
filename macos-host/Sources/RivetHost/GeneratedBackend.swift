@@ -190,63 +190,63 @@ public struct RivetAPI: Sendable {
     public init(client: RivetClient) { self.client = client }
 
     public func close_workspace() async throws -> Bool {
-        let result = try await client.call("close_workspace", arguments: [])
-        return try decode_Bool(result)
+        let rivetResult = try await client.call("close_workspace", arguments: [])
+        return try decode_Bool(rivetResult)
     }
     public func communication() async throws -> RivetTypes.CommunicationDto {
-        let result = try await client.call("communication", arguments: [])
-        return try decode_CommunicationDto(result)
+        let rivetResult = try await client.call("communication", arguments: [])
+        return try decode_CommunicationDto(rivetResult)
     }
     public func diff_workspaces(before: String, after: String) async throws -> RivetTypes.DiffDto {
-        let result = try await client.call("diff_workspaces", arguments: [encode_String(before), encode_String(after)])
-        return try decode_DiffDto(result)
+        let rivetResult = try await client.call("diff_workspaces", arguments: [encode_String(before), encode_String(after)])
+        return try decode_DiffDto(rivetResult)
     }
     public func find_objects(pattern: String) async throws -> [RivetTypes.SemanticObjectDto] {
-        let result = try await client.call("find_objects", arguments: [encode_String(pattern)])
-        return try decode__List_SemanticObjectDto_(result)
+        let rivetResult = try await client.call("find_objects", arguments: [encode_String(pattern)])
+        return try decode__List_SemanticObjectDto_(rivetResult)
     }
     public func get_refs(name_or_path: String) async throws -> [RivetTypes.ReferenceDto] {
-        let result = try await client.call("get_refs", arguments: [encode_String(name_or_path)])
-        return try decode__List_ReferenceDto_(result)
+        let rivetResult = try await client.call("get_refs", arguments: [encode_String(name_or_path)])
+        return try decode__List_ReferenceDto_(rivetResult)
     }
     public func impact_for_ecu(before: String, after: String, ecu_name: String) async throws -> RivetTypes.DiffDto {
-        let result = try await client.call("impact_for_ecu", arguments: [encode_String(before), encode_String(after), encode_String(ecu_name)])
-        return try decode_DiffDto(result)
+        let rivetResult = try await client.call("impact_for_ecu", arguments: [encode_String(before), encode_String(after), encode_String(ecu_name)])
+        return try decode_DiffDto(rivetResult)
     }
     public func list_ecus() async throws -> [RivetTypes.SemanticObjectDto] {
-        let result = try await client.call("list_ecus", arguments: [])
-        return try decode__List_SemanticObjectDto_(result)
+        let rivetResult = try await client.call("list_ecus", arguments: [])
+        return try decode__List_SemanticObjectDto_(rivetResult)
     }
     public func list_objects(kind: String) async throws -> [RivetTypes.SemanticObjectDto] {
-        let result = try await client.call("list_objects", arguments: [encode_String(kind)])
-        return try decode__List_SemanticObjectDto_(result)
+        let rivetResult = try await client.call("list_objects", arguments: [encode_String(kind)])
+        return try decode__List_SemanticObjectDto_(rivetResult)
     }
     public func open_workspace(path: String) async throws -> RivetTypes.WorkspaceSummary {
-        let result = try await client.call("open_workspace", arguments: [encode_String(path)])
-        return try decode_WorkspaceSummary(result)
+        let rivetResult = try await client.call("open_workspace", arguments: [encode_String(path)])
+        return try decode_WorkspaceSummary(rivetResult)
     }
     public func patch_apply(workspace: String, ops_json: String) async throws -> RivetTypes.DiffDto {
-        let result = try await client.call("patch_apply", arguments: [encode_String(workspace), encode_String(ops_json)])
-        return try decode_DiffDto(result)
+        let rivetResult = try await client.call("patch_apply", arguments: [encode_String(workspace), encode_String(ops_json)])
+        return try decode_DiffDto(rivetResult)
     }
     public func patch_plan(workspace: String, ops_json: String) async throws -> RivetTypes.DiffDto {
-        let result = try await client.call("patch_plan", arguments: [encode_String(workspace), encode_String(ops_json)])
-        return try decode_DiffDto(result)
+        let rivetResult = try await client.call("patch_plan", arguments: [encode_String(workspace), encode_String(ops_json)])
+        return try decode_DiffDto(rivetResult)
     }
     public func trace_from(name_or_path: String, depth: Int64) async throws -> RivetTypes.TraceDto {
-        let result = try await client.call("trace_from", arguments: [encode_String(name_or_path), encode_Int64(depth)])
-        return try decode_TraceDto(result)
+        let rivetResult = try await client.call("trace_from", arguments: [encode_String(name_or_path), encode_Int64(depth)])
+        return try decode_TraceDto(rivetResult)
     }
     public func unresolved_references() async throws -> [RivetTypes.ReferenceDto] {
-        let result = try await client.call("unresolved_references", arguments: [])
-        return try decode__List_ReferenceDto_(result)
+        let rivetResult = try await client.call("unresolved_references", arguments: [])
+        return try decode__List_ReferenceDto_(rivetResult)
     }
     public func validate_workspace() async throws -> [String] {
-        let result = try await client.call("validate_workspace", arguments: [])
-        return try decode__List_String_(result)
+        let rivetResult = try await client.call("validate_workspace", arguments: [])
+        return try decode__List_String_(rivetResult)
     }
     public func workspace_summary() async throws -> RivetTypes.WorkspaceSummary {
-        let result = try await client.call("workspace_summary", arguments: [])
-        return try decode_WorkspaceSummary(result)
+        let rivetResult = try await client.call("workspace_summary", arguments: [])
+        return try decode_WorkspaceSummary(rivetResult)
     }
 }

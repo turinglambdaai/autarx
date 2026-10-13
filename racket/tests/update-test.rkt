@@ -1,24 +1,170 @@
 #lang racket/base
 
-;; Update-channel tests — port of UpdateTests.cs (feed selection, version
-;; comparison, verified extraction, in-place swap with backups).
+;; Updater tests — the offline trust chain and the CLI installer leg: craft
+;; a manifest, sign it with a throwaway Ed25519 key, verify it, and select
+;; updates the same way the live checker does; then the verified extraction
+;; and the in-place swap with backups. (fetch-update-manifest only accepts
+;; HTTPS, so the network half is exercised in production; the error path
+;; runs against a closed local port.)
 
-(require rackunit
+(require crypto
+         crypto/all
+         rackunit
+         rivet/distribution
          racket/file
          racket/path
          racket/string
-         json
          file/zip
          (prefix-in u: "../autarx/update.rkt"))
 
-(define (fixture-path . parts)
-  (for/or ([base '("shared/fixtures" "../shared/fixtures" "../../shared/fixtures")])
-    (define p (apply build-path base parts))
-    (and (file-exists? p) (path->string p))))
+(use-all-factories!)
 
+(test-case "platform symbols match rivet release manifests"
+  (case (system-type 'os)
+    [(macosx) (check-equal? (u:platform-symbol) 'macos)]
+    [(windows) (check-equal? (u:platform-symbol) 'windows)]
+    [else (check-equal? (u:platform-symbol) 'linux)])
+  (check-not-false (memq (u:architecture-symbol) '(arm64 x64)))
+  (check-equal? (u:detect-update-platform)
+                (string-append
+                 (symbol->string (u:platform-symbol))
+                 "-"
+                 (symbol->string (u:architecture-symbol)))))
+
+(test-case "the portable payload is a zip on every platform"
+  (check-equal? (u:installer-extension) ".zip"))
+
+(test-case "manifest url joins base and file name"
+  (check-equal? (u:manifest-url)
+                (string-append u:default-update-base-url
+                               "/update-manifest.json"))
+  (check-equal?
+   (parameterize ([u:current-update-base-url "https://dl.example/autarx/"])
+     (u:manifest-url))
+   "https://dl.example/autarx/update-manifest.json")
+  (check-equal?
+   (parameterize ([u:current-update-base-url "https://dl.example/autarx"])
+     (u:manifest-url))
+   "https://dl.example/autarx/update-manifest.json")
+  (check-equal?
+   (parameterize ([u:current-update-manifest-url
+                   "https://dl.example/autarx/signed-feed.json"])
+     (u:manifest-url))
+   "https://dl.example/autarx/signed-feed.json"))
+
+(test-case "rollout bucket is sticky and persists to updater-state.json"
+  (define state-dir (make-temporary-file "autarx-updater-home-~a" 'directory))
+  (u:set-update-state-dir-override! state-dir)
+  (check-true (exact-integer? (u:rollout-bucket)))
+  (define first (u:rollout-bucket))
+  (check-true (<= 0 first 99))
+  ;; a second read returns the persisted bucket, not a fresh draw
+  (check-equal? (u:rollout-bucket) first)
+  (define doc
+    (call-with-input-file (build-path state-dir "updater-state.json") read))
+  (check-equal? (hash-ref doc 'rollout-bucket) first)
+  (u:set-update-state-dir-override! #f))
+
+(test-case "check against an unreachable feed reports the error status"
+  (parameterize ([u:current-update-base-url "https://127.0.0.1:9/autarx"])
+    (define result (u:check-for-update! "0.0.1"))
+    (check-equal? (hash-ref result 'status) "error")
+    (check-true (string? (hash-ref result 'message)))
+    ;; a failed check leaves no candidate behind
+    (check-exn exn:fail?
+               (lambda ()
+                 (u:download-candidate!
+                  (make-temporary-file "upd-dl-~a" 'directory))))))
+
+(test-case "the old checksum feed shape fails closed"
+  ;; the pre-rivet feed was a plain {version, assets} document; the signed
+  ;; wrapper parser must reject it before anything is trusted
+  (check-exn exn:fail?
+             (lambda ()
+               (verify-signed-manifest
+                (open-input-bytes
+                 (string->bytes/utf-8
+                  "{\"version\":\"9.9.9\",\"assets\":{}}"))
+                (datum->pk-key (base64-string->bytes u:update-public-key-b64)
+                               'SubjectPublicKeyInfo)))))
+
+(test-case "signed manifest verifies and selects updates"
+  ;; throwaway keypair: same DER formats the release pipeline uses
+  (define priv (generate-private-key 'eddsa '((curve ed25519))))
+  (define pub (datum->pk-key (pk-key->datum priv 'rkt-public) 'rkt-public))
+  (define artifact-file (make-temporary-file "autarx-artifact-~a.zip"))
+  (call-with-output-file artifact-file
+    #:exists 'truncate
+    (lambda (out) (write-bytes (make-bytes 128 3) out)))
+  (define manifest
+    (update-manifest
+     u:app-identifier "9.9.9" 7 'stable
+     "2026-10-09T00:00:00Z" "0.0.0" #f #t 100
+     (list (update-artifact (u:platform-symbol) (u:architecture-symbol)
+                            "https://dl.example/autarx/autarx-9.9.9-macos-arm64.zip"
+                            (sha256-file/hex artifact-file)
+                            (file-size artifact-file)
+                            'zip '()))))
+  ;; write-signed-manifest refuses malformed manifests before signing
+  (define wrapped (open-output-bytes))
+  (write-signed-manifest manifest priv "autarx-test" wrapped)
+  (define verified
+    (verify-signed-manifest (open-input-bytes (get-output-bytes wrapped))
+                            pub
+                            #:key-id "autarx-test"))
+  (check-equal? (update-manifest-version verified) "9.9.9")
+  ;; a different key-id fails closed
+  (check-exn exn:fail?
+             (lambda ()
+               (verify-signed-manifest
+                (open-input-bytes (get-output-bytes wrapped))
+                pub
+                #:key-id "some-other-key")))
+  ;; selection: newer version offered, same version and downgrades not
+  (define (config-for version)
+    (updater-config u:app-identifier version 'stable
+                    (u:platform-symbol) (u:architecture-symbol)
+                    pub "autarx-test" 42 1000000))
+  (define candidate (select-update (config-for "0.1.0") verified))
+  (check-true (update-candidate? candidate))
+  (check-equal? (update-artifact-sha256 (update-candidate-artifact candidate))
+                (string-downcase (sha256-file/hex artifact-file)))
+  (check-false (select-update (config-for "9.9.9") verified))
+  (check-false (select-update (config-for "10.0.0") verified))
+  ;; another platform's artifact is not this host's candidate
+  (define other-platform
+    (update-manifest
+     u:app-identifier "9.9.9" 7 'stable
+     "2026-10-09T00:00:00Z" "0.0.0" #f #t 100
+     (list (update-artifact
+            (if (eq? (u:platform-symbol) 'windows) 'macos 'windows)
+            (u:architecture-symbol)
+            "https://dl.example/autarx/autarx-9.9.9-other.zip"
+            (sha256-file/hex artifact-file)
+            (file-size artifact-file)
+            'zip '()))))
+  (check-false (select-update (config-for "0.1.0") other-platform))
+  (delete-file artifact-file))
+
+(test-case "embedded release identity is coherent"
+  (check-equal? u:app-identifier "site.jrtx.autarx.Autarx")
+  (check-equal? u:app-channel 'stable)
+  (check-equal? u:app-display-name "Autarx")
+  (check-equal? u:update-key-id "autarx-2026-10")
+  ;; the embedded SPKI key is the host key: its raw tail is exactly the
+  ;; 32 bytes UpdateService.swift embeds
+  (define key
+    (datum->pk-key (base64-string->bytes u:update-public-key-b64)
+                   'SubjectPublicKeyInfo))
+  (check-true (pk-key? key))
+  (check-equal?
+   (bytes->base64-string
+    (subbytes (pk-key->datum key 'SubjectPublicKeyInfo) 12))
+   "Ijm2Iqrres1BbLnx5DQCvZtbbKb4jBKRpUbGSQ9FWxM="))
+
+;; entries: list of (relative-path-string . content-bytes); laid out under
+;; a temp directory then zipped relative to it (release-package shape)
 (define (make-zip entries dest)
-  ;; entries: list of (relative-path-string . content-bytes); laid out under
-  ;; a temp directory then zipped relative to it (release-package shape)
   (define base (make-temporary-file "upd-stage-~a" 'directory))
   (define staging (build-path base "cli"))
   (make-directory staging)
@@ -32,27 +178,13 @@
   (delete-directory/files base)
   dest)
 
-(test-case "Parses_feed_and_selects_assets_by_kind_and_platform"
-  (define feed (u:load-update-feed (fixture-path "UpdateFeed/latest.json")))
-  (check-equal? (hash-ref feed 'version) "9.9.9")
-  (define cli (hash-ref (hash-ref feed 'assets) 'cli))
-  (define windows (hash-ref cli 'windows-x64))
-  (check-equal? (hash-ref windows 'url) "https://example.invalid/Autarx-cli-windows-x64.zip"))
-
-(test-case "Compares_versions_semantically"
-  (check-true (u:update-newer? "1.0.1" "1.0.2"))
-  (check-false (u:update-newer? "1.0.2" "1.0.1"))
-  (check-false (u:update-newer? "1.0.1" "1.0.1"))
-  (check-true (u:update-newer? "v1.0.1" "1.2.0"))
-  (check-true (u:update-newer? "1.0.1" "2.0.0")))
-
 (test-case "Extract_verified_accepts_matching_hash_and_locates_payload_root"
   (define base (make-temporary-file "upd-e2e-~a" 'directory))
   (define zip-path (build-path base "update.zip"))
   (make-zip (list (cons "cli/autarx" #"new-binary")
                   (cons "cli/config.json" #"{}"))
             zip-path)
-  (define sha (u:sha256-file zip-path))
+  (define sha (sha256-file/hex zip-path))
   (define root (u:extract-verified zip-path sha "autarx"))
   (check-true (string-suffix? root "cli"))
   (check-equal? (file->bytes (build-path root "autarx")) #"new-binary")
@@ -73,7 +205,7 @@
   (define base (make-temporary-file "upd-marker-~a" 'directory))
   (define zip-path (build-path base "update.zip"))
   (make-zip (list (cons "other/readme.txt" #"hi")) zip-path)
-  (define sha (u:sha256-file zip-path))
+  (define sha (sha256-file/hex zip-path))
   (check-exn exn:fail? (λ () (u:extract-verified zip-path sha "autarx")))
   (delete-directory/files base))
 
@@ -83,7 +215,7 @@
   (make-zip (list (cons "cli/autarx" #"new-binary")
                   (cons "cli/config.json" #"{}"))
             zip-path)
-  (define sha (u:sha256-file zip-path))
+  (define sha (sha256-file/hex zip-path))
   (define payload-root (u:extract-verified zip-path sha "autarx"))
   (define app-dir (build-path base "app"))
   (make-directory app-dir)
@@ -101,13 +233,15 @@
   (check-false (file-exists? (build-path app-dir "stale.autarx-update.old")))
   (delete-directory/files base))
 
-(test-case "Sha256_matches_known_vectors"
+(test-case "extracted_sha256_matches_known_vectors"
+  ;; SHA-256 now comes from rivet/distribution (libcrypto), not the retired
+  ;; pure-Racket implementation — pin the vectors anyway
   (define base (make-temporary-file "sha-~a" 'directory))
   (define (write+hash content)
     (define p (build-path base "in.bin"))
     (call-with-output-file p #:exists 'replace
       (λ (out) (display content out)))
-    (u:sha256-file p))
+    (sha256-file/hex p))
   (check-equal? (write+hash "")
                 "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
   (check-equal? (write+hash "abc")
@@ -116,4 +250,3 @@
    (write+hash "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq")
    "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1")
   (delete-directory/files base))
-

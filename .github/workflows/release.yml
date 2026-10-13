@@ -162,14 +162,18 @@ jobs:
               *) [ -f "$f" ] || continue; [ -f "$f.sha256" ] || shasum -a 256 "$f" > "$f.sha256" ;;
             esac
           done
-      - name: Compose the update feed (update-manifest.json)
+      - name: Sign the CLI update feed (update-manifest.json)
+        env:
+          UPDATE_ED25519_PRIVATE_KEY_B64: ${{ secrets.UPDATE_ED25519_PRIVATE_KEY_B64 }}
         run: |
+          # Fail-closed: no key, no release. The CLI feed is an Ed25519
+          # signed wrapper since 0.4.0 — an unauthenticated feed is the
+          # supply-chain gap this retires (shared/spec/UPDATE.md). Builds
+          # up to 0.2.0 read the old checksum shape and report a failed
+          # check against the signed feed until manually updated once.
           racket scripts/make-update-feed.rkt \
             "${{ github.ref_name }}" dist \
             "https://github.com/turinglambdaai/autarx/releases/download/${{ github.ref_name }}"
-          # byte-identical alias: pre-0.2.0 CLI builds poll latest.json —
-          # keep them updating until the field has moved on
-          cp dist/update-manifest.json dist/latest.json
       - name: Sign the workbench update manifest (update-app-manifest.json)
         env:
           UPDATE_ED25519_PRIVATE_KEY_B64: ${{ secrets.UPDATE_ED25519_PRIVATE_KEY_B64 }}
@@ -194,7 +198,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           ver="${GITHUB_REF_NAME#v}"
-          notes="Autarx ${ver}. The macOS workbench (macOS 14+, Apple silicon and Intel) ships as autarx-<version>-macos-<arch>.dmg for human install and as autarx-<version>-macos-<arch>-app.zip — the payload the workbench's built-in updater consumes (Ed25519-signed feed, in-app update with relaunch). The CLI ships as self-contained zips — autarx-<version>-macos-arm64.zip, -macos-x64.zip, -linux-x64.zip, -linux-arm64.zip, -windows-x64.zip — and updates itself through a checksum-verified feed (\`autarx update\`). Every asset carries a .sha256 sidecar. Windows and Linux GUI hosts are in development. Ad-hoc signed — on first launch, right-click the app and choose Open."
+          notes="Autarx ${ver}. The macOS workbench (macOS 14+, Apple silicon and Intel) ships as autarx-<version>-macos-<arch>.dmg for human install and as autarx-<version>-macos-<arch>-app.zip — the payload the workbench's built-in updater consumes (Ed25519-signed feed, in-app update with relaunch). The CLI ships as self-contained zips — autarx-<version>-macos-arm64.zip, -macos-x64.zip, -linux-x64.zip, -linux-arm64.zip, -windows-x64.zip — and updates itself through an Ed25519-signed feed (\`autarx update\`). Every asset carries a .sha256 sidecar. Windows and Linux GUI hosts are in development. Ad-hoc signed — on first launch, right-click the app and choose Open."
           if gh release view "${{ github.ref_name }}" -R turinglambdaai/autarx >/dev/null 2>&1; then
             gh release upload "${{ github.ref_name }}" dist/* --clobber -R turinglambdaai/autarx
           else

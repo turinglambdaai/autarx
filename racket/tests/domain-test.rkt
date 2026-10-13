@@ -8,6 +8,7 @@
          racket/list
          racket/string
          json
+         rivet/distribution
          "../autarx/index.rkt"
          "../autarx/ecuc.rkt"
          "../autarx/validate.rkt"
@@ -16,8 +17,7 @@
          "../autarx/impact.rkt"
          "../autarx/patch.rkt"
          "../autarx/vendor.rkt"
-         "../autarx/arxml.rkt"
-         (prefix-in upd: (only-in "../autarx/cli.rkt" update-newer?)))
+         "../autarx/arxml.rkt")
 
 (define (fixture . parts)
   (define candidates
@@ -474,14 +474,20 @@
 
 ;; ---------------------------------------------------------------- update
 
-;; version comparison parity with UpdateFeed.IsNewer
+;; version comparison parity with UpdateFeed.IsNewer — the comparator is
+;; rivet/distribution's strict SemVer 2.0 version>? since the rivet
+;; migration (the signed manifest schema validates both sides, so the old
+;; v-prefix tolerance is obsolete: a feed version can no longer carry a v).
+;; Case shape stays (current, candidate, candidate-newer?) — the .NET
+;; suite's question — so the comparator call runs candidate first.
 (define version-cases
   '(("1.0.1" "1.0.2" #t)
     ("1.0.2" "1.0.1" #f)
     ("1.0.1" "1.0.1" #f)
-    ("v1.0.1" "1.2.0" #t)
-    ("1.0.1" "2.0.0" #t)))
+    ("1.0.1" "2.0.0" #t)
+    ("1.0.1" "1.0.2-beta" #t)
+    ("1.0.2" "1.0.2-beta" #f)))
 
 (for ([case (in-list version-cases)])
   (test-case (format "version ~a vs ~a" (car case) (cadr case))
-    (check-equal? (upd:update-newer? (car case) (cadr case)) (caddr case))))
+    (check-equal? (version>? (cadr case) (car case)) (caddr case))))

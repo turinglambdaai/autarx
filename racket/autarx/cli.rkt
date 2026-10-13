@@ -5,8 +5,6 @@
 ;; Rivet RPC surface). JSON profile: 2-space indent, camelCase in
 ;; declaration order, null omitted, string enums; exit codes 0/1/2/3.
 
-(provide update-newer? load-update-feed)
-
 (require racket/file
          racket/path
          racket/string
@@ -22,7 +20,7 @@
          "comm.rkt"
          "vendor.rkt"
          "patch.rkt"
-         "update.rkt"
+         (prefix-in u: "update.rkt")
          "jsonout.rkt")
 
 ;; Look for rivet-app-info.rktd next to the running executable (or its
@@ -933,8 +931,8 @@
     "              the full tool API with workspace audit logging\n"
     "\n"
     "Self-update:\n"
-    "  update      Check the release feed and self-apply newer builds\n"
-    "              update [--check] [--json] [--feed <url|file>]\n"
+    "  update      Check the signed release feed and self-apply newer builds\n"
+    "              update [--check] [--json] [--feed <https-url>]\n"
     "\n"
     "Single-file commands:\n"
     "  info        Summarize a single ARXML file\n"
@@ -1745,90 +1743,108 @@
 
 ;; ---------------------------------------------------------------- update
 
-(define default-feed-url
-  "https://github.com/turinglambdaai/autarx/releases/latest/download/update-manifest.json")
-
 (define (cmd-update args)
   (define parsed (parse-update-args args))
   (cond
     [(not parsed) 2]
     [else (run-update parsed)]))
 
+;; --feed keeps its old meaning (the manifest URL); a base URL without the
+;; file name also works. Local file paths are gone: every feed is an
+;; authenticated HTTPS signed wrapper now, and fetch-update-manifest
+;; rejects anything else (the pre-0.3.1 checksum feed was the supply-chain
+;; gap this retires — shared/spec/UPDATE.md).
+(define (feed-overrides parsed)
+  (define feed (hash-ref parsed 'feed #f))
+  (if (not feed)
+      (values #f #f)
+      (let ([trimmed (string-trim feed "/" #:right? #t)])
+        (if (string-suffix? trimmed ".json")
+            (values #f trimmed)
+            (values trimmed #f)))))
+
 ;; the apply leg lives in its own function: deep cond nesting here caused
 ;; real bracket bugs
 (define (run-update parsed)
   (define check-only? (hash-ref parsed 'check #f))
   (define json? (hash-ref parsed 'json #f))
-  (define feed (hash-ref parsed 'feed default-feed-url))
-  (with-handlers ([exn:fail?
-                   (λ (ex)
-                     (eprintf "autarx: update check failed: ~a\n" (exn-message ex))
-                     2)])
-    (define manifest (load-update-feed feed))
-    (define latest (hash-ref manifest 'version))
-    (define asset (select-update-asset manifest parsed))
-    (define available? (and asset (update-newer? autarx-version latest)))
-    (cond
-      [(not available?)
-       (finish-update json? #f
-                      (list (cons "currentVersion" autarx-version)
-                            (cons "latestVersion" latest)
-                            (cons "updateAvailable" #f)))
-       (if json? 0 (begin (out-ln "autarx " autarx-version
-                                  " is up to date (latest release: " latest ").")
-                          0))]
-      [json?
+  (define-values (base override-url) (feed-overrides parsed))
+  (define-values (platform architecture)
+    (let ([raw (hash-ref parsed 'platform #f)])
+      (if raw
+          (values (string->symbol (car (string-split raw "-")))
+                  (string->symbol (cadr (string-split raw "-"))))
+          (values #f #f))))
+  (define outcome
+    (parameterize ([u:current-update-base-url base]
+                   [u:current-update-manifest-url override-url])
+      (u:check-for-update! autarx-version
+                           #:platform platform
+                           #:architecture architecture)))
+  (define status (hash-ref outcome 'status))
+  (cond
+    [(string=? status "error")
+     (eprintf "autarx: update check failed: ~a\n" (hash-ref outcome 'message))
+     2]
+    [(string=? status "up-to-date")
+     (define latest (hash-ref outcome 'latestVersion))
+     (when json?
        (print-json (list (cons "currentVersion" autarx-version)
                          (cons "latestVersion" latest)
-                         (cons "updateAvailable" #t)))
-       1]
-      [check-only?
-       (out-ln "update available: " latest " (current: " autarx-version
-               ") — run 'autarx update' to apply.")
-       1]
-      [else (apply-update-asset parsed manifest latest asset)])))
+                         (cons "updateAvailable" #f))))
+     (unless json?
+       (out-ln "autarx " autarx-version
+               " is up to date (latest release: " latest ")."))
+     0]
+    [else
+     (define latest (hash-ref outcome 'availableVersion))
+     (cond
+       [json?
+        (print-json (list (cons "currentVersion" autarx-version)
+                          (cons "latestVersion" latest)
+                          (cons "updateAvailable" #t)))
+        1]
+       [check-only?
+        (out-ln "update available: " latest " (current: " autarx-version
+                ") — run 'autarx update' to apply.")
+        1]
+       [else (apply-update! parsed outcome)])]))
 
-(define (finish-update json? available? payload)
-  (when json? (print-json payload)))
-
-(define (select-update-asset manifest parsed)
-  (define assets (hash-ref manifest 'assets #f))
-  (and (hash? assets)
-       (let ([platforms (hash-ref assets
-                                  (string->symbol (hash-ref parsed 'kind "cli"))
-                                  #f)])
-         (and (hash? platforms)
-              (hash-ref platforms
-                        (string->symbol
-                         (hash-ref parsed 'platform (detect-update-platform)))
-                        #f)))))
-
-(define (apply-update-asset parsed manifest latest asset)
+(define (apply-update! parsed outcome)
+  (define latest (hash-ref outcome 'availableVersion))
   (out-ln "updating: " autarx-version " → " latest)
   (out-ln "  downloading and verifying…")
   (define zip-path
-    (download-asset (hash-ref asset 'url)
-                    (path->string (build-path (find-system-path 'temp-dir)
-                                              "autarx-update"))))
-  (define marker
-    (cond
-      [(string=? (hash-ref parsed 'kind "cli") "gui") "RivetHost"]
-      ;; the windows payload's launcher carries the .exe suffix
-      [(eq? (system-type 'os) 'windows) "autarx.exe"]
-      [else "autarx"]))
-  (define payload-root (extract-verified zip-path (hash-ref asset 'sha256) marker))
+    (with-handlers ([exn:fail?
+                     (λ (ex)
+                       (eprintf "autarx: update download failed: ~a\n"
+                                (exn-message ex))
+                       #f)])
+      (u:download-candidate! (build-path (find-system-path 'temp-dir)
+                                         "autarx"))))
+  (unless zip-path 2)
+  ;; the windows payload's launcher carries the .exe suffix
+  (define marker (if (eq? (system-type 'os) 'windows) "autarx.exe" "autarx"))
+  (define payload-root
+    (with-handlers ([exn:fail?
+                     (λ (ex)
+                       (eprintf "autarx: update package rejected: ~a\n"
+                                (exn-message ex))
+                       #f)])
+      (u:extract-verified zip-path (hash-ref outcome 'sha256) marker)))
   (define explicit-dir (hash-ref parsed 'install-dir #f))
   (define app-dir
     (if (and explicit-dir (> (string-length explicit-dir) 0))
         (string->path explicit-dir)
         (path-only (find-system-path 'run-file))))
-  (if (not (and app-dir (directory-exists? app-dir)))
+  (if (not (and payload-root app-dir (directory-exists? app-dir)))
       (begin
-        (eprintf "autarx: cannot locate install directory: ~a\n"
-                 (if app-dir (path->string app-dir) "?"))
+        (when payload-root
+          (eprintf "autarx: cannot locate install directory: ~a\n"
+                   (if app-dir (path->string app-dir) "?")))
         2)
       (let ()
-        (define replaced (apply-payload payload-root app-dir))
+        (define replaced (u:apply-payload payload-root app-dir))
         (out-ln "  applied " (number->string replaced) " file(s) to "
                 (path->string app-dir))
         (out-ln "autarx " latest " installed — restart to take effect.")
@@ -1840,17 +1856,6 @@
                (cons "installDirectory" (path->string app-dir))))
         0)))
 
-(define (detect-platform)
-  (define os (system-type 'os))
-  ;; other architectures fall back to x64 (v1.0.3 behaviour)
-  (define arch (if (member (system-type 'arch) '(arm aarch64 arm64))
-                   "arm64"
-                   "x64"))
-  (string-append (case os [(macosx) "macos"] [(windows) "windows"] [else "linux"])
-                 "-" arch))
-
-;; semantic comparison when both sides parse as versions, falling back to
-;; ordinal inequality so pre-release strings still surface as different
 (define (parse-update-args args)
   (let loop ([args args] [opts (hash)])
     (cond
@@ -1866,21 +1871,18 @@
       [(string=? (car args) "--json") (loop (cdr args) (hash-set opts 'json #t))]
       [(member (car args) '("--feed" "--kind" "--platform"))
        (define opt (substring (car args) 2))
-       (when (null? (cdr args))
-         (case opt
-           [("feed") (eprintf "autarx: --feed requires a URL or file path\n")]
-           [("kind") (eprintf "autarx: --kind must be cli or gui\n")]
-           [("platform")
-            (eprintf "autarx: --platform requires a value (e.g. windows-x64)\n")])
-         (loop '() #f))
-       (define value (cadr args))
-       (case opt
-         [("kind")
-          (unless (member value '("cli" "gui"))
-            (eprintf "autarx: --kind must be cli or gui\n")
-            (loop '() #f))]
-         [else (void)])
-       (loop (cddr args) (hash-set opts (string->symbol opt) value))]
+       (if (null? (cdr args))
+           (begin
+             (case opt
+               [("feed") (eprintf "autarx: --feed requires an HTTPS URL\n")]
+               [("kind") (eprintf "autarx: --kind must be cli\n")]
+               [("platform")
+                (eprintf "autarx: --platform requires a value (e.g. windows-x64)\n")])
+             #f)
+           (let ([value (cadr args)])
+             (if (valid-update-option? opt value)
+                 (loop (cddr args) (hash-set opts (string->symbol opt) value))
+                 #f)))]
       [(string-prefix? (car args) "-")
        (eprintf "autarx: unknown option '~a' — try 'autarx update --help'\n"
                 (car args))
@@ -1888,6 +1890,26 @@
       [else
        (eprintf "autarx: update takes no positional arguments\n")
        #f])))
+
+;; Answers #f on a bad value (after the specific complaint); the caller
+;; aborts the parse (the pre-rivet parser printed but kept parsing).
+(define (valid-update-option? opt value)
+  ;; eprintf returns void — truthy — so rejection must return #f itself
+  (define (reject message)
+    (eprintf "~a\n" message)
+    #f)
+  (case opt
+    [("kind")
+     ;; the signed feed covers the CLI only; the workbench updates itself
+     ;; through its own feed (shared/spec/UPDATE.md)
+     (if (string=? value "cli")
+         #t
+         (reject "autarx: --kind must be cli (the gui ships its own feed)"))]
+    [("platform")
+     (if (regexp-match? #rx"^(macos|windows|linux)-(x64|arm64)$" value)
+         #t
+         (reject "autarx: --platform must be <platform>-<arch> (e.g. windows-x64)"))]
+    [else #t]))
 
 ;; ---------------------------------------------------------------- info / modules / validate
 

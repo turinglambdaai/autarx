@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **The update chain is authenticated end to end.** The CLI updater
+  (`autarx update`) was rewritten onto `rivet/distribution`: it now
+  fetches and verifies the Ed25519-signed channel manifest
+  (`fetch-update-manifest`), selects the artifact for the running
+  platform (`select-update`, sticky `crypto-random-bytes` rollout
+  bucket), and downloads under size + SHA-256 enforcement from the
+  signed manifest (`download-update`). This retires the curl subprocess,
+  the hand-written FIPS 180-4 SHA-256, and the unauthenticated
+  checksum feed — the supply-chain gap flagged in the family audit.
+  The release pipeline signs `update-manifest.json` with the same
+  `autarx-2026-10` key as the workbench feed; a missing signing key now
+  fails the release instead of shipping an unsigned feed, and the
+  `latest.json` alias is retired. Both network legs gained watchdog
+  timeouts (60 s manifest, 120 s stall / 30 min download).
+- **The macOS workbench update client is rivet's shared `RivetUpdate`
+  module** (since rivet 0.8.1): signed-manifest verification, the bounded
+  download, sha256/size enforcement, the ditto unpack + version
+  confirmation, the atomic swap with rollback, and the quit/relaunch
+  handoff moved into the library; `UpdateService.swift` shrank to a thin
+  product adapter (feed, key, key id, bundle name, error mapping).
+- CLI builds up to 0.2.0 parse the old checksum feed shape and report a
+  failed check against the signed feed; they need a one-off manual
+  install to cross over (shared/spec/UPDATE.md).
+
 ## [0.4.0] - 2026-10-12
 
 Real-delivery hardening release: every fix below was driven by running the

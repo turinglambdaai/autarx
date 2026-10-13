@@ -17,6 +17,7 @@ struct AutarxApp: App {
                 .task {
                     model.start()
                     model.autoCheckForUpdates()
+                    UpdateService.sweepStaleWorkDirs()
                 }
                 .sheet(isPresented: Binding(
                     get: { model.updatePanelVisible },
