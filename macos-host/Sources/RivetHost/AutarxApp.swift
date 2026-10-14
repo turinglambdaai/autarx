@@ -25,11 +25,20 @@ struct AutarxApp: App {
                     UpdatePanelView()
                         .environment(model)
                 }
+                .sheet(isPresented: Binding(
+                    get: { model.aboutVisible },
+                    set: { model.aboutVisible = $0 })) {
+                    AboutPanelView()
+                        .environment(model)
+                }
         }
         .defaultSize(width: 1180, height: 820)
         .commands {
             AutarxCommands(model: model)
             CommandGroup(replacing: .toolbar) {}
+            CommandGroup(replacing: .help) {
+                Button("About Autarx") { model.aboutVisible = true }
+            }
         }
     }
 }

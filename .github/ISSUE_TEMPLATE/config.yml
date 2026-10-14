@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation & guide
+    url: https://autarx.jrtx.site/guide.html
+    about: The user guide — workspace, trace, diff and update workflows.
+  - name: Product overview
+    url: https://autarx.jrtx.site/
+    about: What Autarx is (and is not) — an AUTOSAR Integration Workbench.

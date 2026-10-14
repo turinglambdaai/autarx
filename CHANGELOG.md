@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Foundation round — feedback surfaces, no behaviour change.
+
+### Added
+
+- **Help ▸ About** (macOS workbench): an About panel carrying the
+  `Autarx v<version>` line (bundle version, falling back to the generated
+  Rivet config), the product site (autarx.jrtx.site), a Report-an-Issue
+  link to the GitHub tracker and the license line — "Proprietary — all
+  rights reserved", matching the LICENSE, with no opensource link
+  promised.
+- **GitHub issue templates** (bug report + feature request) so feedback
+  from the About link lands structured: the bug form asks which surface
+  (GUI / CLI / MCP), the delivery shape and the ARX rule codes involved.
+
+### Changed
+
+- **Update failure text is selectable** in the update panel's failed
+  state, so the exact error — URLs, manifest verification failures — can
+  be copied into a bug report instead of retyped.
+
 ## [0.4.2] - 2026-10-14
 
 The legacy plaintext update feed is retired for good: with no installed

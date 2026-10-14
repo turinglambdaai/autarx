@@ -56,6 +56,9 @@ struct UpdatePanelView: View {
                     .font(.system(size: 13))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
+                    // Failure text (URLs, manifest errors) must leave the
+                    // screen with the user — selectable for a bug report.
+                    .textSelection(.enabled)
                     .frame(maxWidth: 320)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 12) {

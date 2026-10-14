@@ -35,6 +35,7 @@ final class AppModel: @unchecked Sendable {
     var updateAvailableVersion = ""
     var updateErrorMessage = ""
     var updatePanelVisible = false
+    var aboutVisible = false
 
     private var pendingUpdateManifest: UpdateService.Manifest?
 
