@@ -78,7 +78,7 @@ jobs:
           ditto -c -k --sequesterRsrc --keepParent "$appstage" \
             "autarx-${GITHUB_REF_NAME#v}-macos-${{ matrix.arch }}-app.zip"
           unzip -l "autarx-${GITHUB_REF_NAME#v}-macos-${{ matrix.arch }}-app.zip" | head -4
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: macos-${{ matrix.arch }}
           path: |
@@ -125,7 +125,7 @@ jobs:
         shell: bash
       - name: Build CLI distribution
         run: bash scripts/build-cli.sh dist-cli
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: cli-${{ matrix.platform }}
           path: dist-cli/autarx-*.zip
