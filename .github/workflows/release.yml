@@ -145,7 +145,7 @@ jobs:
           distribution: full
       - name: Install Rivet (catalog)
         run: raco pkg install --auto --no-docs 'https://github.com/turinglambdaai/rivet.git#${{ env.RIVET_PIN }}'
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: dist
       - name: Flatten artifact dirs
