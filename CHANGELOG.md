@@ -7,7 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Foundation round — feedback surfaces, no behaviour change.
+## [0.4.3] - 2026-10-15
+
+The pin-restore release. The headline is a release-pipeline repair, not a
+product change — the foundation round below (feedback surfaces, no domain
+behaviour change) rides along in the same rebuild.
+
+### Fixed
+
+- **The release pipeline builds against the pinned rivet again.**
+  `release.yml` referenced `env.RIVET_PIN` without ever defining it: the
+  empty ref made `raco pkg install 'URL#'` silently resolve to rivet
+  main-HEAD, so the v0.4.1 / v0.4.2 release artifacts were built from
+  untested upstream commits while the contract tests ran the pinned
+  v0.11.0 — the Windows and Linux CLI zips, the payloads `autarx update`
+  distributes on those platforms, shipped this way. The pin is now defined
+  once at workflow level (the same single source as `ci.yml`), and
+  **0.4.3 is the first release off the restored pinned build chain**: the
+  same product rebuilt on rivet v0.11.0, with no domain-code change
+  involved.
 
 ### Added
 
@@ -26,6 +44,12 @@ Foundation round — feedback surfaces, no behaviour change.
 - **Update failure text is selectable** in the update panel's failed
   state, so the exact error — URLs, manifest verification failures — can
   be copied into a bug report instead of retyped.
+- **ARCHITECTURE.md tells the signed-wrapper story** — the update-chain
+  description no longer narrates the retired plaintext checksum feed.
+- **The package declares its `crypto` dependency and carries no version
+  literal**: rivet.rktd stays the single version source (the `info.rkt`
+  package version that could float free of the product is gone), and the
+  updater's Ed25519 surface is an explicit catalog dependency.
 
 ## [0.4.2] - 2026-10-14
 
