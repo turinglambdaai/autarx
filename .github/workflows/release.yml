@@ -4,6 +4,14 @@ on:
   push:
     tags: ["v*"]
 
+env:
+  # Single pin source, same value as ci.yml. Release used to reference
+  # env.RIVET_PIN without defining it: the empty ref made `raco pkg
+  # install 'URL#'` silently resolve to rivet main-HEAD, so release
+  # artifacts were built from an untested commit while the contract tests
+  # ran the pinned version (v0.4.1 / v0.4.2 shipped this way).
+  RIVET_PIN: v0.11.0
+
 permissions:
   contents: write
   id-token: write
