@@ -179,13 +179,25 @@ self-update. The release publish job signs the manifest with the
 `UPDATE_ED25519_PRIVATE_KEY_B64` secret.
 
 **CLI.** the updater (`update.rkt` + the `update` command in `cli.rkt`)
-implements the checksum channel. The release pipeline publishes
-`update-manifest.json` (with a `latest.json` alias) every release (version,
-per-platform download URL, SHA-256); the CLI parses it (URL or local file —
-local files keep CI gated without network), checks versions, downloads, and
-verifies the checksum BEFORE touching anything, then swaps files in place:
-current files move to `<name>.autarx-update.old` (allowed while the
-executable runs on Windows), stale backups are cleaned on the next update.
+rides `rivet/distribution` since 0.4.1: fetch the Ed25519-signed feed
+`update-manifest.json` (the family wrapper format — base64 inner manifest +
+signature over its exact bytes, verified with the embedded `autarx-2026-10`
+key before a byte of it is parsed), select the artifact for this
+platform × architecture (channel, version, rollout bucket), and download
+it under the signed size + sha256 enforcement. Neither leg can hang: a
+60 s manifest deadline and a 120 s stall / 30 min wall-clock download
+watchdog. `--feed` overrides the manifest URL (HTTPS only — the local-file
+path went with the checksum channel). The install leg is CLI-owned:
+re-verify the zip checksum, unpack, locate the marker executable, and swap
+files in place — current files move to `<name>.autarx-update.old` (allowed
+while the executable runs on Windows), stale backups are cleaned on the
+next update. The publish job signs the feed with the
+`UPDATE_ED25519_PRIVATE_KEY_B64` secret, fail-closed: no key, no release.
+Builds up to 0.4.0 read the retired plaintext checksum shape (and its
+`latest.json` alias) and report a failed check against the signed feed;
+they need a one-off manual install to cross over. The version is never
+embedded in the updater — it stays single-sourced in rivet.rktd /
+rivet-app-info.rktd and is passed in by the CLI.
 
 Unhandled exceptions write a local crash log under `<TEMP>/autarx/crashes/`
 and exit 3 — nothing is sent anywhere.
