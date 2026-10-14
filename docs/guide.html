@@ -443,8 +443,8 @@ autarx patch undo  &lt;workspace&gt; [--json]</div>
       </div>
 
       <div class="faq-item">
-        <h3 data-i18n="q4.q">更新机制是怎样的？为什么 0.4.0 及更早版本检查更新会报错？</h3>
-        <p data-i18n="q4.a">CLI 用 autarx update、macOS GUI 用内置「检查更新」，两者都消费 Ed25519 签名的 update feed。从 0.4.1 起 CLI 的 update-manifest.json 换成签名 wrapper 格式：0.4.0 及更早的 CLI 只认识旧的明文 checksum 格式，第一次对着 0.4.1+ 的 feed 检查更新会 fail-closed 报验证错误（这是有意为之的安全行为，不是故障）。处理方式：到 releases 页手动下载一次对应平台的 zip 替换旧二进制（对照 .sha256 校验），之后 autarx update 恢复正常。</p>
+        <h3 data-i18n="q4.q">更新机制是怎样的？</h3>
+        <p data-i18n="q4.a">CLI 用 autarx update、macOS GUI 用内置「检查更新」，两者都消费 Ed25519 签名的 update feed：先验证 wrapper 签名，再校验工件 SHA-256，然后就地替换（GUI 完成后重启）。任何一步验证失败都会 fail-closed 拒绝更新——这是有意为之的安全行为，不是故障。</p>
       </div>
 
       <div class="faq-item">
@@ -531,8 +531,8 @@ autarx patch undo  &lt;workspace&gt; [--json]</div>
         'q2.a': 'ARXML——System Description、System Extract、ECU Extract、ECUC 与通信 ARXML，支持多文件交付包（把目录交给命令即可）。AUTOSAR 版本从 XSD schema location 自动识别（如 AUTOSAR_4-3-0.xsd → 4.3.0），已知 revision 映射到经典版本号，未知 revision 原样保留。许可方式为 source-available（源码可见、专有许可），详见仓库 LICENSE。',
         'q3.q': '与 DaVinci / tresos / ISOLAR 是什么关系？',
         'q3.a': '共存，不替代。Autarx 不是配置器，不重做 vendor 的校验与代码生成；它补的是「收到 OEM 交付」到「打开 vendor 工具链」之间的工程缺口。vendor 侧的校验仍是权威路径——autarx 通过 vendor 命令中继 DaVinci/tresos/ISOLAR 的校验运行并归一化诊断，编辑过的文件最终仍交回 vendor 工具链验证。',
-        'q4.q': '更新机制是怎样的？为什么 0.4.0 及更早版本检查更新会报错？',
-        'q4.a': 'CLI 用 autarx update、macOS GUI 用内置「检查更新」，两者都消费 Ed25519 签名的 update feed。从 0.4.1 起 CLI 的 update-manifest.json 换成签名 wrapper 格式：0.4.0 及更早的 CLI 只认识旧的明文 checksum 格式，第一次对着 0.4.1+ 的 feed 检查更新会 fail-closed 报验证错误（这是有意为之的安全行为，不是故障）。处理方式：到 releases 页手动下载一次对应平台的 zip 替换旧二进制（对照 .sha256 校验），之后 autarx update 恢复正常。',
+        'q4.q': '更新机制是怎样的？',
+        'q4.a': 'CLI 用 autarx update、macOS GUI 用内置「检查更新」，两者都消费 Ed25519 签名的 update feed：先验证 wrapper 签名，再校验工件 SHA-256，然后就地替换（GUI 完成后重启）。任何一步验证失败都会 fail-closed 拒绝更新——这是有意为之的安全行为，不是故障。',
         'q5.q': '怎么卸载？',
         'q5.a': 'CLI：删除解压出来的目录（以及你复制到 PATH 里的 autarx 二进制）；运行期状态在系统临时目录的 autarx 子目录（崩溃日志 <TEMP>/autarx/crashes、更新器状态），可一并删除。GUI：把 Autarx.app 拖进废纸篓即可。',
         'footer': 'Autarx · AUTOSAR 集成工作台 · turinglambdaai'
@@ -610,8 +610,8 @@ autarx patch undo  &lt;workspace&gt; [--json]</div>
         'q2.a': 'ARXML — System Description, System Extract, ECU Extract, ECUC and communication ARXML, including multi-file delivery packages (just pass the directory). The AUTOSAR release is detected from the XSD schema location (AUTOSAR_4-3-0.xsd → 4.3.0); known revisions map to classic versions, unknown ones stay raw. Licensed source-available (visible source, proprietary license) — see the repository LICENSE.',
         'q3.q': 'How does it relate to DaVinci / tresos / ISOLAR?',
         'q3.a': 'Coexistence, not replacement. Autarx is not a configurator and does not redo vendor validation or code generation; it closes the gap between receiving an OEM delivery and opening the vendor toolchain. Vendor validation remains authoritative — autarx relays DaVinci/tresos/ISOLAR validation runs via the vendor command with normalized diagnostics, and edited files go back to the vendor toolchain for verification.',
-        'q4.q': 'How do updates work? Why does 0.4.0 and earlier fail the update check?',
-        'q4.a': 'The CLI uses autarx update and the macOS GUI its built-in Check for Updates; both consume an Ed25519-signed update feed. Starting with 0.4.1 the CLI\'s update-manifest.json is a signed wrapper: CLI builds up to and including 0.4.0 only understand the legacy plaintext checksum shape, so their first check against a 0.4.1+ feed fails closed with a verification error (deliberate security behavior, not a malfunction). Fix: download the zip for your platform from the releases page once and replace the old binary (verify against the .sha256 sidecar); autarx update then works normally again.',
+        'q4.q': 'How do updates work?',
+        'q4.a': 'The CLI uses autarx update and the macOS GUI its built-in Check for Updates; both consume an Ed25519-signed update feed: the wrapper signature is verified first, then the artifact SHA-256, before the in-place swap (the GUI relaunches afterwards). Any verification failure refuses the update fail-closed — deliberate security behavior, not a malfunction.',
         'q5.q': 'How do I uninstall?',
         'q5.a': 'CLI: delete the unpacked directory (and any autarx binary you copied onto your PATH); runtime state lives in the autarx folder under the system temp directory (crash logs <TEMP>/autarx/crashes, updater state) and can go too. GUI: drag Autarx.app to the Trash.',
         'footer': 'Autarx · AUTOSAR Integration Workbench · turinglambdaai'

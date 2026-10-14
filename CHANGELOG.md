@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-10-14
+
+The legacy plaintext update feed is retired for good: with no installed
+base to carry over, the README and site stop carrying the dual-feed
+crossover story — only the signed `update-manifest.json` /
+`update-app-manifest.json` remain.
+
 ## [0.4.1] - 2026-10-14
 
 Supply-chain alignment release: the signed update feed goes live, and the

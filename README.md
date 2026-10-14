@@ -37,7 +37,7 @@ Autarx **does not**: replace DaVinci/tresos/ISOLAR, generate production BSW/RTE/
 - **Vendor hand-off** — `vendor list` detects DaVinci/tresos/ISOLAR installations; `vendor validate` relays the vendor tool's own run with normalized diagnostics and the raw output preserved — never an Autarx verdict
 - **Reviewed editing** — `patch plan` previews every change as a semantic diff before anything is written; `patch apply` keeps backups and an undo manifest; renames rewrite incoming reference targets across the workspace
 - **AI agent surface** — `autarx mcp` runs a Model Context Protocol stdio server exposing the whole tool API; there is no raw-write tool, so an agent cannot bypass the plan/diff/review boundary, and every call is audit-logged
-- **Self-update** — the macOS workbench updates in place: it polls an Ed25519-signed feed, and one `Restart and Update` click downloads (with progress), verifies, swaps the bundle and relaunches (`Check for Updates…`, ⌘U). The CLI's `autarx update` checks its release feed (a `latest.json` asset published with every release), verifies the SHA-256 checksum, and swaps the new binaries in place. Unhandled crashes leave a local log under `<TEMP>/autarx/crashes/` — nothing is sent anywhere
+- **Self-update** — the macOS workbench updates in place: it polls an Ed25519-signed feed, and one `Restart and Update` click downloads (with progress), verifies, swaps the bundle and relaunches (`Check for Updates…`, ⌘U). The CLI's `autarx update` checks its release feed (the Ed25519-signed `update-manifest.json` published with every release), verifies the wrapper signature and the artifact SHA-256, and swaps the new binaries in place. Unhandled crashes leave a local log under `<TEMP>/autarx/crashes/` — nothing is sent anywhere
 - **Agent-friendly CLI** — camelCase JSON, deterministic exit codes, ambiguity is reported instead of guessed; a ready-made command chain for CI gates
 - **Native macOS workbench** — SwiftUI host over the embedded Racket core (Windows/Linux hosts planned)
 - **Single binary core** — one Racket executable carries CLI + MCP; the GUI embeds it
@@ -129,7 +129,7 @@ Releases follow `autarx-<version>-<os>-<arch>.<ext>` and ship from
 | `autarx-0.2.0-windows-x64.zip` | Windows (x64) | CLI (self-contained) |
 
 The CLI zips are the self-update payload: once installed, `autarx update`
-pulls newer builds from the checksum-verified feed. The DMG is ad-hoc
+pulls newer builds from the signature-verified feed. The DMG is ad-hoc
 signed — on first launch, right-click the app and choose Open.
 
 To build from source instead:

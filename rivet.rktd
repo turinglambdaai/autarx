@@ -1,1 +1,1 @@
-#hasheq((name . "autarx") (display-name . "Autarx") (version . "0.4.1") (build . 1) (identifier . "site.jrtx.autarx.Autarx") (macos-min-version . "14.0") (windows-min-version . "10.0.19041.0") (backend . "racket/autarx/backend.rkt") (module . "backend") (entry . "start") (protocol . 1))
+#hasheq((name . "autarx") (display-name . "Autarx") (version . "0.4.2") (build . 1) (identifier . "site.jrtx.autarx.Autarx") (macos-min-version . "14.0") (windows-min-version . "10.0.19041.0") (backend . "racket/autarx/backend.rkt") (module . "backend") (entry . "start") (protocol . 1))
