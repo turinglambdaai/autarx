@@ -51,7 +51,7 @@ jobs:
           version: stable
           distribution: full
       - name: Install Rivet (catalog)
-        run: raco pkg install --auto --no-docs rivet
+        run: raco pkg install --auto --no-docs 'https://github.com/turinglambdaai/rivet.git#${{ env.RIVET_PIN }}'
       - name: Link autarx core
         run: raco pkg install --auto --no-docs --name autarx-core --link "file://$GITHUB_WORKSPACE/racket"
       - name: Package
@@ -118,7 +118,7 @@ jobs:
           version: stable
           distribution: full
       - name: Install Rivet (catalog)
-        run: raco pkg install --auto --no-docs rivet
+        run: raco pkg install --auto --no-docs 'https://github.com/turinglambdaai/rivet.git#${{ env.RIVET_PIN }}'
         shell: bash
       - name: Link autarx core
         run: raco pkg install --auto --no-docs --name autarx-core --link "file://$GITHUB_WORKSPACE/racket"
@@ -144,7 +144,7 @@ jobs:
           version: stable
           distribution: full
       - name: Install Rivet (catalog)
-        run: raco pkg install --auto --no-docs rivet
+        run: raco pkg install --auto --no-docs 'https://github.com/turinglambdaai/rivet.git#${{ env.RIVET_PIN }}'
       - uses: actions/download-artifact@v4
         with:
           path: dist
@@ -166,11 +166,12 @@ jobs:
         env:
           UPDATE_ED25519_PRIVATE_KEY_B64: ${{ secrets.UPDATE_ED25519_PRIVATE_KEY_B64 }}
         run: |
-          # Fail-closed: no key, no release. The CLI feed is an Ed25519
-          # signed wrapper since 0.4.0 — an unauthenticated feed is the
-          # supply-chain gap this retires (shared/spec/UPDATE.md). Builds
-          # up to 0.2.0 read the old checksum shape and report a failed
-          # check against the signed feed until manually updated once.
+          # Fail-closed: no key, no release. Starting with 0.4.1 the CLI
+          # feed is an Ed25519 signed wrapper — an unauthenticated feed is
+          # the supply-chain gap this retires (shared/spec/UPDATE.md). CLI
+          # builds up to and including 0.4.0 read the legacy plaintext
+          # checksum shape and report a failed check against the signed
+          # feed; they must update manually once to cross over.
           racket scripts/make-update-feed.rkt \
             "${{ github.ref_name }}" dist \
             "https://github.com/turinglambdaai/autarx/releases/download/${{ github.ref_name }}"
@@ -178,14 +179,18 @@ jobs:
         env:
           UPDATE_ED25519_PRIVATE_KEY_B64: ${{ secrets.UPDATE_ED25519_PRIVATE_KEY_B64 }}
         run: |
-          if [ -n "$UPDATE_ED25519_PRIVATE_KEY_B64" ]; then
-            keyder="$(mktemp /tmp/autarx-key-XXXXXX)"
-            printf '%s' "$UPDATE_ED25519_PRIVATE_KEY_B64" | base64 -d > "$keyder"
-            bash scripts/make-update-manifest.sh "${{ github.ref_name }}" dist "$keyder"
-            rm -f "$keyder"
-          else
-            echo "::warning::UPDATE_ED25519_PRIVATE_KEY_B64 is not set — publishing without the workbench update manifest; in-app updates will report 'release has no update manifest'"
+          # Fail-closed, same contract as the CLI feed above: no key, no
+          # release. The workbench update client verifies the wrapper
+          # signature before parsing, so shipping without the feed would
+          # strand every installed copy on "release has no update manifest".
+          if [ -z "$UPDATE_ED25519_PRIVATE_KEY_B64" ]; then
+            echo "::error::UPDATE_ED25519_PRIVATE_KEY_B64 is not set — refusing to publish without the signed workbench feed (shared/spec/UPDATE.md)"
+            exit 1
           fi
+          keyder="$(mktemp /tmp/autarx-key-XXXXXX)"
+          printf '%s' "$UPDATE_ED25519_PRIVATE_KEY_B64" | base64 -d > "$keyder"
+          bash scripts/make-update-manifest.sh "${{ github.ref_name }}" dist "$keyder"
+          rm -f "$keyder"
       - name: Ensure SHA256SUMS
         run: |
           cd dist
@@ -198,7 +203,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           ver="${GITHUB_REF_NAME#v}"
-          notes="Autarx ${ver}. The macOS workbench (macOS 14+, Apple silicon and Intel) ships as autarx-<version>-macos-<arch>.dmg for human install and as autarx-<version>-macos-<arch>-app.zip — the payload the workbench's built-in updater consumes (Ed25519-signed feed, in-app update with relaunch). The CLI ships as self-contained zips — autarx-<version>-macos-arm64.zip, -macos-x64.zip, -linux-x64.zip, -linux-arm64.zip, -windows-x64.zip — and updates itself through an Ed25519-signed feed (\`autarx update\`). Every asset carries a .sha256 sidecar. Windows and Linux GUI hosts are in development. Ad-hoc signed — on first launch, right-click the app and choose Open."
+          notes="Autarx ${ver}. The macOS workbench (macOS 14+, Apple silicon and Intel) ships as autarx-<version>-macos-<arch>.dmg for human install and as autarx-<version>-macos-<arch>-app.zip — the payload the workbench's built-in updater consumes (Ed25519-signed feed, in-app update with relaunch). The CLI ships as self-contained zips — autarx-<version>-macos-arm64.zip, -macos-x64.zip, -linux-x64.zip, -linux-arm64.zip, -windows-x64.zip — and updates itself through an Ed25519-signed feed (\`autarx update\`). Every asset carries a .sha256 sidecar. Attention CLI users: starting with this release the update feed is an Ed25519 signed wrapper — CLI builds up to and including 0.4.0 still read the legacy plaintext feed and will report a failed update check; download the zip for your platform once and replace the binary to cross over. Windows and Linux GUI hosts are in development. Ad-hoc signed — on first launch, right-click the app and choose Open."
           if gh release view "${{ github.ref_name }}" -R turinglambdaai/autarx >/dev/null 2>&1; then
             gh release upload "${{ github.ref_name }}" dist/* --clobber -R turinglambdaai/autarx
           else

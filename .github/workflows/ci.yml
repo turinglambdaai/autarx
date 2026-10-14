@@ -7,6 +7,11 @@ on:
   pull_request:
     branches: [main, experiment/autarx-rivet]
 
+# Single source of truth for the rivet pin; every install step below
+# references this so a bump is one edit, not a grep-replace across jobs.
+env:
+  RIVET_PIN: v0.11.0
+
 jobs:
   test:
     strategy:
@@ -26,7 +31,7 @@ jobs:
           version: '9.3'
 
       - name: Install Rivet (catalog)
-        run: raco pkg install --auto --no-docs rivet
+        run: raco pkg install --auto --no-docs 'https://github.com/turinglambdaai/rivet.git#${{ env.RIVET_PIN }}'
 
       - name: Install autarx core
         run: raco pkg install --auto --no-docs --name autarx-core --link "file://$PWD/racket"
@@ -63,7 +68,7 @@ jobs:
           version: '9.3'
 
       - name: Install Rivet (catalog)
-        run: raco pkg install --auto --no-docs rivet
+        run: raco pkg install --auto --no-docs 'https://github.com/turinglambdaai/rivet.git#${{ env.RIVET_PIN }}'
 
       - name: Install autarx core + build staged app
         run: |

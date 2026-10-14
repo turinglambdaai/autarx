@@ -1,19 +1,30 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Autarx — AUTOSAR Integration Workbench</title>
-  <meta name="description" content="AUTOSAR Integration Workbench that opens OEM deliveries directly: inspect, search, trace references and validate ARXML before entering the vendor toolchain.">
+  <title>Autarx — AUTOSAR 集成工作台</title>
+  <meta name="description" content="AUTOSAR 集成工作台：直接打开 OEM 交付物，在进入 vendor 工具链之前完成检查、检索、引用追踪与 ARXML 校验。">
+  <script>
+    // no-flash theme: from localStorage when the user picked manually,
+    // otherwise from the system preference (payback family pattern).
+    (function () {
+      var t;
+      try { t = localStorage.getItem('autarx-theme'); } catch (e) {}
+      if (t !== 'dark' && t !== 'light') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.dataset.theme = t;
+    })();
+  </script>
   <link rel="stylesheet" href="styles.css">
   <style>
-    :root { --accent:#0E7490; --accent-hover:#155E75; --accent-soft:rgba(14,116,144,.14); --accent-tint:rgba(14,116,144,.08); }
-    .status-pill { display:inline-flex; gap:8px; align-items:center; padding:7px 12px; border-radius:999px; border:1px solid var(--border); font-family:var(--font-mono); font-size:12px; }
+    .status-pill { display:inline-flex; gap:8px; align-items:center; padding:7px 12px; border-radius:999px; border:1px solid var(--border); font-family:var(--font-mono); font-size:12px; background:var(--bg-card); }
     .status-dot { width:8px; height:8px; border-radius:50%; background:#22c55e; }
     .hero-copy { max-width:850px; }
     .support-table { width:100%; border-collapse:collapse; margin-top:24px; }
-    .support-table th,.support-table td { text-align:left; padding:13px 14px; border-bottom:1px solid var(--border); }
-    .support-table th { color:var(--text-2); }
+    .support-table th,.support-table td { text-align:left; padding:13px 14px; border-bottom:1px solid var(--border); vertical-align:top; }
+    .support-table th { color:var(--text-2); white-space:nowrap; width:110px; }
+    .platforms-grid.four { grid-template-columns: repeat(3, 1fr); }
+    .dev-note { display:inline-block; margin-top:8px; font-size:12px; color:var(--text-3); border:1px dashed var(--border-strong); border-radius:999px; padding:3px 10px; }
   </style>
 </head>
 <body>
@@ -21,121 +32,301 @@
     <div class="nav-wrapper">
       <div class="nav-brand">Autarx</div>
       <ul class="nav-menu">
-        <li><a href="#features" data-en="Features" data-zh="功能">Features</a></li>
-        <li><a href="#platform" data-en="Platform" data-zh="平台">Platform</a></li>
-        <li><a href="#status" data-en="Status" data-zh="状态">Status</a></li>
+        <li><a href="#features" data-i18n="nav.features">功能</a></li>
+        <li><a href="#platform" data-i18n="nav.platform">平台</a></li>
+        <li><a href="#download" data-i18n="nav.download">下载</a></li>
+        <li><a href="guide.html" data-i18n="nav.guide">用户手册</a></li>
         <li><a href="https://github.com/turinglambdaai/autarx">GitHub</a></li>
         <li class="lang-dropdown-wrapper">
-                    <button class="lang-btn" type="button" onclick="void 0" aria-label="Switch language">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-                        <span id="current-lang-label" data-en="English" data-zh="简体中文">English</span>
-                    </button>
-                    <ul class="lang-menu">
-                        <li onclick="setLanguage('en')">English</li>
-                        <li onclick="setLanguage('zh')">简体中文</li>
-                    </ul>
-                </li>
+          <button class="lang-btn" type="button" aria-label="Switch language">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+            <span id="current-lang-label">简体中文</span>
+          </button>
+          <ul class="lang-menu">
+            <li onclick="setLanguage('zh')">简体中文</li>
+            <li onclick="setLanguage('en')">English</li>
+          </ul>
+        </li>
+        <li><button class="theme-btn" id="theme-btn" type="button" aria-label="Toggle theme">◐</button></li>
       </ul>
     </div>
   </nav>
 
   <section class="hero" id="overview">
     <div class="container hero-copy">
-      <div class="status-pill"><span class="status-dot"></span><span data-en="v0.1.0 · M0–M8 shipped" data-zh="v0.1.0 · M0–M8 已交付">v0.1.0 · M0–M8 shipped</span></div>
-      <span class="eyebrow" data-en="OEM-to-supplier AUTOSAR workflows" data-zh="OEM–供应商 AUTOSAR 工作流">OEM-to-supplier AUTOSAR workflows</span>
-      <h1><span data-en="One workspace." data-zh="一个工作台，">One workspace.</span> <span class="accent" data-en="Full delivery visibility." data-zh="看清整套交付。">Full delivery visibility.</span></h1>
-      <p class="lead" data-en="Autarx is an AUTOSAR Integration Workbench that opens OEM deliveries directly — System Description, System Extract, ECU Extract, ECUC and communication ARXML — so integration engineers can inspect, search, trace references and validate structure before entering the vendor toolchain." data-zh="Autarx 是一个 AUTOSAR 集成工作台：直接打开 OEM 交付物——System Description、System Extract、ECU Extract、ECUC 与通信 ARXML——让集成工程师在进入 vendor 工具链之前，先完成检查、检索、引用追踪与结构校验。">Autarx is an AUTOSAR Integration Workbench that opens OEM deliveries directly — so integration engineers can inspect, search, trace references and validate structure before entering the vendor toolchain.</p>
+      <div class="status-pill"><span class="status-dot"></span><span data-i18n="hero.pill">分析栈已交付 · M9 商业化进行中</span></div>
+      <span class="eyebrow" data-i18n="hero.eyebrow">OEM–供应商 AUTOSAR 工作流</span>
+      <h1><span data-i18n="hero.h1a">一个工作台，</span> <span class="accent" data-i18n="hero.h1b">看清整套交付。</span></h1>
+      <p class="lead" data-i18n="hero.lead">Autarx 是一个 AUTOSAR 集成工作台：直接打开 OEM 交付物——System Description、System Extract、ECU Extract、ECUC 与通信 ARXML——让集成工程师在进入 vendor 工具链之前，先完成检查、检索、引用追踪与结构校验。</p>
       <div class="hero-buttons">
-        <a href="https://github.com/turinglambdaai/autarx" class="btn btn-primary" data-en="View source" data-zh="查看源码">View source</a>
-        <a href="https://github.com/turinglambdaai/autarx/blob/main/docs/PRODUCT.md" class="btn btn-secondary" data-en="Product direction" data-zh="产品方向">Product direction</a>
+        <a href="https://github.com/turinglambdaai/autarx/releases/latest" class="btn btn-primary" data-i18n="hero.download">下载最新版</a>
+        <a href="guide.html" class="btn btn-secondary" data-i18n="hero.guide">用户手册</a>
+      </div>
+      <div class="hero-visual">
+        <div class="code-window">
+          <div class="window-header">
+            <div class="window-controls"><span class="traffic-light close"></span><span class="traffic-light minimize"></span><span class="traffic-light maximize"></span></div>
+            <div class="window-title" data-i18n="hero.term-title">autarx — 真实命令与输出</div>
+          </div>
+          <div class="code-body"><span class="prompt">$</span> <span class="cmd">autarx inspect</span> shared/fixtures/OemDelivery
+workspace         shared/fixtures/OemDelivery
+files             2 (5,218 B)
+elements          86
+identifiables     11
+references        8 (<span class="flag">1 unresolved</span>)
+autosar release   <span class="str">4.3.0</span>
+
+<span class="prompt">$</span> <span class="cmd">autarx impact</span> <span class="dim">DiffBefore/ DiffAfter/</span> <span class="flag">--ecu</span> Gateway
+impact for Gateway (/Vehicle/Ecus/Gateway) — ECU present in after delivery
+closure: 7 objects in scope, relevant changes: 4, unrelated: 2, <span class="flag">breaking: 2</span></div>
+        </div>
       </div>
     </div>
   </section>
 
   <section id="features">
     <div class="container">
-      <span class="eyebrow" data-en="What it does" data-zh="它做什么">What it does</span>
-      <h2 class="section-title"><span data-en="The delivery gap," data-zh="交付接手后的缺口，">The delivery gap,</span> <span class="accent" data-en="closed in one window." data-zh="一个窗口补齐。">closed in one window.</span></h2>
+      <span class="eyebrow" data-i18n="features.eyebrow">它做什么</span>
+      <h2 class="section-title"><span data-i18n="features.t1">交付接手后的缺口，</span> <span class="accent" data-i18n="features.t2">一个窗口补齐。</span></h2>
       <div class="bento-grid">
-        <div class="bento-card"><h3 data-en="Open ARXML directly" data-zh="直接打开 ARXML">Open ARXML directly</h3><p data-en="System Description, System Extract, ECU Extract, ECUC and communication ARXML — multi-file delivery packages read by a streaming parser. No vendor configurator required." data-zh="System Description、System Extract、ECU Extract、ECUC 与通信 ARXML——流式解析器直接读多文件交付包，无需 vendor 配置器。">System Description, System Extract, ECU Extract, ECUC and communication ARXML — multi-file delivery packages, no vendor configurator required.</p></div>
-        <div class="bento-card"><h3 data-en="Workspace semantic index" data-zh="工作区语义索引">Workspace semantic index</h3><p data-en="Every SHORT-NAME becomes an indexable object with source-file provenance and a cross-file reference graph (*-REF / *-TREF)." data-zh="每个 SHORT-NAME 都是可索引对象，带来源文件信息与跨文件引用图（*-REF / *-TREF）。">Every SHORT-NAME becomes an indexable object with source-file provenance and a cross-file reference graph.</p></div>
-        <div class="bento-card"><h3 data-en="Delivery inspection" data-zh="交付检查">Delivery inspection</h3><p data-en="One inspect command answers the first question of every delivery: package inventory, ECU list, network and cluster inventory, SWC and communication counts." data-zh="一条 inspect 命令回答「这次 OEM 给了什么」：包清单、ECU 列表、网络与集群清单、SWC 与通信计数。">One inspect command answers the first question of every delivery: package inventory, ECU list, network inventory, SWC and communication counts.</p></div>
-        <div class="bento-card"><h3 data-en="Find, refs, trace" data-zh="检索、引用、追踪">Find, refs, trace</h3><p data-en="Locate any signal, PDU, SWC or ECU element and follow its references across files — with broken references reported, not hidden." data-zh="定位任意 signal、PDU、SWC 或 ECU 元素，跨文件追踪其引用——断链引用会被报告，不会被藏起来。">Locate any signal, PDU, SWC or ECU element and follow its references across files — broken references reported, not hidden.</p></div>
-        <div class="bento-card"><h3 data-en="Semantic diff &amp; ECU impact" data-zh="语义 diff 与 ECU 影响分析">Semantic diff &amp; ECU impact</h3><p data-en="Diff two deliveries by path identity — parameter changes reported by DEFINITION-REF, never line numbers. Impact classifies every change relevant or unrelated to your ECU, with breaking-change findings for CI." data-zh="按路径身份对比两版交付——参数变化以 DEFINITION-REF 表述，绝非行号。影响分析把每个变化归类为「与本 ECU 相关/无关」，并给出可进 CI 的 breaking 发现。">Diff deliveries by identity; impact classifies changes relevant or unrelated to your ECU.</p></div>
-        <div class="bento-card"><h3 data-en="Communication projection" data-zh="通信链路投影">Communication projection</h3><p data-en="Cluster → frame → PDU → signal chains derived from the reference graph, with orphan frames, PDUs and signals reported — structural only, no invented sender/receiver claims." data-zh="从引用图推导 Cluster → Frame → PDU → Signal 链路，并报告未挂接的孤儿对象——只陈述结构，不虚构收发方向。">Cluster → frame → PDU → signal chains, orphans reported — structural only.</p></div>
-        <div class="bento-card"><h3 data-en="Vendor hand-off &amp; reviewed patching" data-zh="厂商交接与受控编辑">Vendor hand-off &amp; reviewed patching</h3><p data-en="Relay validation to DaVinci/tresos/ISOLAR with normalized diagnostics. Patching is plan → semantic diff → apply → undo: nothing is written before the diff is reviewed." data-zh="校验中继给 DaVinci/tresos/ISOLAR 并归一化诊断。编辑遵循 plan → 语义 diff → apply → undo：diff 未审阅前不落盘。">Plan → semantic diff → apply → undo; vendor validation relayed, never replaced.</p></div>
-        <div class="bento-card"><h3 data-en="MCP for AI agents" data-zh="AI agent 的 MCP 接口">MCP for AI agents</h3><p data-en="autarx mcp serves the full tool API over Model Context Protocol. No raw-write tool exists — agents cannot bypass the review boundary, and every call is audit-logged." data-zh="autarx mcp 通过 Model Context Protocol 暴露完整工具 API。不存在裸写工具——agent 无法绕过审阅边界，每次调用都进审计日志。">Full tool API over MCP; no raw-write tool, every call audit-logged.</p></div>
-        <div class="bento-card"><h3 data-en="Agent-friendly CLI" data-zh="对 AI 友好的 CLI">Agent-friendly CLI</h3><p data-en="The same workflows run from CLI and CI with stable JSON output — ready for automation and AI agents." data-zh="同一套工作流可从 CLI/CI 运行，输出稳定 JSON——为自动化与 AI agent 准备。">The same workflows run from CLI and CI with stable JSON output — ready for automation and AI agents.</p></div>
+        <div class="bento-card"><h3 data-i18n="f1.title">直接打开 ARXML</h3><p data-i18n="f1.body">System Description、System Extract、ECU Extract、ECUC 与通信 ARXML——流式解析器直接读多文件交付包，无需 vendor 配置器。</p></div>
+        <div class="bento-card"><h3 data-i18n="f2.title">工作区语义索引</h3><p data-i18n="f2.body">每个 SHORT-NAME 都是可索引对象，带来源文件信息与跨文件引用图（*-REF / *-TREF）。</p></div>
+        <div class="bento-card"><h3 data-i18n="f3.title">交付检查</h3><p data-i18n="f3.body">一条 inspect 命令回答「这次 OEM 给了什么」：包清单、ECU 列表、网络与集群清单、SWC 与通信计数。</p></div>
+        <div class="bento-card"><h3 data-i18n="f4.title">检索、引用、追踪</h3><p data-i18n="f4.body">定位任意 signal、PDU、SWC 或 ECU 元素，跨文件追踪其引用——断链引用会被报告，不会被藏起来。</p></div>
+        <div class="bento-card"><h3 data-i18n="f5.title">语义 diff 与 ECU 影响分析</h3><p data-i18n="f5.body">按路径身份对比两版交付——参数变化以 DEFINITION-REF 表述，绝非行号。影响分析把每个变化归类为「与本 ECU 相关/无关」，并给出可进 CI 的 breaking 发现。</p></div>
+        <div class="bento-card"><h3 data-i18n="f6.title">通信链路投影</h3><p data-i18n="f6.body">从引用图推导 Cluster → Frame → PDU → Signal 链路，并报告未挂接的孤儿对象——只陈述结构，不虚构收发方向。</p></div>
+        <div class="bento-card"><h3 data-i18n="f7.title">厂商交接与受控编辑</h3><p data-i18n="f7.body">校验中继给 DaVinci/tresos/ISOLAR 并归一化诊断。编辑遵循 plan → 语义 diff → apply → undo：diff 未审阅前不落盘。</p></div>
+        <div class="bento-card"><h3 data-i18n="f8.title">AI agent 的 MCP 接口</h3><p data-i18n="f8.body">autarx mcp 通过 Model Context Protocol 暴露完整工具 API。不存在裸写工具——agent 无法绕过审阅边界，每次调用都进审计日志。</p></div>
+        <div class="bento-card"><h3 data-i18n="f9.title">对 AI 友好的 CLI</h3><p data-i18n="f9.body">同一套工作流可从 CLI/CI 运行，输出稳定 JSON——为自动化与 AI agent 准备。</p></div>
       </div>
     </div>
   </section>
 
   <section id="platform">
     <div class="container">
-      <span class="eyebrow" data-en="Platform contract" data-zh="平台契约">Platform contract</span>
-      <h2 class="section-title"><span data-en="Not a configurator." data-zh="不是配置器，">Not a configurator.</span> <span class="accent" data-en="A workbench." data-zh="是工作台。">A workbench.</span></h2>
-      <p class="lead" data-en="Autarx does not replace DaVinci Configurator, EB tresos or ETAS ISOLAR. It closes the engineering gap between receiving an OEM delivery and opening the vendor toolchain — vendor validation and code generation remain authoritative." data-zh="Autarx 不替代 DaVinci Configurator、EB tresos 或 ETAS ISOLAR。它补上的是收到 OEM 交付到打开 vendor 工具链之间的工程缺口——vendor 侧的校验与代码生成仍是权威路径。">Autarx does not replace DaVinci Configurator, EB tresos or ETAS ISOLAR. It closes the engineering gap between receiving an OEM delivery and opening the vendor toolchain.</p>
+      <span class="eyebrow" data-i18n="platform.eyebrow">平台契约</span>
+      <h2 class="section-title"><span data-i18n="platform.t1">不是配置器，</span> <span class="accent" data-i18n="platform.t2">是工作台。</span></h2>
+      <p class="lead" data-i18n="platform.lead">Autarx 不替代 DaVinci Configurator、EB tresos 或 ETAS ISOLAR。它补上的是收到 OEM 交付到打开 vendor 工具链之间的工程缺口——vendor 侧的校验与代码生成仍是权威路径。</p>
       <table class="support-table">
-        <tr><th data-en="Desktop" data-zh="桌面端">Desktop</th><td>Avalonia 12 + .NET 10</td></tr>
-        <tr><th data-en="Platforms" data-zh="平台">Platforms</th><td>Windows · Linux · macOS</td></tr>
-        <tr><th data-en="Input" data-zh="输入">Input</th><td>ARXML — System Description / System Extract / ECU Extract / ECUC / communication, multi-file packages</td></tr>
-        <tr><th data-en="Automation" data-zh="自动化">Automation</th><td>CLI with stable JSON output (CI / AI-agent friendly)</td></tr>
-        <tr><th data-en="License" data-zh="许可">License</th><td>Source-available, proprietary</td></tr>
-        <tr><th data-en="Milestone" data-zh="里程碑">Milestone</th><td>v0.1.0 — M0–M8 shipped: semantic engine, diff, impact, communication, vendor hand-off, reviewed patching, MCP</td></tr>
+        <tr><th data-i18n="pf.desktop">桌面端</th><td data-i18n="pf.desktop-v">macOS 原生宿主（Swift）+ Racket 语义引擎</td></tr>
+        <tr><th data-i18n="pf.platforms">平台</th><td data-i18n="pf.platforms-v">GUI：macOS 14+（Apple silicon / Intel）· CLI：macOS / Linux / Windows；Windows 与 Linux GUI 开发中</td></tr>
+        <tr><th data-i18n="pf.input">输入</th><td data-i18n="pf.input-v">ARXML — System Description / System Extract / ECU Extract / ECUC / 通信，多文件交付包</td></tr>
+        <tr><th data-i18n="pf.automation">自动化</th><td data-i18n="pf.automation-v">CLI 稳定 JSON 输出（CI / AI agent 友好）+ MCP 服务器</td></tr>
+        <tr><th data-i18n="pf.license">许可</th><td data-i18n="pf.license-v">源码可见，专有许可（source-available, proprietary）</td></tr>
+        <tr><th data-i18n="pf.milestone">里程碑</th><td data-i18n="pf.milestone-v">分析栈已交付：语义引擎、语义 diff、ECU 影响分析、通信投影、厂商交接、受控编辑、MCP；M9 商业化加固进行中</td></tr>
       </table>
+      <div class="hero-visual" style="margin-top:44px">
+        <div class="app-window">
+          <img src="assets/autarx-workbench-empty-state.png" alt="Autarx macOS workbench — empty state" style="width:100%;height:auto;display:block">
+        </div>
+        <p style="text-align:center;font-size:13px;color:var(--text-3);margin-top:12px" data-i18n="pf.caption">macOS 工作台真实截图：空态。⌘O 打开 OEM 交付包，开始索引。</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="download">
+    <div class="container">
+      <span class="eyebrow" data-i18n="dl.eyebrow">下载</span>
+      <h2 class="section-title"><span data-i18n="dl.t1">CLI 先行，</span> <span class="accent" data-i18n="dl.t2">GUI 随行。</span></h2>
+      <p class="lead" data-i18n="dl.lead">CLI 是全功能入口：macOS、Linux、Windows 自包含 zip，解压即用。macOS GUI 以 dmg 交付；Windows 与 Linux GUI 在 M9 路线上。</p>
+      <div class="platforms-grid four">
+        <a class="platform-card" href="https://github.com/turinglambdaai/autarx/releases/latest">
+          <div class="platform-icon">🍎</div>
+          <div class="platform-name">CLI · macOS</div>
+          <div class="platform-format">.zip · arm64 + x64</div>
+        </a>
+        <a class="platform-card" href="https://github.com/turinglambdaai/autarx/releases/latest">
+          <div class="platform-icon">🐧</div>
+          <div class="platform-name">CLI · Linux</div>
+          <div class="platform-format">.zip · x64 + arm64</div>
+        </a>
+        <a class="platform-card" href="https://github.com/turinglambdaai/autarx/releases/latest">
+          <div class="platform-icon">🪟</div>
+          <div class="platform-name">CLI · Windows</div>
+          <div class="platform-format">.zip · x64</div>
+        </a>
+      </div>
+      <div class="platforms-grid four">
+        <a class="platform-card" href="https://github.com/turinglambdaai/autarx/releases/latest">
+          <div class="platform-icon">🖥️</div>
+          <div class="platform-name" data-i18n="dl.mac-gui">GUI · macOS</div>
+          <div class="platform-format">.dmg · arm64 + x64 · app.zip（应用内更新）</div>
+        </a>
+        <div class="platform-card">
+          <div class="platform-icon">🪟</div>
+          <div class="platform-name" data-i18n="dl.win-gui">GUI · Windows</div>
+          <span class="dev-note" data-i18n="dl.in-dev">开发中 · M9</span>
+        </div>
+        <div class="platform-card">
+          <div class="platform-icon">🐧</div>
+          <div class="platform-name" data-i18n="dl.linux-gui">GUI · Linux</div>
+          <span class="dev-note" data-i18n="dl.in-dev">开发中 · M9</span>
+        </div>
+      </div>
+      <div class="callout"><span data-i18n="dl.callout">更新机制：CLI 用 autarx update 自更新，macOS GUI 内置「检查更新」（⌘U）——两条通道都走 Ed25519 签名的 update feed。每个资产都带 .sha256 校验文件。</span></div>
     </div>
   </section>
 
   <section id="status">
     <div class="container">
-      <span class="eyebrow" data-en="Status" data-zh="状态">Status</span>
-      <h2 class="section-title"><span data-en="Analysis first," data-zh="分析优先，">Analysis first,</span> <span class="accent" data-en="milestone by milestone." data-zh="一个里程碑一个里程碑。">milestone by milestone.</span></h2>
-      <p class="lead" data-en="v0.1.0 ships the full analysis stack: workspace semantic engine, semantic diff, ECU impact analysis, communication projection, vendor hand-off, reviewed editing and the MCP agent surface. What remains is M9 commercial hardening — installer, licensing and performance profiling." data-zh="v0.1.0 已交付完整分析栈：工作区语义引擎、语义 diff、ECU 影响分析、通信投影、厂商交接、受控编辑与 MCP agent 接口。剩余为 M9 商业化加固——安装器、授权与性能画像。">v0.1.0 ships the full analysis stack; M9 commercial hardening remains.</p>
+      <span class="eyebrow" data-i18n="status.eyebrow">状态</span>
+      <h2 class="section-title"><span data-i18n="status.t1">分析优先，</span> <span class="accent" data-i18n="status.t2">一个里程碑一个里程碑。</span></h2>
+      <p class="lead" data-i18n="status.lead">当前状态：完整分析栈已交付——工作区语义引擎、语义 diff、ECU 影响分析、通信投影、厂商交接、受控编辑与 MCP agent 接口。剩余为 M9 商业化加固——安装器、授权与性能画像；Windows / Linux GUI 宿主也在 M9 路线上。</p>
       <div class="hero-buttons">
-        <a href="https://github.com/turinglambdaai/autarx/releases/latest" class="btn btn-primary" data-en="Download" data-zh="下载">Download</a>
-        <a href="https://github.com/turinglambdaai/autarx" class="btn btn-secondary" data-en="View source" data-zh="查看源码">View source</a>
-        <a href="https://github.com/turinglambdaai/autarx/blob/main/docs/ROADMAP.md" class="btn btn-secondary" data-en="Roadmap" data-zh="路线图">Roadmap</a>
+        <a href="https://github.com/turinglambdaai/autarx/releases/latest" class="btn btn-primary" data-i18n="status.download">下载</a>
+        <a href="guide.html" class="btn btn-secondary" data-i18n="status.guide">用户手册</a>
+        <a href="https://github.com/turinglambdaai/autarx/blob/main/docs/ROADMAP.md" class="btn btn-secondary" data-i18n="status.roadmap">路线图</a>
       </div>
     </div>
   </section>
 
-  <footer><div class="container"><p data-en="Autarx · AUTOSAR Integration Workbench · turinglambdaai" data-zh="Autarx · AUTOSAR 集成工作台 · turinglambdaai">Autarx · AUTOSAR Integration Workbench · turinglambdaai</p></div></footer>
+  <footer><div class="container"><p data-i18n="footer">Autarx · AUTOSAR 集成工作台 · turinglambdaai</p></div></footer>
 
   <script>
-    // Unified language policy: explicit choice wins; otherwise follow system/browser locale.
-    var LANGUAGE_OVERRIDE_KEY = 'autarx-lang-override-v2';
-    var LANGUAGE_LEGACY_KEYS = ['autarx-lang-override-v1', 'site-lang'];
-    var pageMetadata = {
-      en: { title:'Autarx — AUTOSAR Integration Workbench', description:'AUTOSAR Integration Workbench that opens OEM deliveries directly: inspect, search, trace references and validate ARXML before entering the vendor toolchain.' },
-      zh: { title:'Autarx — AUTOSAR 集成工作台', description:'AUTOSAR 集成工作台：直接打开 OEM 交付物，在进入 vendor 工具链之前完成检查、检索、引用追踪与 ARXML 校验。' }
-    };
-    function readLanguageOverride(){
-      try {
-        var v=localStorage.getItem(LANGUAGE_OVERRIDE_KEY);
-        if(v!=='zh'&&v!=='en'){
-          for(var i=0;i<LANGUAGE_LEGACY_KEYS.length;i++){
-            var legacy=localStorage.getItem(LANGUAGE_LEGACY_KEYS[i]);
-            if(legacy==='zh'||legacy==='en'){ v=legacy; try{localStorage.setItem(LANGUAGE_OVERRIDE_KEY,v);}catch(e){} break; }
+    (function () {
+      // Unified family policy: explicit choice wins; otherwise browser locale.
+      // Default inline content is Chinese; en strings live in the dictionary.
+      var zh = {
+        'nav.features': '功能', 'nav.platform': '平台', 'nav.download': '下载', 'nav.guide': '用户手册',
+        'hero.pill': '分析栈已交付 · M9 商业化进行中',
+        'hero.eyebrow': 'OEM–供应商 AUTOSAR 工作流',
+        'hero.h1a': '一个工作台，', 'hero.h1b': '看清整套交付。',
+        'hero.lead': 'Autarx 是一个 AUTOSAR 集成工作台：直接打开 OEM 交付物——System Description、System Extract、ECU Extract、ECUC 与通信 ARXML——让集成工程师在进入 vendor 工具链之前，先完成检查、检索、引用追踪与结构校验。',
+        'hero.download': '下载最新版', 'hero.guide': '用户手册',
+        'features.eyebrow': '它做什么', 'features.t1': '交付接手后的缺口，', 'features.t2': '一个窗口补齐。',
+        'f1.title': '直接打开 ARXML',
+        'f1.body': 'System Description、System Extract、ECU Extract、ECUC 与通信 ARXML——流式解析器直接读多文件交付包，无需 vendor 配置器。',
+        'f2.title': '工作区语义索引',
+        'f2.body': '每个 SHORT-NAME 都是可索引对象，带来源文件信息与跨文件引用图（*-REF / *-TREF）。',
+        'f3.title': '交付检查',
+        'f3.body': '一条 inspect 命令回答「这次 OEM 给了什么」：包清单、ECU 列表、网络与集群清单、SWC 与通信计数。',
+        'f4.title': '检索、引用、追踪',
+        'f4.body': '定位任意 signal、PDU、SWC 或 ECU 元素，跨文件追踪其引用——断链引用会被报告，不会被藏起来。',
+        'f5.title': '语义 diff 与 ECU 影响分析',
+        'f5.body': '按路径身份对比两版交付——参数变化以 DEFINITION-REF 表述，绝非行号。影响分析把每个变化归类为「与本 ECU 相关/无关」，并给出可进 CI 的 breaking 发现。',
+        'f6.title': '通信链路投影',
+        'f6.body': '从引用图推导 Cluster → Frame → PDU → Signal 链路，并报告未挂接的孤儿对象——只陈述结构，不虚构收发方向。',
+        'f7.title': '厂商交接与受控编辑',
+        'f7.body': '校验中继给 DaVinci/tresos/ISOLAR 并归一化诊断。编辑遵循 plan → 语义 diff → apply → undo：diff 未审阅前不落盘。',
+        'f8.title': 'AI agent 的 MCP 接口',
+        'f8.body': 'autarx mcp 通过 Model Context Protocol 暴露完整工具 API。不存在裸写工具——agent 无法绕过审阅边界，每次调用都进审计日志。',
+        'f9.title': '对 AI 友好的 CLI',
+        'f9.body': '同一套工作流可从 CLI/CI 运行，输出稳定 JSON——为自动化与 AI agent 准备。',
+        'platform.eyebrow': '平台契约', 'platform.t1': '不是配置器，', 'platform.t2': '是工作台。',
+        'platform.lead': 'Autarx 不替代 DaVinci Configurator、EB tresos 或 ETAS ISOLAR。它补上的是收到 OEM 交付到打开 vendor 工具链之间的工程缺口——vendor 侧的校验与代码生成仍是权威路径。',
+        'pf.desktop': '桌面端', 'pf.desktop-v': 'macOS 原生宿主（Swift）+ Racket 语义引擎',
+        'pf.platforms': '平台', 'pf.platforms-v': 'GUI：macOS 14+（Apple silicon / Intel）· CLI：macOS / Linux / Windows；Windows 与 Linux GUI 开发中',
+        'pf.input': '输入', 'pf.input-v': 'ARXML — System Description / System Extract / ECU Extract / ECUC / 通信，多文件交付包',
+        'pf.automation': '自动化', 'pf.automation-v': 'CLI 稳定 JSON 输出（CI / AI agent 友好）+ MCP 服务器',
+        'pf.license': '许可', 'pf.license-v': '源码可见，专有许可（source-available, proprietary）',
+        'pf.milestone': '里程碑', 'pf.milestone-v': '分析栈已交付：语义引擎、语义 diff、ECU 影响分析、通信投影、厂商交接、受控编辑、MCP；M9 商业化加固进行中',
+        'pf.caption': 'macOS 工作台真实截图：空态。⌘O 打开 OEM 交付包，开始索引。',
+        'dl.eyebrow': '下载', 'dl.t1': 'CLI 先行，', 'dl.t2': 'GUI 随行。',
+        'dl.lead': 'CLI 是全功能入口：macOS、Linux、Windows 自包含 zip，解压即用。macOS GUI 以 dmg 交付；Windows 与 Linux GUI 在 M9 路线上。',
+        'dl.mac-gui': 'GUI · macOS', 'dl.win-gui': 'GUI · Windows', 'dl.linux-gui': 'GUI · Linux',
+        'dl.in-dev': '开发中 · M9',
+        'dl.callout': '更新机制：CLI 用 autarx update 自更新，macOS GUI 内置「检查更新」（⌘U）——两条通道都走 Ed25519 签名的 update feed。每个资产都带 .sha256 校验文件。',
+        'status.eyebrow': '状态', 'status.t1': '分析优先，', 'status.t2': '一个里程碑一个里程碑。',
+        'status.lead': '当前状态：完整分析栈已交付——工作区语义引擎、语义 diff、ECU 影响分析、通信投影、厂商交接、受控编辑与 MCP agent 接口。剩余为 M9 商业化加固——安装器、授权与性能画像；Windows / Linux GUI 宿主也在 M9 路线上。',
+        'status.download': '下载', 'status.guide': '用户手册', 'status.roadmap': '路线图',
+        'hero.term-title': 'autarx — 真实命令与输出',
+        'footer': 'Autarx · AUTOSAR 集成工作台 · turinglambdaai'
+      };
+      var en = {
+        'nav.features': 'Features', 'nav.platform': 'Platform', 'nav.download': 'Download', 'nav.guide': 'User guide',
+        'hero.pill': 'Analysis stack shipped · M9 hardening in progress',
+        'hero.eyebrow': 'OEM-to-supplier AUTOSAR workflows',
+        'hero.h1a': 'One workspace.', 'hero.h1b': 'Full delivery visibility.',
+        'hero.lead': 'Autarx is an AUTOSAR Integration Workbench that opens OEM deliveries directly — System Description, System Extract, ECU Extract, ECUC and communication ARXML — so integration engineers can inspect, search, trace references and validate structure before entering the vendor toolchain.',
+        'hero.download': 'Download', 'hero.guide': 'User guide',
+        'features.eyebrow': 'What it does', 'features.t1': 'The delivery gap,', 'features.t2': 'closed in one window.',
+        'f1.title': 'Open ARXML directly',
+        'f1.body': 'System Description, System Extract, ECU Extract, ECUC and communication ARXML — multi-file delivery packages read by a streaming parser. No vendor configurator required.',
+        'f2.title': 'Workspace semantic index',
+        'f2.body': 'Every SHORT-NAME becomes an indexable object with source-file provenance and a cross-file reference graph (*-REF / *-TREF).',
+        'f3.title': 'Delivery inspection',
+        'f3.body': 'One inspect command answers the first question of every delivery: package inventory, ECU list, network and cluster inventory, SWC and communication counts.',
+        'f4.title': 'Find, refs, trace',
+        'f4.body': 'Locate any signal, PDU, SWC or ECU element and follow its references across files — with broken references reported, not hidden.',
+        'f5.title': 'Semantic diff & ECU impact',
+        'f5.body': 'Diff two deliveries by path identity — parameter changes reported by DEFINITION-REF, never line numbers. Impact classifies every change relevant or unrelated to your ECU, with breaking-change findings for CI.',
+        'f6.title': 'Communication projection',
+        'f6.body': 'Cluster → frame → PDU → signal chains derived from the reference graph, with orphan frames, PDUs and signals reported — structural only, no invented sender/receiver claims.',
+        'f7.title': 'Vendor hand-off & reviewed patching',
+        'f7.body': 'Relay validation to DaVinci/tresos/ISOLAR with normalized diagnostics. Patching is plan → semantic diff → apply → undo: nothing is written before the diff is reviewed.',
+        'f8.title': 'MCP for AI agents',
+        'f8.body': 'autarx mcp serves the full tool API over Model Context Protocol. No raw-write tool exists — agents cannot bypass the review boundary, and every call is audit-logged.',
+        'f9.title': 'Agent-friendly CLI',
+        'f9.body': 'The same workflows run from CLI and CI with stable JSON output — ready for automation and AI agents.',
+        'platform.eyebrow': 'Platform contract', 'platform.t1': 'Not a configurator.', 'platform.t2': 'A workbench.',
+        'platform.lead': 'Autarx does not replace DaVinci Configurator, EB tresos or ETAS ISOLAR. It closes the engineering gap between receiving an OEM delivery and opening the vendor toolchain — vendor validation and code generation remain authoritative.',
+        'pf.desktop': 'Desktop', 'pf.desktop-v': 'Native macOS host (Swift) + Racket semantic engine',
+        'pf.platforms': 'Platforms', 'pf.platforms-v': 'GUI: macOS 14+ (Apple silicon / Intel) · CLI: macOS / Linux / Windows; Windows and Linux GUI in development',
+        'pf.input': 'Input', 'pf.input-v': 'ARXML — System Description / System Extract / ECU Extract / ECUC / communication, multi-file packages',
+        'pf.automation': 'Automation', 'pf.automation-v': 'CLI with stable JSON output (CI / AI-agent friendly) + MCP server',
+        'pf.license': 'License', 'pf.license-v': 'Source-available, proprietary',
+        'pf.milestone': 'Milestone', 'pf.milestone-v': 'Analysis stack shipped: semantic engine, semantic diff, ECU impact, communication projection, vendor hand-off, reviewed patching, MCP; M9 commercial hardening in progress',
+        'pf.caption': 'Real screenshot of the macOS workbench: empty state. Press ⌘O to open an OEM delivery and start indexing.',
+        'dl.eyebrow': 'Download', 'dl.t1': 'CLI first,', 'dl.t2': 'GUI alongside.',
+        'dl.lead': 'The CLI is the full-featured entry point: self-contained zips for macOS, Linux and Windows — unpack and run. The macOS GUI ships as a dmg; Windows and Linux GUIs are on the M9 roadmap.',
+        'dl.mac-gui': 'GUI · macOS', 'dl.win-gui': 'GUI · Windows', 'dl.linux-gui': 'GUI · Linux',
+        'dl.in-dev': 'In development · M9',
+        'dl.callout': 'Updates: the CLI updates itself with autarx update; the macOS GUI has a built-in Check for Updates (⌘U). Both channels consume an Ed25519-signed update feed. Every asset carries a .sha256 sidecar.',
+        'status.eyebrow': 'Status', 'status.t1': 'Analysis first,', 'status.t2': 'milestone by milestone.',
+        'status.lead': 'Where things stand: the full analysis stack is shipped — workspace semantic engine, semantic diff, ECU impact analysis, communication projection, vendor hand-off, reviewed editing and the MCP agent surface. What remains is M9 commercial hardening — installer, licensing and performance profiling; Windows / Linux GUI hosts are on the same roadmap.',
+        'status.download': 'Download', 'status.guide': 'User guide', 'status.roadmap': 'Roadmap',
+        'hero.term-title': 'autarx — real commands, real output',
+        'footer': 'Autarx · AUTOSAR Integration Workbench · turinglambdaai'
+      };
+
+      var LANGUAGE_OVERRIDE_KEY = 'autarx-lang-override-v2';
+      var LANGUAGE_LEGACY_KEYS = ['autarx-lang-override-v1', 'site-lang'];
+
+      function readLanguageOverride() {
+        try {
+          var v = localStorage.getItem(LANGUAGE_OVERRIDE_KEY);
+          if (v !== 'zh' && v !== 'en') {
+            for (var i = 0; i < LANGUAGE_LEGACY_KEYS.length; i++) {
+              var legacy = localStorage.getItem(LANGUAGE_LEGACY_KEYS[i]);
+              if (legacy === 'zh' || legacy === 'en') { v = legacy; try { localStorage.setItem(LANGUAGE_OVERRIDE_KEY, v); } catch (e) {} break; }
+            }
           }
+          return v === 'zh' || v === 'en' ? v : null;
+        } catch (e) { return null; }
+      }
+      function detectBrowserLanguage() {
+        var locale = (navigator.languages && navigator.languages[0]) || navigator.language || '';
+        return String(locale).toLowerCase().indexOf('zh') === 0 ? 'zh' : 'en';
+      }
+      function apply(lang) {
+        var dict = lang === 'en' ? en : zh;
+        document.documentElement.lang = lang === 'en' ? 'en' : 'zh-CN';
+        document.documentElement.setAttribute('data-language', lang);
+        var nodes = document.querySelectorAll('[data-i18n]');
+        for (var i = 0; i < nodes.length; i++) {
+          var key = nodes[i].getAttribute('data-i18n');
+          if (dict[key]) nodes[i].textContent = dict[key];
         }
-        return v==='zh'||v==='en'?v:null;
-      } catch(e){ return null; }
-    }
-    function detectBrowserLanguage(){ var locale=(navigator.languages&&navigator.languages[0])||navigator.language||''; return String(locale).toLowerCase().indexOf('zh')===0?'zh':'en'; }
-    function applyLanguage(lang,persist){
-      if(persist){ try { localStorage.setItem(LANGUAGE_OVERRIDE_KEY,lang); } catch(e){} }
-      document.querySelectorAll('[data-en]').forEach(function(el){ var text=el.getAttribute('data-'+lang); if(text!==null) el.textContent=text; });
-      document.documentElement.lang=lang==='zh'?'zh-CN':'en';
-      document.documentElement.setAttribute('data-language',lang);
-      var label=document.getElementById('current-lang-label');
-      if(label) label.textContent=lang==='zh'?'简体中文':'English';
-      var metadata=pageMetadata[lang];
-      if(metadata){ document.title=metadata.title; var d=document.querySelector('meta[name="description"]'); if(d)d.setAttribute('content',metadata.description); }
-    }
-    function setLanguage(lang){ if(lang==='zh'||lang==='en') applyLanguage(lang,true); }
-    applyLanguage(readLanguageOverride()||detectBrowserLanguage(),false);
-    LANGUAGE_LEGACY_KEYS.forEach(function(k){ try{ localStorage.removeItem(k); }catch(e){} });
-    window.addEventListener('languagechange',function(){ if(!readLanguageOverride()) applyLanguage(detectBrowserLanguage(),false); });
+        var label = document.getElementById('current-lang-label');
+        if (label) label.textContent = lang === 'en' ? 'English' : '简体中文';
+      }
+      window.setLanguage = function (lang) {
+        if (lang !== 'zh' && lang !== 'en') return;
+        try { localStorage.setItem(LANGUAGE_OVERRIDE_KEY, lang); } catch (e) {}
+        apply(lang);
+      };
+      apply(readLanguageOverride() || 'zh');
+      LANGUAGE_LEGACY_KEYS.forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
+      window.addEventListener('languagechange', function () {
+        if (!readLanguageOverride()) apply(detectBrowserLanguage());
+      });
+
+      document.getElementById('theme-btn').addEventListener('click', function () {
+        var next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = next;
+        try { localStorage.setItem('autarx-theme', next); } catch (e) {}
+      });
+    })();
   </script>
 </body>
 </html>

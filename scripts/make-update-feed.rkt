@@ -7,9 +7,9 @@
 ;; {version, assets} checksum feed: `autarx update` now authenticates the
 ;; feed before a byte of it is parsed, with the same key that signs the
 ;; workbench's update-app-manifest.json (sibling script
-;; make-update-manifest.sh). CLI builds up to 0.2.0 read the old checksum
-;; shape and report a failed check against the signed feed — a one-off
-;; manual install moves them over (shared/spec/UPDATE.md).
+;; make-update-manifest.sh). CLI builds up to and including 0.4.0 read
+;; the old checksum shape and report a failed check against the signed
+;; feed — a one-off manual install moves them over (shared/spec/UPDATE.md).
 ;;
 ;; The workbench keeps its own feed because the manifest schema admits one
 ;; artifact per platform × architecture × installer, and macOS carries both

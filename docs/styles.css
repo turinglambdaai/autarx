@@ -5,18 +5,20 @@
  */
 
 :root {
-    --bg: #F5F5F7;
+    --bg: #faf7f2;
     --bg-card: #FFFFFF;
     --bg-elevated: #FFFFFF;
-    --text: #1D1D1F;
-    --text-2: #6E6E73;
-    --text-3: #8E8E93;
-    --accent: #007AFF;
-    --accent-hover: #0066D6;
-    --accent-soft: rgba(0, 122, 255, 0.14);
-    --accent-tint: rgba(0, 122, 255, 0.08);
-    --border: rgba(0, 0, 0, 0.10);
-    --border-strong: rgba(0, 0, 0, 0.16);
+    --text: #1F1D1A;
+    --text-2: #6B6660;
+    --text-3: #8E8880;
+    --accent: #C15F3C;
+    --accent-hover: #A84E2F;
+    --accent-soft: #F7E5DD;
+    --accent-tint: rgba(193, 95, 60, 0.08);
+    --accent-bright: #E89B7E;
+    --border: rgba(31, 29, 26, 0.10);
+    --border-strong: rgba(31, 29, 26, 0.16);
+    --nav-bg: rgba(250, 247, 242, 0.82);
 
     --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --font-serif: "Newsreader", Georgia, serif;
@@ -27,11 +29,49 @@
     --radius-m: 14px;
     --radius-s: 10px;
 
-    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.05);
-    --shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.05), 0 14px 40px rgba(0, 0, 0, 0.09);
-    --shadow-window: 0 30px 70px rgba(0, 0, 0, 0.13), 0 8px 20px rgba(0, 0, 0, 0.06);
+    --shadow-card: 0 1px 2px rgba(31, 29, 26, 0.04), 0 8px 24px rgba(31, 29, 26, 0.05);
+    --shadow-hover: 0 2px 4px rgba(31, 29, 26, 0.05), 0 14px 40px rgba(31, 29, 26, 0.09);
+    --shadow-window: 0 30px 70px rgba(31, 29, 26, 0.13), 0 8px 20px rgba(31, 29, 26, 0.06);
 
     --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* theme: data-theme is set by the inline head script — from localStorage
+   when the user has picked manually, otherwise from the system preference.
+   Explicit light overrides exist so a manual choice wins over the OS. */
+:root[data-theme="dark"] {
+    --bg: #1F1D1A;
+    --bg-card: #2B2926;
+    --bg-elevated: #2B2926;
+    --text: #F0EDE8;
+    --text-2: #A8A29A;
+    --text-3: #7D786F;
+    --accent: #D97A55;
+    --accent-hover: #E58A65;
+    --accent-soft: rgba(217, 122, 85, 0.16);
+    --accent-tint: rgba(217, 122, 85, 0.10);
+    --border: rgba(240, 237, 232, 0.12);
+    --border-strong: rgba(240, 237, 232, 0.22);
+    --nav-bg: rgba(31, 29, 26, 0.82);
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.20), 0 8px 24px rgba(0, 0, 0, 0.25);
+    --shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.25), 0 14px 40px rgba(0, 0, 0, 0.35);
+    --shadow-window: 0 30px 70px rgba(0, 0, 0, 0.45), 0 8px 20px rgba(0, 0, 0, 0.30);
+}
+
+:root[data-theme="light"] {
+    --bg: #faf7f2;
+    --bg-card: #FFFFFF;
+    --bg-elevated: #FFFFFF;
+    --text: #1F1D1A;
+    --text-2: #6B6660;
+    --text-3: #8E8880;
+    --accent: #C15F3C;
+    --accent-hover: #A84E2F;
+    --accent-soft: #F7E5DD;
+    --accent-tint: rgba(193, 95, 60, 0.08);
+    --border: rgba(31, 29, 26, 0.10);
+    --border-strong: rgba(31, 29, 26, 0.16);
+    --nav-bg: rgba(250, 247, 242, 0.82);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -59,7 +99,7 @@ ul { list-style: none; }
     top: 0;
     width: 100%;
     height: 56px;
-    background: rgba(245, 245, 247, 0.78);
+    background: var(--nav-bg);
     backdrop-filter: saturate(180%) blur(20px);
     -webkit-backdrop-filter: saturate(180%) blur(20px);
     border-bottom: 1px solid var(--border);
@@ -146,6 +186,22 @@ ul { list-style: none; }
     transition: background 0.15s;
 }
 .lang-menu li:hover { background: var(--accent-tint); color: var(--accent); }
+
+.theme-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-2);
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s var(--ease);
+}
+.theme-btn:hover { color: var(--accent); background: var(--accent-tint); }
 
 /* ---------- Layout ---------- */
 .container { max-width: var(--wrapper-width); margin: 0 auto; padding: 0 24px; }

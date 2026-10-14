@@ -44,7 +44,7 @@ self-contained signed wrapper, below) for every release.
 |---|---|---|---|---|
 | Workbench, Apple silicon | `update-app-manifest.json` `macos`/`arm64` app-zip entry | zip → sha256 → ditto → atomic swap in place (`.old` copy kept until relaunch) — all inside rivet's shared `RivetUpdate` module | Ed25519 wrapper signature + artifact sha256 + unpacked bundle version == manifest version | wired since 0.3.0 (shared module since 0.4.0) |
 | Workbench, Intel | `update-app-manifest.json` `macos`/`x64` app-zip entry | same swap flow on the x64 build (hosts match their compile-time architecture) | same | wired since 0.3.0 (shared module since 0.4.0) |
-| CLI (macOS/Windows/Linux) | `update-manifest.json` (signed wrapper, `rivet/distribution` — since 0.4.0) | download (size + sha256 enforced by `download-update`) → in-place file swap (`<name>.autarx-update.old`) | Ed25519 wrapper signature (`key_id autarx-2026-10`) + artifact sha256 | checksum feed 0.1.0–0.3.1; signed wrapper since 0.4.0 (`autarx update`) |
+| CLI (macOS/Windows/Linux) | `update-manifest.json` (signed wrapper, `rivet/distribution` — live since 0.4.1) | download (size + sha256 enforced by `download-update`) → in-place file swap (`<name>.autarx-update.old`) | Ed25519 wrapper signature (`key_id autarx-2026-10`) + artifact sha256 | checksum feed 0.1.0–0.4.0; signed wrapper since 0.4.1 (`autarx update`) |
 | Windows / Linux workbench | — | — | — | M9 roadmap; feed entries follow the hosts |
 
 Only a workbench copy under `/Applications` (or `~/Applications`) can
@@ -63,12 +63,12 @@ signed with the same `autarx-2026-10` key.
 
 History: up to and including 0.2.0, `update-manifest.json` was the CLI's
 plain `{version, assets}` checksum document and `latest.json` was a
-byte-identical alias for pre-0.2.0 builds. The 0.4.0 migration replaced
-the checksum document with the signed wrapper and retired the alias —
+byte-identical alias for pre-0.2.0 builds. The 0.4.1 release replaces
+the checksum document with the signed wrapper and retires the alias —
 the unauthenticated checksum feed was the supply-chain gap the family's
-`勿再手搓` direction closes. CLI builds up to 0.2.0 cannot parse the
-signed wrapper and report a failed check; they need a one-off manual
-install to cross over.
+`勿再手搓` direction closes. CLI builds up to and including 0.4.0 cannot
+parse the signed wrapper and report a failed check; they need a one-off
+manual install to cross over.
 
 ## Engine-side updater (CLI, `racket/autarx/update.rkt`)
 

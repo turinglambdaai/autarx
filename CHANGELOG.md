@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-10-14
+
+Supply-chain alignment release: the signed update feed goes live, and the
+release pipeline can no longer publish without it.
+
+> **Attention CLI users — one-off manual update required.** Starting with
+> 0.4.1, `update-manifest.json` is an Ed25519 signed wrapper. Every CLI
+> build up to and including 0.4.0 reads the legacy plaintext checksum
+> shape, so its **first `autarx update` against 0.4.1 or later fails
+> closed** with a verification error instead of updating. To cross over,
+> download the zip for your platform from the
+> [0.4.1 release page](https://github.com/turinglambdaai/autarx/releases/tag/v0.4.1)
+> once and replace the existing binary (verify against the `.sha256`
+> sidecar). From 0.4.1 on, `autarx update` works unattended again. The
+> macOS workbench is unaffected — its in-app updater already verifies the
+> signed `update-app-manifest.json`.
+
 ### Changed
 
 - **The update chain is authenticated end to end.** The CLI updater
@@ -23,15 +40,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   fails the release instead of shipping an unsigned feed, and the
   `latest.json` alias is retired. Both network legs gained watchdog
   timeouts (60 s manifest, 120 s stall / 30 min download).
+  **This is the first release that publishes the signed wrapper** — the
+  0.4.0 feed was still the plaintext checksum document, which is why the
+  manual crossover above covers every build up to and including 0.4.0
+  (shared/spec/UPDATE.md).
 - **The macOS workbench update client is rivet's shared `RivetUpdate`
   module** (since rivet 0.8.1): signed-manifest verification, the bounded
   download, sha256/size enforcement, the ditto unpack + version
   confirmation, the atomic swap with rollback, and the quit/relaunch
   handoff moved into the library; `UpdateService.swift` shrank to a thin
   product adapter (feed, key, key id, bundle name, error mapping).
-- CLI builds up to 0.2.0 parse the old checksum feed shape and report a
-  failed check against the signed feed; they need a one-off manual
-  install to cross over (shared/spec/UPDATE.md).
+- **The workbench feed is fail-closed in the release pipeline too** — a
+  missing `UPDATE_ED25519_PRIVATE_KEY_B64` now fails the publish job
+  with an error instead of uploading the release without
+  `update-app-manifest.json` (the CLI track already behaved this way).
+- CI installs rivet from the pinned tag (`v0.11.0`) instead of the
+  moving catalog head; `macos-host/Package.swift` consumes rivet's root
+  package (`.package(path: rivetRoot)`, product package name `rivet`),
+  matching the family shape.
+- **Website** (docs/index.html): the hardcoded "v0.1.0 · M0–M8" version
+  strings are gone — the milestone/status copy states the product stage
+  without a version literal that rots; default language is now Chinese
+  (`lang="zh-CN"`, English stays one click away); the palette moves to
+  the family tokens (warm paper `#faf7f2` background, terracotta
+  `#c15f3c` accent); a dark theme ships with a toggle, `localStorage`
+  persistence and a no-flash head script.
+- **User guide** (docs/guide.html): a command handbook for the CLI —
+  five-minute start, every subcommand with a real example and its flags,
+  a short GUI section and an FAQ (platforms, license data, coexistence
+  with DaVinci/tresos, update mechanics, uninstall). Bilingual, default
+  Chinese, linked from the site navigation.
 
 ## [0.4.0] - 2026-10-12
 

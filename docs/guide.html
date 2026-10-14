@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Autarx 用户手册 — CLI 命令手册</title>
+  <meta name="description" content="Autarx 用户手册：五分钟上手、每个 CLI 子命令的真实示例与 flag、GUI 简节与常见问题（平台、数据源、与 DaVinci/tresos 共存、更新机制、卸载）。">
+  <script>
+    (function () {
+      var t;
+      try { t = localStorage.getItem('autarx-theme'); } catch (e) {}
+      if (t !== 'dark' && t !== 'light') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.dataset.theme = t;
+    })();
+  </script>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .doc-hero { padding: 64px 0 24px; text-align: left; }
+    .doc-hero h1 { font-family: var(--font-serif); font-size: clamp(32px, 5vw, 48px); font-weight: 500; letter-spacing: -0.02em; margin-bottom: 14px; }
+    .doc-hero .lead { font-size: 17px; color: var(--text-2); max-width: 760px; line-height: 1.65; }
+    .toc-chips { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
+    .toc-chips a { font-size: 13.5px; font-family: var(--font-mono); border: 1px solid var(--border-strong); border-radius: 999px; padding: 6px 14px; color: var(--text-2); transition: all 0.2s var(--ease); }
+    .toc-chips a:hover { color: var(--accent); border-color: var(--accent); }
+    .doc section { padding: 40px 0 8px; }
+    .cmd-group { margin-top: 34px; }
+    .cmd-group > h2 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 6px; }
+    .cmd-group > p.desc { color: var(--text-2); font-size: 15px; margin-bottom: 10px; }
+    .cmd-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-m); box-shadow: var(--shadow-card); padding: 24px 26px; margin-top: 18px; }
+    .cmd-block h3 { font-family: var(--font-mono); font-size: 16.5px; font-weight: 600; color: var(--accent); margin-bottom: 8px; }
+    .cmd-block .one-line { font-size: 14.5px; color: var(--text); margin-bottom: 8px; }
+    .cmd-block .syntax { font-family: var(--font-mono); font-size: 13px; color: var(--text-2); background: var(--accent-tint); border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; overflow-x: auto; white-space: pre; }
+    .cmd-block .flags { font-size: 13.5px; color: var(--text-2); margin-bottom: 12px; line-height: 1.7; }
+    .cmd-block .flags code { font-family: var(--font-mono); font-size: 12.5px; background: var(--accent-soft); border-radius: 5px; padding: 1px 6px; color: var(--text); }
+    .cmd-block .code-window { margin-top: 4px; box-shadow: none; }
+    .cmd-block .code-body { font-size: 12.5px; padding: 14px 18px; }
+    .doc table.compare { font-size: 13.5px; }
+    .doc table.compare code { font-family: var(--font-mono); font-size: 12.5px; }
+    .faq-item { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-m); padding: 22px 26px; margin-top: 16px; box-shadow: var(--shadow-card); }
+    .faq-item h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+    .faq-item p, .faq-item li { font-size: 14.5px; color: var(--text-2); line-height: 1.7; }
+    .faq-item code { font-family: var(--font-mono); font-size: 13px; background: var(--accent-soft); border-radius: 5px; padding: 1px 6px; color: var(--text); }
+    .step-list { counter-reset: step; margin-top: 24px; }
+    .step { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-m); box-shadow: var(--shadow-card); padding: 22px 26px; margin-top: 16px; }
+    .step .step-title { display: flex; align-items: baseline; gap: 12px; margin-bottom: 8px; }
+    .step .step-no { font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--accent); }
+    .step h3 { font-size: 16px; font-weight: 600; }
+    .step p { font-size: 14.5px; color: var(--text-2); line-height: 1.7; margin-bottom: 10px; }
+    .step code { font-family: var(--font-mono); font-size: 13px; background: var(--accent-soft); border-radius: 5px; padding: 1px 6px; color: var(--text); }
+  </style>
+</head>
+<body class="doc">
+  <nav class="nav-container">
+    <div class="nav-wrapper">
+      <div class="nav-brand"><a href="index.html" style="color:inherit">Autarx</a></div>
+      <ul class="nav-menu">
+        <li><a href="index.html#features" data-i18n="nav.features">功能</a></li>
+        <li><a href="index.html#download" data-i18n="nav.download">下载</a></li>
+        <li><a href="guide.html" data-i18n="nav.guide">用户手册</a></li>
+        <li><a href="https://github.com/turinglambdaai/autarx">GitHub</a></li>
+        <li class="lang-dropdown-wrapper">
+          <button class="lang-btn" type="button" aria-label="Switch language">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+            <span id="current-lang-label">简体中文</span>
+          </button>
+          <ul class="lang-menu">
+            <li onclick="setLanguage('zh')">简体中文</li>
+            <li onclick="setLanguage('en')">English</li>
+          </ul>
+        </li>
+        <li><button class="theme-btn" id="theme-btn" type="button" aria-label="Toggle theme">◐</button></li>
+      </ul>
+    </div>
+  </nav>
+
+  <header class="doc-hero">
+    <div class="container">
+      <span class="eyebrow" data-i18n="g.eyebrow">用户手册</span>
+      <h1 data-i18n="g.h1">Autarx 命令手册</h1>
+      <p class="lead" data-i18n="g.lead">CLI 是 Autarx 的全功能入口，本手册就是它的命令手册：五分钟上手、每个子命令的真实示例（全部在仓库 fixture 上跑通）、GUI 简节与常见问题。</p>
+      <div class="toc-chips">
+        <a href="#start" data-i18n="g.toc-start">五分钟上手</a>
+        <a href="#workspace" data-i18n="g.toc-ws">工作区命令</a>
+        <a href="#single-file" data-i18n="g.toc-sf">单文件命令</a>
+        <a href="#vendor" data-i18n="g.toc-vendor">厂商工具</a>
+        <a href="#patch" data-i18n="g.toc-patch">受控编辑</a>
+        <a href="#mcp" data-i18n="g.toc-mcp">MCP</a>
+        <a href="#update" data-i18n="g.toc-update">自更新</a>
+        <a href="#exitcodes" data-i18n="g.toc-exit">选项与退出码</a>
+        <a href="#gui" data-i18n="g.toc-gui">GUI</a>
+        <a href="#faq" data-i18n="g.toc-faq">FAQ</a>
+      </div>
+    </div>
+  </header>
+
+  <section id="start">
+    <div class="container">
+      <span class="eyebrow" data-i18n="s1.eyebrow">五分钟上手</span>
+      <h2 class="section-title"><span data-i18n="s1.t1">下载，解压，</span> <span class="accent" data-i18n="s1.t2">第一条 inspect。</span></h2>
+
+      <div class="step-list">
+        <div class="step">
+          <div class="step-title"><span class="step-no">01</span><h3 data-i18n="s1.st1">下载并解压 CLI</h3></div>
+          <p data-i18n="s1.st1-p">到 releases 页下载你平台的自包含 zip，解压得到 autarx 可执行文件——无需安装运行时，Racket 引擎已打包在内。</p>
+          <div class="code-window"><div class="window-header"><div class="window-controls"><span class="traffic-light close"></span><span class="traffic-light minimize"></span><span class="traffic-light maximize"></span></div><div class="window-title">terminal</div></div><div class="code-body"><span class="prompt">$</span> <span class="cmd">unzip</span> autarx-&lt;version&gt;-macos-arm64.zip -d autarx
+<span class="prompt">$</span> ./autarx/autarx --version</div></div>
+          <p data-i18n="s1.st1-note">macOS / Linux：如需全局使用，把解压目录放进 PATH，或把 autarx 移到 /usr/local/bin。</p>
+        </div>
+
+        <div class="step">
+          <div class="step-title"><span class="step-no">02</span><h3 data-i18n="s1.st2">第一条命令：inspect</h3></div>
+          <p data-i18n="s1.st2-p">把 OEM 交付包（一个目录或单个 ARXML）交给 inspect，它回答「这次交付里有什么」。以下输出在仓库自带 fixture 上真实跑通，本书所有示例同样如此。</p>
+          <div class="code-window"><div class="window-header"><div class="window-controls"><span class="traffic-light close"></span><span class="traffic-light minimize"></span><span class="traffic-light maximize"></span></div><div class="window-title">terminal</div></div><div class="code-body"><span class="prompt">$</span> <span class="cmd">autarx inspect</span> shared/fixtures/OemDelivery
+workspace         shared/fixtures/OemDelivery
+files             2 (5,218 B)
+elements          86
+identifiables     11
+packages          11
+references        8 (<span class="flag">1 unresolved</span>)
+duplicate paths   0
+file errors       0
+autosar release   <span class="str">4.3.0</span>
+namespaces        1 distinct
+semantic inventory:
+  system                     1
+  ecu                        3
+  communication-cluster      1
+  frame                      1
+  pdu                        1
+  signal                     1
+  <span class="dim">…</span></div></div>
+        </div>
+
+        <div class="step">
+          <div class="step-title"><span class="step-no">03</span><h3 data-i18n="s1.st3">读懂输出</h3></div>
+          <p data-i18n="s1.st3-p">files 是交付包里的 ARXML 数量；identifiables 是带 SHORT-NAME 的可索引对象数；references 统计跨对象引用，括号里是断链（unresolved）数量——交付接手第一眼先看它；autosar release 从 XSD schema location 推出（如 AUTOSAR_4-3-0.xsd → 4.3.0）；semantic inventory 是按语义类别的清单。</p>
+        </div>
+
+        <div class="step">
+          <div class="step-title"><span class="step-no">04</span><h3 data-i18n="s1.st4">机器可读：--json</h3></div>
+          <p data-i18n="s1.st4-p">所有命令都接受 --json，输出确定性 camelCase JSON——供 CI 与 AI agent 消费。上面同一条命令的 JSON 输出（节选）：</p>
+          <div class="code-window"><div class="window-header"><div class="window-controls"><span class="traffic-light close"></span><span class="traffic-light minimize"></span><span class="traffic-light maximize"></span></div><div class="window-title">terminal</div></div><div class="code-body"><span class="prompt">$</span> <span class="cmd">autarx inspect</span> shared/fixtures/OemDelivery <span class="flag">--json</span>
+{
+  "workspace": "shared/fixtures/OemDelivery",
+  "fileCount": 2,
+  "totalElementCount": 86,
+  "identifiableCount": 11,
+  "referenceCount": 8,
+  "unresolvedReferenceCount": 1,
+  "autosar": { "release": "4.3.0", "mixedSchema": false, <span class="dim">…</span> },
+  "semanticCounts": { "system": 1, "ecu": 3, <span class="dim">…</span> }
+}</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="workspace" class="cmd-group">
+    <div class="container">
+      <h2 data-i18n="cw.h">工作区命令</h2>
+      <p class="desc" data-i18n="cw.desc">接受一个目录（多文件交付包）或单个 ARXML 作为工作区。</p>
+
+      <div class="cmd-block">
+        <h3>inspect</h3>
+        <p class="one-line" data-i18n="c.inspect">一句话：总结工作区——文件、语义清单、引用与断链计数。上手命令，见上文五分钟上手。</p>
+        <div class="syntax">autarx inspect &lt;workspace&gt; [--json]</div>
+      </div>
+
+      <div class="cmd-block">
+        <h3>find</h3>
+        <p class="one-line" data-i18n="c.find">一句话：按 SHORT-NAME 子串检索对象，定位 signal、PDU、SWC、ECU 等任意元素。</p>
+        <div class="syntax">autarx find &lt;pattern&gt; &lt;workspace&gt; [--json]</div>
+        <div class="code-window"><div class="window-header"><div class="window-controls"><span class="traffic-light close"></span><span class="traffic-light minimize"></span><span class="traffic-light maximize"></span></div><div class="window-title">terminal</div></div><div class="code-body"><span class="prompt">$</span> <span class="cmd">autarx find</span> Radar shared/fixtures/OemDelivery
+ecu                   /Vehicle/Ecus/RadarFL                               system.arxml
+ecu                   /Vehicle/Ecus/RadarFR                               system.arxml</div></div>
+        <p class="flags" data-i18n="c.find-flags"><code>--json</code> 机器可读输出；未命中时以退出码 1 结束（便于 CI 断言）。</p>
+      </div>
+
+      <div class="cmd-block">
+        <h3>refs</h3>
+        <p class="one-line" data-i18n="c.refs">一句话：看一个对象的出边与入边——它引用了谁、谁引用了它。</p>
+        <div class="syntax">autarx refs &lt;name-or-path&gt; &lt;workspace&gt; [--incoming] [--outgoing] [--json]</div>
+        <div class="code-window"><div class="window-header"><div class="window-controls"><span class="traffic-light close"></span><span class="traffic-light minimize"></span><span class="traffic-light maximize"></span></div><div class="window-title">terminal</div></div><div class="code-body"><span class="prompt">$</span> <span class="cmd">autarx refs</span> /Vehicle/Ecus/RadarFL shared/fixtures/OemDelivery
+object    /Vehicle/Ecus/RadarFL (ecu)
+outgoing (1):
+  -&gt; CHANNEL-REF                 /Vehicle/Clusters/VehicleCan                         via /Con_RadarFL
+incoming (0):</div></div>
+        <p class="flags" data-i18n="c.refs-flags">对象名可写全路径（如上）或精确 SHORT-NAME；<code>--incoming</code> / <code>--outgoing</code> 只看单向。</p>
+      </div>
+
+      <div class="cmd-block">
+        <h3>trace</h3>
+        <p class="one-line" data-i18n="c.trace">一句话：从对象出发沿引用图 BFS 追踪（深度受限），跨文件看清关联闭包。</p>
+        <div class="syntax">autarx trace &lt;name-or-path&gt; &lt;workspace&gt; [--depth N] [--incoming|--outgoing|--both] [--json]</div>
+        <div class="code-window"><div class="window-header"><div class="window-controls"><span class="traffic-light close"></span><span class="traffic-light minimize"></span><span class="traffic-light maximize"></span></div><div class="window-title">terminal</div></div><div class="code-body"><span class="prompt">$</span> <span class="cmd">autarx trace</span> /Vehicle/Ecus/RadarFL shared/fixtures/OemDelivery <span class="flag">--depth</span> 2
+trace from /Vehicle/Ecus/RadarFL (depth 2, both):
+  [1] CHANNEL-REF                 /Vehicle/Ecus/RadarFL -&gt; /Vehicle/Clusters/VehicleCan
+  [2] CHANNEL-REF                 /Vehicle/Ecus/Gateway -&gt; /Vehicle/Clusters/VehicleCan
+  [2] CHANNEL-REF                 /Vehicle/Ecus/RadarFL -&gt; /Vehicle/Clusters/VehicleCan
+  [2] CHANNEL-REF                 /Vehicle/Ecus/RadarFR -&gt; /Vehicle/Clusters/VehicleCan
+4 object(s) reachable, 4 edge(s)</div></div>
+        <p class="flags" data-i18n="c.trace-flags"><code>--depth</code> 限制 BFS 层数；<code>--incoming</code>/<code>--outgoing</code>/<code>--both</code> 选方向（默认双向）。</p>
+      </div>
+
+      <div class="cmd-block">
+        <h3>ecus</h3>
+        <p class="one-line" data-i18n="c.ecus">一句话：列出工作区里所有 ECU 实例。</p>
+        <div class="syntax">autarx ecus &lt;workspace&gt; [--json]</div>
+        <div class="code-window"><div class="window-header"><div class="window-controls"><span class="traffic-light close"></span><span class="traffic-light minimize"></span><span class="traffic-light maximize"></span></div><div class="window-title">terminal</div></div><div class="code-body"><span class="prompt">$</span> <span class="cmd">autarx ecus</span> shared/fixtures/OemDelivery
+Gateway             /Vehicle/Ecus/Gateway                               system.arxml
+RadarFL             /Vehicle/Ecus/RadarFL                               system.arxml
+RadarFR             /Vehicle/Ecus/RadarFR                               system.arxml</div></div>
+      </div>
+
+      <div class="cmd-block">
+        <h3>ecu</h3>
+        <p class="one-line" data-i18n="c.ecu">一句话：看单个 ECU 实例及其直接关系（注意参数顺序：工作区在前，ECU 名在后）。</p>
+        <div class="syntax">autarx ecu &lt;workspace&gt; &lt;ecu-name&gt; [--json]</div>
+        <div class="code-window"><div class="window-header"><div class="window-controls"><span class="traffic-light close"></span><span class="traffic-light minimize"></span><span class="traffic-light maximize"></span></div><div class="window-title">terminal</div></div><div class="code-body"><span class="prompt">$</span> <span class="cmd">autarx ecu</span> shared/fixtures/OemDelivery RadarFL
+RadarFL (ecu)
+  path   /Vehicle/Ecus/RadarFL
+  file   system.arxml
+  outgoing references (1):
+    -&gt; CHANNEL-REF                 /Vehicle/Clusters/VehicleCan
+  incoming references (0):</div></div>
+        <p class="flags" data-i18n="c.ecu-flags">名字歧义时以退出码 2 结束，用路径消歧。</p>
+      </div>
+
+      <div class="cmd-block">
+        <h3>unresolved</h3>
+        <p class="one-line" data-i18n="c.unresolved">一句话：列出目标不在工作区内的断链引用——交付完整性的第一道检查。</p>
+        <div class="syntax">autarx unresolved &lt;workspace&gt; [--json]</div>
+        <div class="code-window"><div class="window-header"><div class="window-controls"><span class="traffic-light close"></span><span class="traffic-light minimize"></span><span class="traffic-light maximize"></span></div><div class="window-title">terminal</div></div><div class="code-body"><span class="prompt">$</span> <span class="cmd">autarx unresolved</span> shared/fixtures/OemDelivery
+/Vehicle/SwCs/SpeedSensor/CalibrationIn                      -[REQUIRED-INTERFACE-TREF]-&gt; /Vehicle/Interfaces/IF_Calibration (communication.arxml)
+1 unresolved reference(s)</div></div>
+        <p class="flags" data-i18n="c.unresolved-flags">有发现时退出码为 1——直接放进 CI 作为门禁。</p>
+      </div>
+
+      <div class="cmd-block">
+        <h3>diff</h3>
+        <p class="one-line" data-i18n="c.diff">一句话：按路径身份语义对比两版交付——报参数值与类型变化，绝不报行号。</p>
+        <div class="syntax">autarx diff &lt;before&gt; &lt;after&gt; [--detail] [--json]</div>
+        <div class="code-window"><div class="window-header"><div class="window-controls"><span class="traffic-light close"></span><span class="traffic-light minimize"></span><span class="traffic-light maximize"></span></div><div class="window-title">terminal</div></div><div class="code-body"><span class="prompt">$</span> <span class="cmd">autarx diff</span> shared/fixtures/DiffBefore shared/fixtures/DiffAfter <span class="flag">--detail</span>
+before: 2 files, 10 objects, 4 references — shared/fixtures/DiffBefore
+after:  2 files, 9 objects, 4 references — shared/fixtures/DiffAfter
+
+added (1):
+  + ECU-INSTANCE /Vehicle/Ecus/Display
+
+removed (2):
+  - CAN-CLUSTER /Vehicle/Clusters/SpareCan
+  - ECU-INSTANCE /Vehicle/Ecus/Legacy
+
+modified (3):
+  ~ ECUC-MODULE-CONFIGURATION-VALUES /Config/Diag
+    CONTAINERS/DiagGeneral/PARAMETER-VALUES/DiagParamA/VALUE: 1 → 2
+  <span class="dim">…</span></div></div>
+        <p class="flags" data-i18n="c.diff-flags"><code>--detail</code> 展开到容器内参数级；有差异时退出码为 1。</p>
+      </div>
+
+      <div class="cmd-block">
+        <h3>impact</h3>
+        <p class="one-line" data-i18n="c.impact">一句话：站在你的 ECU 视角做影响分析——把每个变化归类为相关/无关，并标出 breaking。</p>
+        <div class="syntax">autarx impact &lt;before&gt; &lt;after&gt; --ecu &lt;name&gt; [--detail] [--json]</div>
+        <div class="code-window"><div class="window-header"><div class="window-controls"><span class="traffic-light close"></span><span class="traffic-light minimize"></span><span class="traffic-light maximize"></span></div><div class="window-title">terminal</div></div><div class="code-body"><span class="prompt">$</span> <span class="cmd">autarx impact</span> shared/fixtures/DiffBefore shared/fixtures/DiffAfter <span class="flag">--ecu</span> Gateway
+impact for Gateway (/Vehicle/Ecus/Gateway) — ECU present in after delivery
+closure: 7 objects in scope, relevant changes: 4, unrelated: 2, breaking: 2
+findings:
+  [breaking] ARX-IMP-REMOVED-REFERENCED /Vehicle/Clusters/SpareCan
+  [breaking] ARX-IMP-REMOVED-REFERENCED /Vehicle/Ecus/Legacy
+  [info] ARX-IMP-OBJECT-MODIFIED /Config/Diag/DiagGeneral
+  <span class="dim">…</span></div></div>
+        <p class="flags" data-i18n="c.impact-flags"><code>--ecu</code> 必填，指定你负责的 ECU；<code>--detail</code> 展开每条 finding 的细节；有 breaking 时退出码为 1。</p>
+      </div>
+
+      <div class="cmd-block">
+        <h3>comm</h3>
+        <p class="one-line" data-i18n="c.comm">一句话：通信投影——Cluster → Frame → PDU → Signal 链路，并报告孤儿对象。</p>
+        <div class="syntax">autarx comm &lt;workspace&gt; [--cluster &lt;name&gt;] [--json]</div>
+        <div class="code-window"><div class="window-header"><div class="window-controls"><span class="traffic-light close"></span><span class="traffic-light minimize"></span><span class="traffic-light maximize"></span></div><div class="window-title">terminal</div></div><div class="code-body"><span class="prompt">$</span> <span class="cmd">autarx comm</span> shared/fixtures/CommDelivery
+VehicleCan (/Vehicle/Clusters/VehicleCan)
+  ecus: Gateway, RadarFL
+  frames:
+  frame Frame_VehicleSpeed
+    pdu Pdu_VehicleSpeed  signals: VehicleSpeed
+  frame Frame_VehicleSpeedFa
+    pdu Pdu_VehicleSpeedFa  signals: BrakePressure, VehicleSpeed
+
+orphan signals (1) — not attached to any parent:
+  /Vehicle/Signals/DiagCounter</div></div>
+        <p class="flags" data-i18n="c.comm-flags"><code>--cluster</code> 只投影指定集群。投影只陈述结构，不虚构收发方向。</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="single-file" class="cmd-group">
+    <div class="container">
+      <h2 data-i18n="cs.h">单文件命令</h2>
+      <p class="desc" data-i18n="cs.desc">接受单个 ARXML 文件。</p>
+
+      <div class="cmd-block">
+        <h3>info</h3>
+        <p class="one-line" data-i18n="c.info">一句话：单个 ARXML 的摘要——大小、元素数、ECUC 模块、解析耗时。</p>
+        <div class="syntax">autarx info &lt;file.arxml&gt; [--json]</div>
+        <div class="code-window"><div class="window-header"><div class="window-controls"><span class="traffic-light close"></span><span class="traffic-light minimize"></span><span class="traffic-light maximize"></span></div><div class="window-title">terminal</div></div><div class="code-body"><span class="prompt">$</span> <span class="cmd">autarx info</span> shared/fixtures/minimal.arxml
+file            shared/fixtures/minimal.arxml
+size            3,857 B
+elements        48
+ecuc modules    2 (Mcu, Can)
+parsed in       1 ms</div></div>
+      </div>
+
+      <div class="cmd-block">
+        <h3>modules</h3>
+        <p class="one-line" data-i18n="c.modules">一句话：列出文件里的 ECUC 模块配置及容器/参数计数。</p>
+        <div class="syntax">autarx modules &lt;file.arxml&gt; [--json]</div>
+        <div class="code-window"><div class="window-header"><div class="window-controls"><span class="traffic-light close"></span><span class="traffic-light minimize"></span><span class="traffic-light maximize"></span></div><div class="window-title">terminal</div></div><div class="code-body"><span class="prompt">$</span> <span class="cmd">autarx modules</span> shared/fixtures/minimal.arxml
+Mcu                 /AURIX2G/Mcu                             containers=2 parameters=3
+Can                 /AURIX2G/Can                             containers=1 parameters=1</div></div>
+      </div>
+
+      <div class="cmd-block">
+        <h3>validate</h3>
+        <p class="one-line" data-i18n="c.validate">一句话：结构检查——XML 正确性、工作区完整性、断链、重复路径。这不是 vendor 级校验：生产级校验请用 DaVinci / tresos / ISOLAR。</p>
+        <div class="syntax">autarx validate &lt;file.arxml&gt; [--json]</div>
+        <div class="code-window"><div class="window-header"><div class="window-controls"><span class="traffic-light close"></span><span class="traffic-light minimize"></span><span class="traffic-light maximize"></span></div><div class="window-title">terminal</div></div><div class="code-body"><span class="prompt">$</span> <span class="cmd">autarx validate</span> shared/fixtures/minimal.arxml
+0 error(s), 0 warning(s)</div></div>
+        <p class="flags" data-i18n="c.validate-flags">有 error/warning 时退出码为 1，可直接作 CI 门禁。</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="vendor" class="cmd-group">
+    <div class="container">
+      <h2 data-i18n="cv.h">厂商工具（只做交接，不重新实现生成）</h2>
+      <p class="desc" data-i18n="cv.desc">探测本机的 DaVinci / EB tresos / ISOLAR 并中继它们的校验运行——autarx 从不评判工程结论。</p>
+
+      <div class="cmd-block">
+        <h3>vendor</h3>
+        <div class="syntax">autarx vendor list [--json]
+autarx vendor validate &lt;tool&gt; &lt;project&gt;</div>
+        <p class="flags" data-i18n="c.vendor-flags">探测顺序：先查工具的 HOME 环境变量（<code>DAVINCI_HOME</code>、<code>TRESOS_HOME</code>、<code>ISOLAR_HOME</code>），再查 PATH。可用工具：<code>davinci</code> · <code>tresos</code> · <code>isolar</code>。</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="patch" class="cmd-group">
+    <div class="container">
+      <h2 data-i18n="cp.h">受控编辑（plan → diff → apply → undo）</h2>
+      <p class="desc" data-i18n="cp.desc">语义改名、ECUC 参数与引用编辑。每次写盘都被语义 diff 把关：plan 生成变更预览，apply 前必须经过 diff 审阅，undo 可回退。</p>
+
+      <div class="cmd-block">
+        <h3>patch</h3>
+        <div class="syntax">autarx patch plan  &lt;workspace&gt; --file ops.json [--json]
+autarx patch apply &lt;workspace&gt; --file ops.json [--json]
+autarx patch undo  &lt;workspace&gt; [--json]</div>
+        <p class="flags" data-i18n="c.patch-flags">ops.json 声明操作列表，例如：</p>
+        <div class="code-window"><div class="window-header"><div class="window-controls"><span class="traffic-light close"></span><span class="traffic-light minimize"></span><span class="traffic-light maximize"></span></div><div class="window-title">ops.json</div></div><div class="code-body">{
+  "operations": [
+    { "op": "rename", "target": "/Pkg/Obj", "newName": "NewName" },
+    { "op": "set-parameter", "target": "/Pkg/Module",
+      "definition": "/Vendor/Module/Ctr/Param", "value": "2" },
+    { "op": "add-parameter", "target": "/Pkg/Module",
+      "definition": "/Vendor/Module/Ctr/NewParam", "value": "5" }
+  ]
+}</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="mcp" class="cmd-group">
+    <div class="container">
+      <h2 data-i18n="cm.h">AI agent 接口</h2>
+      <div class="cmd-block">
+        <h3>mcp</h3>
+        <p class="one-line" data-i18n="c.mcp">一句话：启动 MCP stdio 服务器（JSON-RPC 2.0），把完整工具 API 暴露给 AI agent。不存在裸写工具——agent 无法绕过审阅边界，每次调用都进工作区审计日志。</p>
+        <div class="syntax">autarx mcp</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="update" class="cmd-group">
+    <div class="container">
+      <h2 data-i18n="cu.h">自更新</h2>
+      <div class="cmd-block">
+        <h3>update</h3>
+        <p class="one-line" data-i18n="c.update">一句话：检查 GitHub Releases 上的 Ed25519 签名 update feed，验证签名与 SHA-256 后自更新。</p>
+        <div class="syntax">autarx update [--check] [--json] [--feed &lt;https-url&gt;]</div>
+        <p class="flags" data-i18n="c.update-flags"><code>--check</code> 只检查不安装（有新版时退出码 1，便于脚本探测）；<code>--feed</code> 覆盖 feed 地址。两条网络腿都有看门狗：manifest 60 秒、下载 120 秒停滞 / 30 分钟硬顶。</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="exitcodes">
+    <div class="container">
+      <span class="eyebrow" data-i18n="ce.eyebrow">参考</span>
+      <h2 class="section-title"><span data-i18n="ce.t1">全局选项</span> <span class="accent" data-i18n="ce.t2">与退出码。</span></h2>
+      <div class="compare-table-wrap">
+        <table class="compare">
+          <tr><th data-i18n="ce.opt">选项</th><th data-i18n="ce.meaning">含义</th></tr>
+          <tr><td><code>--json</code></td><td data-i18n="ce.opt-json">所有命令可用；确定性 camelCase JSON 输出（CI / AI agent 友好）</td></tr>
+          <tr><td><code>-h</code> / <code>--help</code></td><td data-i18n="ce.opt-help">显示总帮助（含全部子命令）</td></tr>
+          <tr><td><code>--version</code></td><td data-i18n="ce.opt-version">显示版本号</td></tr>
+        </table>
+      </div>
+      <div class="compare-table-wrap">
+        <table class="compare">
+          <tr><th data-i18n="ce.code">退出码</th><th data-i18n="ce.meaning2">含义</th></tr>
+          <tr><td><code>0</code></td><td data-i18n="ce.rc0">成功</td></tr>
+          <tr><td><code>1</code></td><td data-i18n="ce.rc1">无命中（find/refs/trace/ecu），或发现了问题（validate/unresolved/diff/impact）；update --check 表示有新版</td></tr>
+          <tr><td><code>2</code></td><td data-i18n="ce.rc2">用法、文件或解析错误；对象名歧义</td></tr>
+          <tr><td><code>3</code></td><td data-i18n="ce.rc3">未处理崩溃（日志写在 &lt;TEMP&gt;/autarx/crashes）</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="gui">
+    <div class="container">
+      <span class="eyebrow" data-i18n="cg.eyebrow">GUI</span>
+      <h2 class="section-title"><span data-i18n="cg.t1">macOS 工作台，</span> <span class="accent" data-i18n="cg.t2">同一个引擎。</span></h2>
+      <p class="lead" data-i18n="cg.lead">GUI 与 CLI 跑同一个 Racket 语义引擎，只是换成原生 macOS 窗口。下载 autarx-&lt;version&gt;-macos-&lt;arch&gt;.dmg，拖入 Applications 即完成安装。发行包为 ad-hoc 签名：首次启动请右键 App 选「打开」。内置「检查更新」（⌘U）走 Ed25519 签名 feed 原子换包、失败自动回滚。注意：只有装在 /Applications（或 ~/Applications）的副本才能自更新。Windows 与 Linux GUI 在 M9 路线上，当前请使用 CLI。</p>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="container">
+      <span class="eyebrow" data-i18n="cf.eyebrow">FAQ</span>
+      <h2 class="section-title"><span data-i18n="cf.t1">常见问题。</span></h2>
+
+      <div class="faq-item">
+        <h3 data-i18n="q1.q">支持哪些平台？</h3>
+        <p data-i18n="q1.a">CLI：macOS（Apple silicon / Intel）、Linux（x64 / arm64）、Windows（x64）自包含 zip。GUI：macOS 14+（Apple silicon / Intel）dmg。Windows / Linux GUI 属 M9 路线图。</p>
+      </div>
+
+      <div class="faq-item">
+        <h3 data-i18n="q2.q">能读什么数据？需要什么格式的输入？</h3>
+        <p data-i18n="q2.a">ARXML——System Description、System Extract、ECU Extract、ECUC 与通信 ARXML，支持多文件交付包（把目录交给命令即可）。AUTOSAR 版本从 XSD schema location 自动识别（如 AUTOSAR_4-3-0.xsd → 4.3.0），已知 revision 映射到经典版本号，未知 revision 原样保留。许可方式为 source-available（源码可见、专有许可），详见仓库 LICENSE。</p>
+      </div>
+
+      <div class="faq-item">
+        <h3 data-i18n="q3.q">与 DaVinci / tresos / ISOLAR 是什么关系？</h3>
+        <p data-i18n="q3.a">共存，不替代。Autarx 不是配置器，不重做 vendor 的校验与代码生成；它补的是「收到 OEM 交付」到「打开 vendor 工具链」之间的工程缺口。vendor 侧的校验仍是权威路径——autarx 通过 vendor 命令中继 DaVinci/tresos/ISOLAR 的校验运行并归一化诊断，编辑过的文件最终仍交回 vendor 工具链验证。</p>
+      </div>
+
+      <div class="faq-item">
+        <h3 data-i18n="q4.q">更新机制是怎样的？为什么 0.4.0 及更早版本检查更新会报错？</h3>
+        <p data-i18n="q4.a">CLI 用 autarx update、macOS GUI 用内置「检查更新」，两者都消费 Ed25519 签名的 update feed。从 0.4.1 起 CLI 的 update-manifest.json 换成签名 wrapper 格式：0.4.0 及更早的 CLI 只认识旧的明文 checksum 格式，第一次对着 0.4.1+ 的 feed 检查更新会 fail-closed 报验证错误（这是有意为之的安全行为，不是故障）。处理方式：到 releases 页手动下载一次对应平台的 zip 替换旧二进制（对照 .sha256 校验），之后 autarx update 恢复正常。</p>
+      </div>
+
+      <div class="faq-item">
+        <h3 data-i18n="q5.q">怎么卸载？</h3>
+        <p data-i18n="q5.a">CLI：删除解压出来的目录（以及你复制到 PATH 里的 autarx 二进制）；运行期状态在系统临时目录的 autarx 子目录（崩溃日志 &lt;TEMP&gt;/autarx/crashes、更新器状态），可一并删除。GUI：把 Autarx.app 拖进废纸篓即可。</p>
+      </div>
+    </div>
+  </section>
+
+  <footer><div class="container"><p data-i18n="footer">Autarx · AUTOSAR 集成工作台 · turinglambdaai</p></div></footer>
+
+  <script>
+    (function () {
+      var zh = {
+        'nav.features': '功能', 'nav.download': '下载', 'nav.guide': '用户手册',
+        'g.eyebrow': '用户手册', 'g.h1': 'Autarx 命令手册',
+        'g.lead': 'CLI 是 Autarx 的全功能入口，本手册就是它的命令手册：五分钟上手、每个子命令的真实示例（全部在仓库 fixture 上跑通）、GUI 简节与常见问题。',
+        'g.toc-start': '五分钟上手', 'g.toc-ws': '工作区命令', 'g.toc-sf': '单文件命令', 'g.toc-vendor': '厂商工具',
+        'g.toc-patch': '受控编辑', 'g.toc-mcp': 'MCP', 'g.toc-update': '自更新', 'g.toc-exit': '选项与退出码',
+        'g.toc-gui': 'GUI', 'g.toc-faq': 'FAQ',
+        's1.eyebrow': '五分钟上手', 's1.t1': '下载，解压，', 's1.t2': '第一条 inspect。',
+        's1.st1': '下载并解压 CLI',
+        's1.st1-p': '到 releases 页下载你平台的自包含 zip，解压得到 autarx 可执行文件——无需安装运行时，Racket 引擎已打包在内。',
+        's1.st1-note': 'macOS / Linux：如需全局使用，把解压目录放进 PATH，或把 autarx 移到 /usr/local/bin。',
+        's1.st2': '第一条命令：inspect',
+        's1.st2-p': '把 OEM 交付包（一个目录或单个 ARXML）交给 inspect，它回答「这次交付里有什么」。以下输出在仓库自带 fixture 上真实跑通，本书所有示例同样如此。',
+        's1.st3': '读懂输出',
+        's1.st3-p': 'files 是交付包里的 ARXML 数量；identifiables 是带 SHORT-NAME 的可索引对象数；references 统计跨对象引用，括号里是断链（unresolved）数量——交付接手第一眼先看它；autosar release 从 XSD schema location 推出（如 AUTOSAR_4-3-0.xsd → 4.3.0）；semantic inventory 是按语义类别的清单。',
+        's1.st4': '机器可读：--json',
+        's1.st4-p': '所有命令都接受 --json，输出确定性 camelCase JSON——供 CI 与 AI agent 消费。上面同一条命令的 JSON 输出（节选）：',
+        'cw.h': '工作区命令',
+        'cw.desc': '接受一个目录（多文件交付包）或单个 ARXML 作为工作区。',
+        'c.inspect': '一句话：总结工作区——文件、语义清单、引用与断链计数。上手命令，见上文五分钟上手。',
+        'c.find': '一句话：按 SHORT-NAME 子串检索对象，定位 signal、PDU、SWC、ECU 等任意元素。',
+        'c.find-flags': '--json 机器可读输出；未命中时以退出码 1 结束（便于 CI 断言）。',
+        'c.refs': '一句话：看一个对象的出边与入边——它引用了谁、谁引用了它。',
+        'c.refs-flags': '对象名可写全路径（如上）或精确 SHORT-NAME；--incoming / --outgoing 只看单向。',
+        'c.trace': '一句话：从对象出发沿引用图 BFS 追踪（深度受限），跨文件看清关联闭包。',
+        'c.trace-flags': '--depth 限制 BFS 层数；--incoming/--outgoing/--both 选方向（默认双向）。',
+        'c.ecus': '一句话：列出工作区里所有 ECU 实例。',
+        'c.ecu': '一句话：看单个 ECU 实例及其直接关系（注意参数顺序：工作区在前，ECU 名在后）。',
+        'c.ecu-flags': '名字歧义时以退出码 2 结束，用路径消歧。',
+        'c.unresolved': '一句话：列出目标不在工作区内的断链引用——交付完整性的第一道检查。',
+        'c.unresolved-flags': '有发现时退出码为 1——直接放进 CI 作为门禁。',
+        'c.diff': '一句话：按路径身份语义对比两版交付——报参数值与类型变化，绝不报行号。',
+        'c.diff-flags': '--detail 展开到容器内参数级；有差异时退出码为 1。',
+        'c.impact': '一句话：站在你的 ECU 视角做影响分析——把每个变化归类为相关/无关，并标出 breaking。',
+        'c.impact-flags': '--ecu 必填，指定你负责的 ECU；--detail 展开每条 finding 的细节；有 breaking 时退出码为 1。',
+        'c.comm': '一句话：通信投影——Cluster → Frame → PDU → Signal 链路，并报告孤儿对象。',
+        'c.comm-flags': '--cluster 只投影指定集群。投影只陈述结构，不虚构收发方向。',
+        'cs.h': '单文件命令',
+        'cs.desc': '接受单个 ARXML 文件。',
+        'c.info': '一句话：单个 ARXML 的摘要——大小、元素数、ECUC 模块、解析耗时。',
+        'c.modules': '一句话：列出文件里的 ECUC 模块配置及容器/参数计数。',
+        'c.validate': '一句话：结构检查——XML 正确性、工作区完整性、断链、重复路径。这不是 vendor 级校验：生产级校验请用 DaVinci / tresos / ISOLAR。',
+        'c.validate-flags': '有 error/warning 时退出码为 1，可直接作 CI 门禁。',
+        'cv.h': '厂商工具（只做交接，不重新实现生成）',
+        'cv.desc': '探测本机的 DaVinci / EB tresos / ISOLAR 并中继它们的校验运行——autarx 从不评判工程结论。',
+        'c.vendor-flags': '探测顺序：先查工具的 HOME 环境变量（DAVINCI_HOME、TRESOS_HOME、ISOLAR_HOME），再查 PATH。可用工具：davinci · tresos · isolar。',
+        'cp.h': '受控编辑（plan → diff → apply → undo）',
+        'cp.desc': '语义改名、ECUC 参数与引用编辑。每次写盘都被语义 diff 把关：plan 生成变更预览，apply 前必须经过 diff 审阅，undo 可回退。',
+        'c.patch-flags': 'ops.json 声明操作列表，例如：',
+        'cm.h': 'AI agent 接口',
+        'c.mcp': '一句话：启动 MCP stdio 服务器（JSON-RPC 2.0），把完整工具 API 暴露给 AI agent。不存在裸写工具——agent 无法绕过审阅边界，每次调用都进工作区审计日志。',
+        'cu.h': '自更新',
+        'c.update': '一句话：检查 GitHub Releases 上的 Ed25519 签名 update feed，验证签名与 SHA-256 后自更新。',
+        'c.update-flags': '--check 只检查不安装（有新版时退出码 1，便于脚本探测）；--feed 覆盖 feed 地址。两条网络腿都有看门狗：manifest 60 秒、下载 120 秒停滞 / 30 分钟硬顶。',
+        'ce.eyebrow': '参考', 'ce.t1': '全局选项', 'ce.t2': '与退出码。',
+        'ce.opt': '选项', 'ce.meaning': '含义',
+        'ce.opt-json': '所有命令可用；确定性 camelCase JSON 输出（CI / AI agent 友好）',
+        'ce.opt-help': '显示总帮助（含全部子命令）',
+        'ce.opt-version': '显示版本号',
+        'ce.code': '退出码', 'ce.meaning2': '含义',
+        'ce.rc0': '成功',
+        'ce.rc1': '无命中（find/refs/trace/ecu），或发现了问题（validate/unresolved/diff/impact）；update --check 表示有新版',
+        'ce.rc2': '用法、文件或解析错误；对象名歧义',
+        'ce.rc3': '未处理崩溃（日志写在 <TEMP>/autarx/crashes）',
+        'cg.eyebrow': 'GUI', 'cg.t1': 'macOS 工作台，', 'cg.t2': '同一个引擎。',
+        'cg.lead': 'GUI 与 CLI 跑同一个 Racket 语义引擎，只是换成原生 macOS 窗口。下载 autarx-<version>-macos-<arch>.dmg，拖入 Applications 即完成安装。发行包为 ad-hoc 签名：首次启动请右键 App 选「打开」。内置「检查更新」（⌘U）走 Ed25519 签名 feed 原子换包、失败自动回滚。注意：只有装在 /Applications（或 ~/Applications）的副本才能自更新。Windows 与 Linux GUI 在 M9 路线上，当前请使用 CLI。',
+        'cf.eyebrow': 'FAQ', 'cf.t1': '常见问题。',
+        'q1.q': '支持哪些平台？',
+        'q1.a': 'CLI：macOS（Apple silicon / Intel）、Linux（x64 / arm64）、Windows（x64）自包含 zip。GUI：macOS 14+（Apple silicon / Intel）dmg。Windows / Linux GUI 属 M9 路线图。',
+        'q2.q': '能读什么数据？需要什么格式的输入？',
+        'q2.a': 'ARXML——System Description、System Extract、ECU Extract、ECUC 与通信 ARXML，支持多文件交付包（把目录交给命令即可）。AUTOSAR 版本从 XSD schema location 自动识别（如 AUTOSAR_4-3-0.xsd → 4.3.0），已知 revision 映射到经典版本号，未知 revision 原样保留。许可方式为 source-available（源码可见、专有许可），详见仓库 LICENSE。',
+        'q3.q': '与 DaVinci / tresos / ISOLAR 是什么关系？',
+        'q3.a': '共存，不替代。Autarx 不是配置器，不重做 vendor 的校验与代码生成；它补的是「收到 OEM 交付」到「打开 vendor 工具链」之间的工程缺口。vendor 侧的校验仍是权威路径——autarx 通过 vendor 命令中继 DaVinci/tresos/ISOLAR 的校验运行并归一化诊断，编辑过的文件最终仍交回 vendor 工具链验证。',
+        'q4.q': '更新机制是怎样的？为什么 0.4.0 及更早版本检查更新会报错？',
+        'q4.a': 'CLI 用 autarx update、macOS GUI 用内置「检查更新」，两者都消费 Ed25519 签名的 update feed。从 0.4.1 起 CLI 的 update-manifest.json 换成签名 wrapper 格式：0.4.0 及更早的 CLI 只认识旧的明文 checksum 格式，第一次对着 0.4.1+ 的 feed 检查更新会 fail-closed 报验证错误（这是有意为之的安全行为，不是故障）。处理方式：到 releases 页手动下载一次对应平台的 zip 替换旧二进制（对照 .sha256 校验），之后 autarx update 恢复正常。',
+        'q5.q': '怎么卸载？',
+        'q5.a': 'CLI：删除解压出来的目录（以及你复制到 PATH 里的 autarx 二进制）；运行期状态在系统临时目录的 autarx 子目录（崩溃日志 <TEMP>/autarx/crashes、更新器状态），可一并删除。GUI：把 Autarx.app 拖进废纸篓即可。',
+        'footer': 'Autarx · AUTOSAR 集成工作台 · turinglambdaai'
+      };
+      var en = {
+        'nav.features': 'Features', 'nav.download': 'Download', 'nav.guide': 'User guide',
+        'g.eyebrow': 'User guide', 'g.h1': 'Autarx Command Handbook',
+        'g.lead': 'The CLI is the full-featured entry point to Autarx — this handbook is its command reference: a five-minute start, a real example for every subcommand (all verified against the repository fixtures), a short GUI section and an FAQ.',
+        'g.toc-start': 'Five-minute start', 'g.toc-ws': 'Workspace commands', 'g.toc-sf': 'Single-file commands', 'g.toc-vendor': 'Vendor tools',
+        'g.toc-patch': 'Reviewed editing', 'g.toc-mcp': 'MCP', 'g.toc-update': 'Self-update', 'g.toc-exit': 'Options & exit codes',
+        'g.toc-gui': 'GUI', 'g.toc-faq': 'FAQ',
+        's1.eyebrow': 'Five-minute start', 's1.t1': 'Download, unpack,', 's1.t2': 'first inspect.',
+        's1.st1': 'Download and unpack the CLI',
+        's1.st1-p': 'Grab the self-contained zip for your platform from the releases page and unpack it — no runtime install needed, the Racket engine ships inside.',
+        's1.st1-note': 'macOS / Linux: to use it globally, put the unpacked directory on your PATH, or move autarx to /usr/local/bin.',
+        's1.st2': 'First command: inspect',
+        's1.st2-p': 'Hand an OEM delivery (a directory or a single ARXML) to inspect and it answers "what did we just receive". The output below was produced against a repository fixture — every example in this handbook is real.',
+        's1.st3': 'Reading the output',
+        's1.st3-p': 'files is the number of ARXML files in the delivery; identifiables counts indexable objects carrying a SHORT-NAME; references counts cross-object links with broken (unresolved) ones in parentheses — look there first when taking over a delivery; autosar release is derived from the XSD schema location (AUTOSAR_4-3-0.xsd → 4.3.0); semantic inventory is the breakdown by semantic kind.',
+        's1.st4': 'Machine-readable: --json',
+        's1.st4-p': 'Every command accepts --json and emits deterministic camelCase JSON for CI and AI agents. The same command as JSON (excerpt):',
+        'cw.h': 'Workspace commands',
+        'cw.desc': 'Each takes a directory (multi-file delivery package) or a single ARXML as the workspace.',
+        'c.inspect': 'In one line: summarize a workspace — files, semantic inventory, reference and broken-link counts. See the five-minute start above.',
+        'c.find': 'In one line: find identifiables by SHORT-NAME substring — signals, PDUs, SWCs, ECUs, anything.',
+        'c.find-flags': '--json machine-readable output; exits 1 on no match (handy for CI assertions).',
+        'c.refs': 'In one line: show an object\'s outgoing and incoming references — what it points at, and what points at it.',
+        'c.refs-flags': 'The object can be a full path (as above) or an exact SHORT-NAME; --incoming / --outgoing restrict the direction.',
+        'c.trace': 'In one line: BFS over the reference graph from an object (depth-limited) to see its cross-file closure.',
+        'c.trace-flags': '--depth bounds the BFS; --incoming/--outgoing/--both pick the direction (default both).',
+        'c.ecus': 'In one line: list every ECU instance in the workspace.',
+        'c.ecu': 'In one line: show one ECU instance and its direct relations (note the order: workspace first, ECU name second).',
+        'c.ecu-flags': 'Ambiguous names exit 2 — disambiguate with a full path.',
+        'c.unresolved': 'In one line: list references whose target is missing from the workspace — the first integrity check of every delivery.',
+        'c.unresolved-flags': 'Exits 1 when findings exist — wire it straight into CI as a gate.',
+        'c.diff': 'In one line: semantic diff of two deliveries by path identity — reports parameter values and type changes, never line numbers.',
+        'c.diff-flags': '--detail expands to container-internal parameter level; exits 1 when differences exist.',
+        'c.impact': 'In one line: ECU-scoped impact analysis — classifies every change as relevant/unrelated to your ECU and flags breaking ones.',
+        'c.impact-flags': '--ecu is required: the ECU you own; --detail expands each finding; exits 1 on breaking findings.',
+        'c.comm': 'In one line: communication projection — Cluster → Frame → PDU → Signal chains, with orphans reported.',
+        'c.comm-flags': '--cluster projects a single cluster. The projection is structural only — no invented sender/receiver claims.',
+        'cs.h': 'Single-file commands',
+        'cs.desc': 'Each takes a single ARXML file.',
+        'c.info': 'In one line: summarize one ARXML — size, element count, ECUC modules, parse time.',
+        'c.modules': 'In one line: list the ECUC module configurations in a file with container/parameter counts.',
+        'c.validate': 'In one line: structural checks only — XML correctness, workspace integrity, broken references, duplicate paths. NOT vendor validation: use DaVinci / tresos / ISOLAR for production-grade validation.',
+        'c.validate-flags': 'Exits 1 on error/warning — a ready-made CI gate.',
+        'cv.h': 'Vendor tools (hand-off only — no generation is reimplemented)',
+        'cv.desc': 'Detect a local DaVinci / EB tresos / ISOLAR and relay its validation runs — autarx never judges the engineering outcome.',
+        'c.vendor-flags': 'Detection order: the tool\'s HOME env var first (DAVINCI_HOME, TRESOS_HOME, ISOLAR_HOME), then PATH. Tools: davinci · tresos · isolar.',
+        'cp.h': 'Reviewed editing (plan → diff → apply → undo)',
+        'cp.desc': 'Semantic renames, ECUC parameter and reference edits. Every write is gated by a semantic diff: plan previews the change, apply requires the reviewed diff, undo rolls back.',
+        'c.patch-flags': 'ops.json declares the operation list, e.g.:',
+        'cm.h': 'AI agent surface',
+        'c.mcp': 'In one line: run the MCP stdio server (JSON-RPC 2.0) exposing the full tool API to AI agents. No raw-write tool exists — agents cannot bypass the review boundary, and every call lands in the workspace audit log.',
+        'cu.h': 'Self-update',
+        'c.update': 'In one line: check the Ed25519-signed update feed on GitHub Releases and self-apply after signature and SHA-256 verification.',
+        'c.update-flags': '--check checks without installing (exits 1 when a newer release exists — handy for scripts); --feed overrides the feed URL. Both network legs have watchdogs: 60 s for the manifest, 120 s stall / 30 min wall clock for downloads.',
+        'ce.eyebrow': 'Reference', 'ce.t1': 'Global options', 'ce.t2': 'And exit codes.',
+        'ce.opt': 'Option', 'ce.meaning': 'Meaning',
+        'ce.opt-json': 'Accepted by every command; deterministic camelCase JSON output (CI / AI-agent friendly)',
+        'ce.opt-help': 'Show the top-level help (lists every subcommand)',
+        'ce.opt-version': 'Print the version',
+        'ce.code': 'Exit code', 'ce.meaning2': 'Meaning',
+        'ce.rc0': 'Success',
+        'ce.rc1': 'Nothing matched (find/refs/trace/ecu) or findings reported (validate/unresolved/diff/impact); update --check: newer release available',
+        'ce.rc2': 'Usage, file, or parse error; ambiguous object name',
+        'ce.rc3': 'Unhandled crash (log written under <TEMP>/autarx/crashes)',
+        'cg.eyebrow': 'GUI', 'cg.t1': 'The macOS workbench,', 'cg.t2': 'same engine.',
+        'cg.lead': 'The GUI runs the same Racket semantic engine as the CLI, wrapped in a native macOS window. Download autarx-<version>-macos-<arch>.dmg and drag it to Applications. The distribution is ad-hoc signed: on first launch, right-click the app and choose Open. The built-in Check for Updates (⌘U) consumes the Ed25519-signed feed with an atomic swap and automatic rollback. Note: only a copy under /Applications (or ~/Applications) can self-update. Windows and Linux GUIs are on the M9 roadmap — use the CLI for now.',
+        'cf.eyebrow': 'FAQ', 'cf.t1': 'Frequently asked.',
+        'q1.q': 'Which platforms are supported?',
+        'q1.a': 'CLI: self-contained zips for macOS (Apple silicon / Intel), Linux (x64 / arm64) and Windows (x64). GUI: macOS 14+ (Apple silicon / Intel) as a dmg. Windows / Linux GUIs are on the M9 roadmap.',
+        'q2.q': 'What data can it read? What input format?',
+        'q2.a': 'ARXML — System Description, System Extract, ECU Extract, ECUC and communication ARXML, including multi-file delivery packages (just pass the directory). The AUTOSAR release is detected from the XSD schema location (AUTOSAR_4-3-0.xsd → 4.3.0); known revisions map to classic versions, unknown ones stay raw. Licensed source-available (visible source, proprietary license) — see the repository LICENSE.',
+        'q3.q': 'How does it relate to DaVinci / tresos / ISOLAR?',
+        'q3.a': 'Coexistence, not replacement. Autarx is not a configurator and does not redo vendor validation or code generation; it closes the gap between receiving an OEM delivery and opening the vendor toolchain. Vendor validation remains authoritative — autarx relays DaVinci/tresos/ISOLAR validation runs via the vendor command with normalized diagnostics, and edited files go back to the vendor toolchain for verification.',
+        'q4.q': 'How do updates work? Why does 0.4.0 and earlier fail the update check?',
+        'q4.a': 'The CLI uses autarx update and the macOS GUI its built-in Check for Updates; both consume an Ed25519-signed update feed. Starting with 0.4.1 the CLI\'s update-manifest.json is a signed wrapper: CLI builds up to and including 0.4.0 only understand the legacy plaintext checksum shape, so their first check against a 0.4.1+ feed fails closed with a verification error (deliberate security behavior, not a malfunction). Fix: download the zip for your platform from the releases page once and replace the old binary (verify against the .sha256 sidecar); autarx update then works normally again.',
+        'q5.q': 'How do I uninstall?',
+        'q5.a': 'CLI: delete the unpacked directory (and any autarx binary you copied onto your PATH); runtime state lives in the autarx folder under the system temp directory (crash logs <TEMP>/autarx/crashes, updater state) and can go too. GUI: drag Autarx.app to the Trash.',
+        'footer': 'Autarx · AUTOSAR Integration Workbench · turinglambdaai'
+      };
+
+      var LANGUAGE_OVERRIDE_KEY = 'autarx-lang-override-v2';
+      var LANGUAGE_LEGACY_KEYS = ['autarx-lang-override-v1', 'site-lang'];
+
+      function readLanguageOverride() {
+        try {
+          var v = localStorage.getItem(LANGUAGE_OVERRIDE_KEY);
+          if (v !== 'zh' && v !== 'en') {
+            for (var i = 0; i < LANGUAGE_LEGACY_KEYS.length; i++) {
+              var legacy = localStorage.getItem(LANGUAGE_LEGACY_KEYS[i]);
+              if (legacy === 'zh' || legacy === 'en') { v = legacy; try { localStorage.setItem(LANGUAGE_OVERRIDE_KEY, v); } catch (e) {} break; }
+            }
+          }
+          return v === 'zh' || v === 'en' ? v : null;
+        } catch (e) { return null; }
+      }
+      function detectBrowserLanguage() {
+        var locale = (navigator.languages && navigator.languages[0]) || navigator.language || '';
+        return String(locale).toLowerCase().indexOf('zh') === 0 ? 'zh' : 'en';
+      }
+      function apply(lang) {
+        var dict = lang === 'en' ? en : zh;
+        document.documentElement.lang = lang === 'en' ? 'en' : 'zh-CN';
+        document.documentElement.setAttribute('data-language', lang);
+        var nodes = document.querySelectorAll('[data-i18n]');
+        for (var i = 0; i < nodes.length; i++) {
+          var key = nodes[i].getAttribute('data-i18n');
+          if (dict[key]) nodes[i].textContent = dict[key];
+        }
+        var label = document.getElementById('current-lang-label');
+        if (label) label.textContent = lang === 'en' ? 'English' : '简体中文';
+      }
+      window.setLanguage = function (lang) {
+        if (lang !== 'zh' && lang !== 'en') return;
+        try { localStorage.setItem(LANGUAGE_OVERRIDE_KEY, lang); } catch (e) {}
+        apply(lang);
+      };
+      apply(readLanguageOverride() || 'zh');
+      LANGUAGE_LEGACY_KEYS.forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
+      window.addEventListener('languagechange', function () {
+        if (!readLanguageOverride()) apply(detectBrowserLanguage());
+      });
+
+      document.getElementById('theme-btn').addEventListener('click', function () {
+        var next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = next;
+        try { localStorage.setItem('autarx-theme', next); } catch (e) {}
+      });
+    })();
+  </script>
+</body>
+</html>
