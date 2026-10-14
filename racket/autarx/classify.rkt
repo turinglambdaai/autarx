@@ -5,8 +5,7 @@
 ;; partial: unmapped element types fall back to 'unknown and never fail
 ;; parsing. Kinds are append-only, never renumbered.
 
-(provide semantic-kind?
-         semantic-kinds
+(provide semantic-kinds
          classify
          kind->json
          kind->text)
@@ -15,8 +14,6 @@
   '(unknown system ecu communication-cluster frame pdu signal
             software-component port port-interface ecuc-module
             ecuc-container constant))
-
-(define (semantic-kind? v) (memq v semantic-kinds) #t)
 
 (define exact-names
   '#hash(("SYSTEM" . system)
