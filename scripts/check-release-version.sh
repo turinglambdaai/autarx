@@ -39,6 +39,14 @@ if grep -Eq '\(version-from-app-info\) *"' "$ROOT/racket/autarx/cli.rkt"; then
   fail "racket/autarx/cli.rkt carries a hardcoded version fallback literal"
 fi
 
+# The raco package must not grow its own version literal either — rivet
+# packaging reads the product version only from rivet.rktd, so a package
+# version here is a second source that floats free of every release
+# ("2.0.0-alpha.1" drifted against the product through four releases).
+if grep -Eq '^\(define version ' "$ROOT/racket/info.rkt"; then
+  fail "racket/info.rkt carries a package version literal (the product version is single-sourced in rivet.rktd)"
+fi
+
 # The checked-in generated Swift backend must match the manifest.
 SWIFT_VERSION="$(sed -nE 's/.*static let version = "([^"]+)".*/\1/p' \
   "$ROOT/macos-host/Sources/RivetHost/GeneratedBackend.swift" | head -n1)"
