@@ -59,7 +59,7 @@
       <h1><span data-i18n="hero.h1a">一个工作台，</span> <span class="accent" data-i18n="hero.h1b">看清整套交付。</span></h1>
       <p class="lead" data-i18n="hero.lead">Autarx 是一个 AUTOSAR 集成工作台：直接打开 OEM 交付物——System Description、System Extract、ECU Extract、ECUC 与通信 ARXML——让集成工程师在进入 vendor 工具链之前，先完成检查、检索、引用追踪与结构校验。</p>
       <div class="hero-buttons">
-        <a href="https://github.com/turinglambdaai/autarx/releases/latest" class="btn btn-primary" data-i18n="hero.download">下载最新版</a>
+        <a href="https://github.com/turinglambdaai/autarx/releases/latest/download/autarx-macos-arm64.dmg" class="btn btn-primary" data-i18n="hero.download">下载最新版</a>
         <a href="guide.html" class="btn btn-secondary" data-i18n="hero.guide">用户手册</a>
       </div>
       <div class="hero-visual">
@@ -130,24 +130,24 @@ closure: 7 objects in scope, relevant changes: 4, unrelated: 2, <span class="fla
       <h2 class="section-title"><span data-i18n="dl.t1">CLI 先行，</span> <span class="accent" data-i18n="dl.t2">GUI 随行。</span></h2>
       <p class="lead" data-i18n="dl.lead">CLI 是全功能入口：macOS、Linux、Windows 自包含 zip，解压即用。macOS GUI 以 dmg 交付；Windows 与 Linux GUI 在 M9 路线上。</p>
       <div class="platforms-grid four">
-        <a class="platform-card" href="https://github.com/turinglambdaai/autarx/releases/latest">
+        <a class="platform-card" data-dl="cli-mac" href="https://github.com/turinglambdaai/autarx/releases/latest/download/autarx-macos-arm64.zip">
           <div class="platform-icon">🍎</div>
           <div class="platform-name">CLI · macOS</div>
           <div class="platform-format">.zip · arm64 + x64</div>
         </a>
-        <a class="platform-card" href="https://github.com/turinglambdaai/autarx/releases/latest">
+        <a class="platform-card" data-dl="cli-linux" href="https://github.com/turinglambdaai/autarx/releases/latest/download/autarx-linux-x64.zip">
           <div class="platform-icon">🐧</div>
           <div class="platform-name">CLI · Linux</div>
           <div class="platform-format">.zip · x64 + arm64</div>
         </a>
-        <a class="platform-card" href="https://github.com/turinglambdaai/autarx/releases/latest">
+        <a class="platform-card" data-dl="cli-win" href="https://github.com/turinglambdaai/autarx/releases/latest/download/autarx-windows-x64.zip">
           <div class="platform-icon">🪟</div>
           <div class="platform-name">CLI · Windows</div>
           <div class="platform-format">.zip · x64</div>
         </a>
       </div>
       <div class="platforms-grid four">
-        <a class="platform-card" href="https://github.com/turinglambdaai/autarx/releases/latest">
+        <a class="platform-card" data-dl="gui-mac" href="https://github.com/turinglambdaai/autarx/releases/latest/download/autarx-macos-arm64.dmg">
           <div class="platform-icon">🖥️</div>
           <div class="platform-name" data-i18n="dl.mac-gui">GUI · macOS</div>
           <div class="platform-format">.dmg · arm64 + x64 · app.zip（应用内更新）</div>
@@ -164,6 +164,7 @@ closure: 7 objects in scope, relevant changes: 4, unrelated: 2, <span class="fla
         </div>
       </div>
       <div class="callout"><span data-i18n="dl.callout">更新机制：CLI 用 autarx update 自更新，macOS GUI 内置「检查更新」（⌘U）——两条通道都走 Ed25519 签名的 update feed。每个资产都带 .sha256 校验文件。</span></div>
+      <p style="margin-top:16px"><a href="https://github.com/turinglambdaai/autarx/releases" class="btn btn-secondary" data-i18n="dl.all-releases">全部版本</a></p>
     </div>
   </section>
 
@@ -173,7 +174,7 @@ closure: 7 objects in scope, relevant changes: 4, unrelated: 2, <span class="fla
       <h2 class="section-title"><span data-i18n="status.t1">分析优先，</span> <span class="accent" data-i18n="status.t2">一个里程碑一个里程碑。</span></h2>
       <p class="lead" data-i18n="status.lead">当前状态：完整分析栈已交付——工作区语义引擎、语义 diff、ECU 影响分析、通信投影、厂商交接、受控编辑与 MCP agent 接口。剩余为 M9 商业化加固——安装器、授权与性能画像；Windows / Linux GUI 宿主也在 M9 路线上。</p>
       <div class="hero-buttons">
-        <a href="https://github.com/turinglambdaai/autarx/releases/latest" class="btn btn-primary" data-i18n="status.download">下载</a>
+        <a href="https://github.com/turinglambdaai/autarx/releases/latest/download/autarx-macos-arm64.dmg" class="btn btn-primary" data-i18n="status.download">下载</a>
         <a href="guide.html" class="btn btn-secondary" data-i18n="status.guide">用户手册</a>
         <a href="https://github.com/turinglambdaai/autarx/blob/main/docs/ROADMAP.md" class="btn btn-secondary" data-i18n="status.roadmap">路线图</a>
       </div>
@@ -182,6 +183,46 @@ closure: 7 objects in scope, relevant changes: 4, unrelated: 2, <span class="fla
 
   <footer><div class="container"><p data-i18n="footer">Autarx · AUTOSAR 集成工作台 · turinglambdaai</p></div></footer>
 
+  <script>
+    // Platform-aware direct downloads: hero/status CTAs and the matching
+    // platform cards point at the versionless alias for the visitor's OS
+    // (mac/linux arch refined via userAgentData). mac visitors get the CLI
+    // zip plus the GUI dmg (both aliases); win/linux get the CLI zip.
+    // Runs before the i18n block below so its language pass applies the
+    // OS-specific label keys.
+    (function () {
+      var BASE = 'https://github.com/turinglambdaai/autarx/releases/latest/download/';
+      var ua = navigator.userAgent;
+      var os = /Windows/i.test(ua) ? 'win' : (/Mac|iPhone|iPad/i.test(ua) ? 'mac' : (/Linux|X11/i.test(ua) ? 'linux' : 'mac'));
+      var arch = os === 'linux' && /aarch64|arm/i.test(ua) ? 'arm64' : (os === 'linux' ? 'x64' : 'arm64');
+      var style = document.createElement('style');
+      style.textContent = '.platform-card.current{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}';
+      document.head.appendChild(style);
+      var heroFile = { mac: 'autarx-macos-' + arch + '.dmg', win: 'autarx-windows-x64.zip', linux: 'autarx-linux-' + arch + '.zip' }[os];
+      var heroUrl = BASE + heroFile;
+      document.querySelectorAll('a[data-i18n="hero.download"], a[data-i18n="status.download"]').forEach(function (a) {
+        a.href = heroUrl;
+        a.setAttribute('data-i18n', (a.getAttribute('data-i18n') === 'hero.download' ? 'hero.' : 'status.') + 'download-' + os);
+      });
+      var cliForOs = { mac: 'cli-mac', win: 'cli-win', linux: 'cli-linux' }[os];
+      document.querySelectorAll('a.platform-card[data-dl]').forEach(function (card) {
+        var kind = card.getAttribute('data-dl');
+        if (kind === 'cli-mac' || kind === 'gui-mac') card.setAttribute('href', BASE + 'autarx-macos-' + arch + (kind === 'gui-mac' ? '.dmg' : '.zip') );
+        if (kind === 'cli-linux') card.setAttribute('href', BASE + 'autarx-linux-' + arch + '.zip');
+        if (kind === cliForOs || (os === 'mac' && kind === 'gui-mac')) card.classList.add('current');
+      });
+      if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+        navigator.userAgentData.getHighEntropyValues(['architecture', 'platform']).then(function (h) {
+          if (!h || /Windows/i.test(h.platform || '')) return; // windows ships x64-only
+          var a = h.architecture === 'arm' ? 'arm64' : (h.architecture === 'x86' ? 'x64' : null);
+          if (!a || a === arch) return;
+          document.querySelectorAll('a[href^="' + BASE + '"]').forEach(function (x) {
+            x.setAttribute('href', x.getAttribute('href').replace('-' + arch + '.(dmg|zip)$', '-' + a + '.$1'));
+          });
+        }).catch(function () {});
+      }
+    })();
+  </script>
   <script>
     (function () {
       // Unified family policy: explicit choice wins; otherwise browser locale.
@@ -193,6 +234,7 @@ closure: 7 objects in scope, relevant changes: 4, unrelated: 2, <span class="fla
         'hero.h1a': '一个工作台，', 'hero.h1b': '看清整套交付。',
         'hero.lead': 'Autarx 是一个 AUTOSAR 集成工作台：直接打开 OEM 交付物——System Description、System Extract、ECU Extract、ECUC 与通信 ARXML——让集成工程师在进入 vendor 工具链之前，先完成检查、检索、引用追踪与结构校验。',
         'hero.download': '下载最新版', 'hero.guide': '用户手册',
+        'hero.download-mac': '下载 macOS 版', 'hero.download-win': '下载 Windows 版', 'hero.download-linux': '下载 Linux 版',
         'features.eyebrow': '它做什么', 'features.t1': '交付接手后的缺口，', 'features.t2': '一个窗口补齐。',
         'f1.title': '直接打开 ARXML',
         'f1.body': 'System Description、System Extract、ECU Extract、ECUC 与通信 ARXML——流式解析器直接读多文件交付包，无需 vendor 配置器。',
@@ -229,6 +271,8 @@ closure: 7 objects in scope, relevant changes: 4, unrelated: 2, <span class="fla
         'status.eyebrow': '状态', 'status.t1': '分析优先，', 'status.t2': '一个里程碑一个里程碑。',
         'status.lead': '当前状态：完整分析栈已交付——工作区语义引擎、语义 diff、ECU 影响分析、通信投影、厂商交接、受控编辑与 MCP agent 接口。剩余为 M9 商业化加固——安装器、授权与性能画像；Windows / Linux GUI 宿主也在 M9 路线上。',
         'status.download': '下载', 'status.guide': '用户手册', 'status.roadmap': '路线图',
+        'status.download-mac': '下载 macOS 版', 'status.download-win': '下载 Windows 版', 'status.download-linux': '下载 Linux 版',
+        'dl.all-releases': '全部版本',
         'hero.term-title': 'autarx — 真实命令与输出',
         'footer': 'Autarx · AUTOSAR 集成工作台 · turinglambdaai'
       };
@@ -239,6 +283,7 @@ closure: 7 objects in scope, relevant changes: 4, unrelated: 2, <span class="fla
         'hero.h1a': 'One workspace.', 'hero.h1b': 'Full delivery visibility.',
         'hero.lead': 'Autarx is an AUTOSAR Integration Workbench that opens OEM deliveries directly — System Description, System Extract, ECU Extract, ECUC and communication ARXML — so integration engineers can inspect, search, trace references and validate structure before entering the vendor toolchain.',
         'hero.download': 'Download', 'hero.guide': 'User guide',
+        'hero.download-mac': 'Download for macOS', 'hero.download-win': 'Download for Windows', 'hero.download-linux': 'Download for Linux',
         'features.eyebrow': 'What it does', 'features.t1': 'The delivery gap,', 'features.t2': 'closed in one window.',
         'f1.title': 'Open ARXML directly',
         'f1.body': 'System Description, System Extract, ECU Extract, ECUC and communication ARXML — multi-file delivery packages read by a streaming parser. No vendor configurator required.',
@@ -275,6 +320,8 @@ closure: 7 objects in scope, relevant changes: 4, unrelated: 2, <span class="fla
         'status.eyebrow': 'Status', 'status.t1': 'Analysis first,', 'status.t2': 'milestone by milestone.',
         'status.lead': 'Where things stand: the full analysis stack is shipped — workspace semantic engine, semantic diff, ECU impact analysis, communication projection, vendor hand-off, reviewed editing and the MCP agent surface. What remains is M9 commercial hardening — installer, licensing and performance profiling; Windows / Linux GUI hosts are on the same roadmap.',
         'status.download': 'Download', 'status.guide': 'User guide', 'status.roadmap': 'Roadmap',
+        'status.download-mac': 'Download for macOS', 'status.download-win': 'Download for Windows', 'status.download-linux': 'Download for Linux',
+        'dl.all-releases': 'All releases',
         'hero.term-title': 'autarx — real commands, real output',
         'footer': 'Autarx · AUTOSAR Integration Workbench · turinglambdaai'
       };

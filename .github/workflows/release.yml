@@ -216,3 +216,24 @@ jobs:
         uses: actions/attest-build-provenance@v1
         with:
           subject-path: dist/*
+      - name: Stable alias copies (versionless direct-download links)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          # Family rule: download buttons point at
+          # releases/latest/download/<alias>, so every release also ships
+          # versionless copies. Autarx is CLI zips (all five platforms) plus
+          # the macOS GUI dmg; the *-app.zip payloads are update-feed
+          # internals and get no alias. Deliberately after the provenance
+          # attestation so dist/* there stays versioned-only.
+          mkdir -p stable-alias
+          cp "dist/autarx-${VERSION}-macos-arm64.dmg" stable-alias/autarx-macos-arm64.dmg
+          cp "dist/autarx-${VERSION}-macos-x64.dmg" stable-alias/autarx-macos-x64.dmg
+          cp "dist/autarx-${VERSION}-macos-arm64.zip" stable-alias/autarx-macos-arm64.zip
+          cp "dist/autarx-${VERSION}-macos-x64.zip" stable-alias/autarx-macos-x64.zip
+          cp "dist/autarx-${VERSION}-windows-x64.zip" stable-alias/autarx-windows-x64.zip
+          cp "dist/autarx-${VERSION}-linux-x64.zip" stable-alias/autarx-linux-x64.zip
+          cp "dist/autarx-${VERSION}-linux-arm64.zip" stable-alias/autarx-linux-arm64.zip
+          gh release upload "${{ github.ref_name }}" stable-alias/* --clobber -R turinglambdaai/autarx
