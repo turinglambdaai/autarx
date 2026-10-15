@@ -25,7 +25,7 @@
    'version))
 
 (test-case "release identity is coherent with the repo manifest"
-  (check-equal? a:workbench-version rktd-version)
+  (check-equal? (a:workbench-version) rktd-version)
   (check-equal? (a:manifest-url)
                 (string-append a:default-update-base-url
                                "/update-app-manifest.json"))
@@ -33,6 +33,37 @@
    (parameterize ([a:current-update-base-url "https://dl.example/autarx/"])
      (a:manifest-url))
    "https://dl.example/autarx/update-app-manifest.json"))
+
+;; Packaged-layout resolution: the 0.5.0 release runner exited the packaged
+;; app at launch because the load-time version lookup missed the macOS
+;; bundle layout (Contents/Resources/app) — pin the candidates and the
+;; per-directory read so a packaged regression trips here, not in rivet's
+;; launch smoke.
+(test-case "app-info candidates cover every packaged layout"
+  (define exe-dir (string->path "/tmp/Autarx.app/Contents/MacOS/"))
+  (define dirs (a:app-info-candidate-dirs exe-dir))
+  (check-equal? (length dirs) 4)
+  ;; macOS bundle: Contents/MacOS → Contents/Resources/app
+  (check-not-false
+   (member (simplify-path (string->path "/tmp/Autarx.app/Contents/Resources/app"))
+           dirs)
+   "macOS bundle layout missing")
+  ;; stage root: exe beside app/
+  (check-not-false
+   (member (build-path (string->path "/tmp/Autarx.app/Contents/MacOS/") "app")
+           dirs)
+   "stage-root layout missing"))
+
+(test-case "app-info version reads the packaged bundle layout"
+  (define base (make-temporary-file "autarx-bundle-~a" 'directory))
+  (define app-dir (build-path base "Contents" "Resources" "app"))
+  (make-directory* app-dir)
+  (call-with-output-file (build-path app-dir "rivet-app-info.rktd")
+    #:exists 'truncate
+    (lambda (out) (write (hasheq 'version "9.9.8") out)))
+  (check-equal? (a:app-info-version-in app-dir) "9.9.8")
+  (check-false (a:app-info-version-in base))
+  (delete-directory/files base))
 
 ;; Env fiddling must not leak across cases. Racket has no unsetenv, so #f
 ;; puts the empty string — every derivation in app-update.rkt treats an

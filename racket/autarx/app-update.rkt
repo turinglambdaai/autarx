@@ -64,6 +64,8 @@
          "update.rkt")
 
 (provide workbench-version
+         app-info-candidate-dirs
+         app-info-version-in
          update-key-id
          update-public-key-b64
          default-update-base-url
@@ -126,25 +128,34 @@
 ;; this file. No version literal here — a build that finds neither file is a
 ;; packaging bug and must fail loudly (scripts/check-release-version.sh
 ;; guards the source).
+;; Candidate directories that carry rivet-app-info.rktd, relative to the
+;; running executable's directory: stage-root layouts (exe beside app/),
+;; CLI-style launcher layouts (beside the exe or its parent, bin/-style),
+;; and the macOS bundle (Contents/MacOS → Contents/Resources/app). Pure so
+;; the packaged-layout resolution is testable without a bundle.
+(define (app-info-candidate-dirs exe-dir)
+  (list exe-dir
+        (simplify-path (build-path exe-dir 'up))
+        (build-path exe-dir "app")
+        (simplify-path (build-path exe-dir 'up "Resources" "app"))))
+
+(define (app-info-version-in dir)
+  (define info (build-path dir "rivet-app-info.rktd"))
+  (and (directory-exists? dir)
+       (file-exists? info)
+       (call-with-input-file info
+         (lambda (in)
+           (define doc (read in))
+           (define v (if (hash? doc) (hash-ref doc 'version #f) #f))
+           (and (string? v) v)))))
+
 (define (version-from-app-info)
   (define run-file (find-system-path 'run-file))
   (define exe-dir (if (path? run-file) (path-only run-file) #f))
   (define candidate-dirs
-    (if exe-dir
-        (list exe-dir
-              (simplify-path (build-path exe-dir 'up))
-              (build-path exe-dir "app")
-              (simplify-path (build-path exe-dir 'up 'up "Resources" "app")))
-        (list)))
+    (if exe-dir (app-info-candidate-dirs exe-dir) (list)))
   (for/or ([dir (in-list candidate-dirs)])
-    (define info (build-path dir "rivet-app-info.rktd"))
-    (and (directory-exists? dir)
-         (file-exists? info)
-         (call-with-input-file info
-           (lambda (in)
-             (define doc (read in))
-             (define v (if (hash? doc) (hash-ref doc 'version #f) #f))
-             (and (string? v) v))))))
+    (app-info-version-in dir)))
 
 (define (version-from-manifest)
   (define src
@@ -162,7 +173,12 @@
                   (define v (if (hash? doc) (hash-ref doc 'version #f) #f))
                   (and (string? v) v)))))))
 
-(define workbench-version
+;; Evaluated lazily (a procedure, not a load-time define): a packaged
+;; environment that carries neither file must fail the check_updates RPC,
+;; not abort the embedded runtime at module load and take the host down
+;; (the 0.5.0 release-runner lesson — the load-time define exited the
+;; packaged app during rivet's launch smoke).
+(define (workbench-version)
   (or (version-from-app-info)
       (version-from-manifest)
       (error 'autarx-update
@@ -333,7 +349,7 @@
                              #:key-id update-key-id))
     (define config
       (updater-config app-identifier
-                      workbench-version
+                      (workbench-version)
                       app-channel
                       (platform-symbol)
                       (architecture-symbol)
@@ -351,7 +367,7 @@
                    (update-manifest-version
                     (update-candidate-manifest candidate)))
        (hasheq 'status "available"
-               'currentVersion workbench-version
+               'currentVersion (workbench-version)
                'availableVersion
                (update-manifest-version
                 (update-candidate-manifest candidate))
@@ -365,7 +381,7 @@
       [else
        (state-set! 'phase "idle")
        (state-set! 'availableVersion #f)
-       (hasheq 'status "up-to-date" 'currentVersion workbench-version)])))
+       (hasheq 'status "up-to-date" 'currentVersion (workbench-version))])))
 
 ;; ---------- download ----------
 
@@ -546,7 +562,7 @@
   (state-set! 'message #f)
   (define config
     (updater-config app-identifier
-                    workbench-version
+                    (workbench-version)
                     app-channel
                     (platform-symbol)
                     (architecture-symbol)

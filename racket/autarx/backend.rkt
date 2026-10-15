@@ -177,7 +177,7 @@
   (UpdateCheck
    (hash-ref result 'status "error")
    (opt 'message)
-   (hash-ref result 'currentVersion workbench-version)
+   (hash-ref result 'currentVersion (workbench-version))
    (opt 'availableVersion)
    (opt 'build)
    (opt 'publishedAt)
@@ -190,8 +190,14 @@
   (with-handlers
       ([exn:fail?
         (lambda (e)
+          ;; the error arm already IS the failure path — if even the
+          ;; version lookup raises here, report an empty current version
+          ;; rather than letting a second error escape the handler
           (UpdateCheck "error" (nullable (exn-message e))
-                       workbench-version (void) (void) (void) (void) (void)))])
+                       (or (with-handlers ([exn:fail? (lambda (_) #f)])
+                             (workbench-version))
+                           "")
+                       (void) (void) (void) (void) (void)))])
     (update-check->record (perform-check!))))
 
 ;; Runs on a backend worker thread; the host follows progress via
