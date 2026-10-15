@@ -11,6 +11,7 @@
 namespace winrt::RivetHost::implementation {
 
 namespace mx = winrt::Microsoft::UI::Xaml;
+namespace mt = winrt::Microsoft::UI::Text;
 namespace mxc = winrt::Microsoft::UI::Xaml::Controls;
 
 // ---------------------------------------------------------------------------
@@ -433,7 +434,7 @@ mxc::Grid MainWindow::MakeObjectRow(rivet_app::SemanticObjectDto const& object) 
   auto name = mxc::TextBlock{};
   name.Text(wide(object.short_name));
   name.FontSize(14);
-  name.FontWeight(mx::FontWeights::SemiBold());
+  name.FontWeight(mt::FontWeights::SemiBold());
   name.TextTrimming(mx::TextTrimming::CharacterEllipsis);
   name.VerticalAlignment(mx::VerticalAlignment::Center);
   head.Children().Append(name);
@@ -555,7 +556,7 @@ mxc::Grid MainWindow::MakeReferenceRow(rivet_app::ReferenceDto const& ref,
   auto kind = mxc::TextBlock{};
   kind.Text(wide(ref.kind));
   kind.FontSize(12);
-  kind.FontWeight(mx::FontWeights::Bold());
+  kind.FontWeight(mt::FontWeights::Bold());
   content.Children().Append(kind);
 
   auto edge = mxc::TextBlock{};
@@ -615,7 +616,7 @@ void MainWindow::RenderComm() {
       auto caption = mxc::TextBlock{};
       caption.Text(L"Clusters");
       caption.FontSize(13);
-      caption.FontWeight(mx::FontWeights::SemiBold());
+      caption.FontWeight(mt::FontWeights::SemiBold());
       caption.Foreground(ThemeBrush(L"AutarxSecondaryTextBrush"));
       caption.Margin(mx::ThicknessHelper::FromLengths(8, 8, 8, 2));
       CommList().Items().Append(caption);
@@ -626,7 +627,7 @@ void MainWindow::RenderComm() {
         auto path = mxc::TextBlock{};
         path.Text(wide(cluster.path));
         path.FontSize(13);
-        path.FontWeight(mx::FontWeights::SemiBold());
+        path.FontWeight(mt::FontWeights::SemiBold());
         path.FontFamily(mx::Media::FontFamily(L"Consolas"));
         path.TextWrapping(mx::TextWrapping::Wrap);
         content.Children().Append(path);
@@ -674,7 +675,7 @@ void MainWindow::RenderComm() {
       auto caption = mxc::TextBlock{};
       caption.Text(L"Orphans");
       caption.FontSize(13);
-      caption.FontWeight(mx::FontWeights::SemiBold());
+      caption.FontWeight(mt::FontWeights::SemiBold());
       caption.Foreground(ThemeBrush(L"AutarxSecondaryTextBrush"));
       caption.Margin(mx::ThicknessHelper::FromLengths(8, 12, 8, 2));
       CommList().Items().Append(caption);
@@ -724,7 +725,7 @@ void MainWindow::RenderInspector(rivet_app::SemanticObjectDto const& object) {
   loading.FontSize(12);
   loading.Foreground(ThemeBrush(L"AutarxSecondaryTextBrush"));
   InspectorRefs().Items().Append(loading);
-  LoadRefsAsync(object.absolute_path);
+  LoadRefsAsync(wide(object.absolute_path));
 }
 
 // ---------------------------------------------------------------------------
