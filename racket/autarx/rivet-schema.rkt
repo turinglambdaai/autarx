@@ -63,3 +63,34 @@
    [orphan-frames : (List String)]
    [orphan-pdus : (List String)]
    [orphan-signals : (List String)]))
+
+;; ------------------------------------------------------------ online update
+;; Consumed only by the Windows/Linux hosts; the macOS workbench updates
+;; through RivetUpdate on the Swift side and never calls these RPCs. Shapes
+;; are the taskly family contract so the host update flows stay ports of the
+;; taskly ones.
+
+(define-record UpdateCheck
+  ([status : String]
+   [error : (Optional String)]
+   [current-version : String]
+   [available-version : (Optional String)]
+   [build : (Optional Int64)]
+   [published-at : (Optional String)]
+   [installer : (Optional String)]
+   [size-bytes : (Optional Int64)]))
+
+;; Polled by the host while a download runs. phase: idle | checking |
+;; downloading | downloaded | error.
+(define-record UpdateState
+  ([phase : String]
+   [percent : Int64]
+   [message : (Optional String)]
+   [downloaded-path : (Optional String)]
+   [available-version : (Optional String)]))
+
+(define (nullable value)
+  (if value value (void)))
+
+(define (optional->false value)
+  (if (void? value) #f value))

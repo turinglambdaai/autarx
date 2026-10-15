@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build and sign the macOS workbench update manifest
+# Build and sign the workbench update manifest
 # (update-app-manifest.json — shared/spec/UPDATE.md).
 #
 #   scripts/make-update-manifest.sh <tag> <dist-dir> [key-path]
@@ -7,7 +7,9 @@
 #   <tag>       release tag, e.g. v0.3.0 (must match rivet.rktd's version)
 #   <dist-dir>  directory containing the release artifacts, i.e. the names
 #               the release pipeline produces:
-#                 autarx-<ver>-macos-arm64-app.zip  autarx-<ver>-macos-x64-app.zip
+#                 autarx-<ver>-macos-arm64-app.zip    autarx-<ver>-macos-x64-app.zip
+#                 autarx-<ver>-windows-x64-app.zip
+#                 autarx-<ver>-linux-x64-app.tar.gz   autarx-<ver>-linux-arm64-app.tar.gz
 #   <key-path>  Ed25519 private key: PEM (update-keys.sh output) or raw DER
 #               (base64-decoded UPDATE_ED25519_PRIVATE_KEY_B64, the format
 #               the release publish job consumes). Env fallbacks:
@@ -15,9 +17,10 @@
 #
 # Emits <dist-dir>/update-app-manifest.json — a single self-contained signed
 # wrapper (schema + base64 payload + signature block): the family format
-# every rivet/distribution client verifies. The portable app zips are the
-# update feed; the DMG is a human installer and stays out of it, and the
-# CLI keeps its own checksum feed (update-manifest.json, a different file).
+# every rivet/distribution client verifies. The portable app zips (macOS,
+# Windows) and the app tarballs (Linux) are the workbench update feed; the
+# DMG/MSI/deb/rpm/AppImage are human installers and stay out of it, and the
+# CLI keeps its own signed feed (update-manifest.json, a different file).
 # Requires racket with rivet linked (the release publish job installs the
 # pinned checkout).
 set -euo pipefail
@@ -33,7 +36,10 @@ RKTD_VERSION="$(sed -n 's/.*(version . "\([^"]*\)").*/\1/p' "$ROOT/rivet.rktd")"
   echo "error: tag $TAG does not match rivet.rktd version '$RKTD_VERSION'" >&2; exit 1; }
 
 for artifact in "$DIST/autarx-$VERSION-macos-arm64-app.zip" \
-                "$DIST/autarx-$VERSION-macos-x64-app.zip"; do
+                "$DIST/autarx-$VERSION-macos-x64-app.zip" \
+                "$DIST/autarx-$VERSION-windows-x64-app.zip" \
+                "$DIST/autarx-$VERSION-linux-x64-app.tar.gz" \
+                "$DIST/autarx-$VERSION-linux-arm64-app.tar.gz"; do
   [[ -f "$artifact" ]] || { echo "error: missing $artifact" >&2; exit 1; }
 done
 
@@ -125,7 +131,13 @@ cat > "$SCRIPT" <<RKT
                    (list (artifact 'macos 'arm64
                                    (format "autarx-~a-macos-arm64-app.zip" version) 'zip)
                          (artifact 'macos 'x64
-                                   (format "autarx-~a-macos-x64-app.zip" version) 'zip))))
+                                   (format "autarx-~a-macos-x64-app.zip" version) 'zip)
+                         (artifact 'windows 'x64
+                                   (format "autarx-~a-windows-x64-app.zip" version) 'zip)
+                         (artifact 'linux 'x64
+                                   (format "autarx-~a-linux-x64-app.tar.gz" version) 'targz)
+                         (artifact 'linux 'arm64
+                                   (format "autarx-~a-linux-arm64-app.tar.gz" version) 'targz))))
 
 ;; write-signed-manifest validates the struct against the manifest schema
 ;; before signing, so a malformed manifest fails the release instead of
@@ -146,7 +158,7 @@ cat > "$SCRIPT" <<RKT
  (open-input-file (build-path dist "update-app-manifest.json"))
  (pk-key->public-only-key (read-ed25519-private-key key-path))
  #:key-id key-id)
-(printf "manifest: ~a (2 artifacts, application ~a, key-id ~a)\\n"
+(printf "manifest: ~a (5 artifacts, application ~a, key-id ~a)\\n"
         (build-path dist "update-app-manifest.json") application-id key-id)
 RKT
 

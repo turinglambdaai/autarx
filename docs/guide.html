@@ -426,8 +426,8 @@ autarx patch undo  &lt;workspace&gt; [--json]</div>
   <section id="gui">
     <div class="container">
       <span class="eyebrow" data-i18n="cg.eyebrow">GUI</span>
-      <h2 class="section-title"><span data-i18n="cg.t1">macOS 工作台，</span> <span class="accent" data-i18n="cg.t2">同一个引擎。</span></h2>
-      <p class="lead" data-i18n="cg.lead">GUI 与 CLI 跑同一个 Racket 语义引擎，只是换成原生 macOS 窗口。下载 autarx-&lt;version&gt;-macos-&lt;arch&gt;.dmg，拖入 Applications 即完成安装。发行包为 ad-hoc 签名：首次启动请右键 App 选「打开」。内置「检查更新」（⌘U）走 Ed25519 签名 feed 原子换包、失败自动回滚。注意：只有装在 /Applications（或 ~/Applications）的副本才能自更新。Windows 与 Linux GUI 在 M9 路线上，当前请使用 CLI。</p>
+      <h2 class="section-title"><span data-i18n="cg.t1">三平台工作台，</span> <span class="accent" data-i18n="cg.t2">同一个引擎。</span></h2>
+      <p class="lead" data-i18n="cg.lead">GUI 与 CLI 跑同一个 Racket 语义引擎，只是各自换成原生窗口：macOS（SwiftUI）、Windows（WinUI）、Linux（GTK4）。macOS 下载 autarx-&lt;version&gt;-macos-&lt;arch&gt;.dmg 拖入 Applications——ad-hoc 签名，首次启动请右键 App 选「打开」，且只有装在 /Applications（或 ~/Applications）的副本才能自更新。Windows 用 autarx-&lt;version&gt;-windows-x64.msi 安装。Linux 提供 deb / rpm / AppImage，或解压 -app.tar.gz 便携运行。三端都内置「检查更新」，走同一条 Ed25519 签名 feed：macOS 原子换包自动重启；Windows 便携版就地换目录、MSI 安装走被动升级；Linux 便携副本下载后引导手动解压覆盖，deb / rpm / AppImage 按安装形态引导。</p>
     </div>
   </section>
 
@@ -438,7 +438,7 @@ autarx patch undo  &lt;workspace&gt; [--json]</div>
 
       <div class="faq-item">
         <h3 data-i18n="q1.q">支持哪些平台？</h3>
-        <p data-i18n="q1.a">CLI：macOS（Apple silicon / Intel）、Linux（x64 / arm64）、Windows（x64）自包含 zip。GUI：macOS 14+（Apple silicon / Intel）dmg。Windows / Linux GUI 属 M9 路线图。</p>
+        <p data-i18n="q1.a">CLI：macOS（Apple silicon / Intel）、Linux（x64 / arm64）、Windows（x64）自包含 zip。GUI：macOS 14+（Apple silicon / Intel）dmg、Windows 10+（x64）MSI、Linux（x64 / arm64）deb / rpm / AppImage——三端同一引擎、同一交互面。</p>
       </div>
 
       <div class="faq-item">
@@ -453,12 +453,12 @@ autarx patch undo  &lt;workspace&gt; [--json]</div>
 
       <div class="faq-item">
         <h3 data-i18n="q4.q">更新机制是怎样的？</h3>
-        <p data-i18n="q4.a">CLI 用 autarx update、macOS GUI 用内置「检查更新」，两者都消费 Ed25519 签名的 update feed：先验证 wrapper 签名，再校验工件 SHA-256，然后就地替换（GUI 完成后重启）。任何一步验证失败都会 fail-closed 拒绝更新——这是有意为之的安全行为，不是故障。</p>
+        <p data-i18n="q4.a">CLI 用 autarx update、三平台 GUI 用内置「检查更新」，都消费 Ed25519 签名的 update feed：先验证 wrapper 签名，再校验工件 SHA-256，然后按平台就位——macOS 换包重启，Windows 便携版换目录、MSI 安装走被动升级，Linux 下载后引导手动解压（AppImage 原地替换后重启）。任何一步验证失败都会 fail-closed 拒绝更新——这是有意为之的安全行为，不是故障。</p>
       </div>
 
       <div class="faq-item">
         <h3 data-i18n="q5.q">怎么卸载？</h3>
-        <p data-i18n="q5.a">CLI：删除解压出来的目录（以及你复制到 PATH 里的 autarx 二进制）；运行期状态在系统临时目录的 autarx 子目录（崩溃日志 &lt;TEMP&gt;/autarx/crashes、更新器状态），可一并删除。GUI：把 Autarx.app 拖进废纸篓即可。</p>
+        <p data-i18n="q5.a">CLI：删除解压出来的目录（以及你复制到 PATH 里的 autarx 二进制）；运行期状态在系统临时目录的 autarx 子目录（崩溃日志 &lt;TEMP&gt;/autarx/crashes、更新器状态），可一并删除。GUI：macOS 把 Autarx.app 拖进废纸篓；Windows 在「设置 › 应用」卸载 MSI；Linux 用包管理器移除（deb / rpm），AppImage 直接删文件。</p>
       </div>
     </div>
   </section>
@@ -531,19 +531,19 @@ autarx patch undo  &lt;workspace&gt; [--json]</div>
         'ce.rc1': '无命中（find/refs/trace/ecu），或发现了问题（validate/unresolved/diff/impact）；update --check 表示有新版',
         'ce.rc2': '用法、文件或解析错误；对象名歧义',
         'ce.rc3': '未处理崩溃（日志写在 <TEMP>/autarx/crashes）',
-        'cg.eyebrow': 'GUI', 'cg.t1': 'macOS 工作台，', 'cg.t2': '同一个引擎。',
-        'cg.lead': 'GUI 与 CLI 跑同一个 Racket 语义引擎，只是换成原生 macOS 窗口。下载 autarx-<version>-macos-<arch>.dmg，拖入 Applications 即完成安装。发行包为 ad-hoc 签名：首次启动请右键 App 选「打开」。内置「检查更新」（⌘U）走 Ed25519 签名 feed 原子换包、失败自动回滚。注意：只有装在 /Applications（或 ~/Applications）的副本才能自更新。Windows 与 Linux GUI 在 M9 路线上，当前请使用 CLI。',
+        'cg.eyebrow': 'GUI', 'cg.t1': '三平台工作台，', 'cg.t2': '同一个引擎。',
+        'cg.lead': 'GUI 与 CLI 跑同一个 Racket 语义引擎，只是各自换成原生窗口：macOS（SwiftUI）、Windows（WinUI）、Linux（GTK4）。macOS 下载 autarx-<version>-macos-<arch>.dmg 拖入 Applications——ad-hoc 签名，首次启动请右键 App 选「打开」，且只有装在 /Applications（或 ~/Applications）的副本才能自更新。Windows 用 autarx-<version>-windows-x64.msi 安装。Linux 提供 deb / rpm / AppImage，或解压 -app.tar.gz 便携运行。三端都内置「检查更新」，走同一条 Ed25519 签名 feed：macOS 原子换包自动重启；Windows 便携版就地换目录、MSI 安装走被动升级；Linux 便携副本下载后引导手动解压覆盖，deb / rpm / AppImage 按安装形态引导。',
         'cf.eyebrow': 'FAQ', 'cf.t1': '常见问题。',
         'q1.q': '支持哪些平台？',
-        'q1.a': 'CLI：macOS（Apple silicon / Intel）、Linux（x64 / arm64）、Windows（x64）自包含 zip。GUI：macOS 14+（Apple silicon / Intel）dmg。Windows / Linux GUI 属 M9 路线图。',
+        'q1.a': 'CLI：macOS（Apple silicon / Intel）、Linux（x64 / arm64）、Windows（x64）自包含 zip。GUI：macOS 14+（Apple silicon / Intel）dmg、Windows 10+（x64）MSI、Linux（x64 / arm64）deb / rpm / AppImage——三端同一引擎、同一交互面。',
         'q2.q': '能读什么数据？需要什么格式的输入？',
         'q2.a': 'ARXML——System Description、System Extract、ECU Extract、ECUC 与通信 ARXML，支持多文件交付包（把目录交给命令即可）。AUTOSAR 版本从 XSD schema location 自动识别（如 AUTOSAR_4-3-0.xsd → 4.3.0），已知 revision 映射到经典版本号，未知 revision 原样保留。许可方式为 source-available（源码可见、专有许可），详见仓库 LICENSE。',
         'q3.q': '与 DaVinci / tresos / ISOLAR 是什么关系？',
         'q3.a': '共存，不替代。Autarx 不是配置器，不重做 vendor 的校验与代码生成；它补的是「收到 OEM 交付」到「打开 vendor 工具链」之间的工程缺口。vendor 侧的校验仍是权威路径——autarx 通过 vendor 命令中继 DaVinci/tresos/ISOLAR 的校验运行并归一化诊断，编辑过的文件最终仍交回 vendor 工具链验证。',
         'q4.q': '更新机制是怎样的？',
-        'q4.a': 'CLI 用 autarx update、macOS GUI 用内置「检查更新」，两者都消费 Ed25519 签名的 update feed：先验证 wrapper 签名，再校验工件 SHA-256，然后就地替换（GUI 完成后重启）。任何一步验证失败都会 fail-closed 拒绝更新——这是有意为之的安全行为，不是故障。',
+        'q4.a': 'CLI 用 autarx update、三平台 GUI 用内置「检查更新」，都消费 Ed25519 签名的 update feed：先验证 wrapper 签名，再校验工件 SHA-256，然后按平台就位——macOS 换包重启，Windows 便携版换目录、MSI 安装走被动升级，Linux 下载后引导手动解压（AppImage 原地替换后重启）。任何一步验证失败都会 fail-closed 拒绝更新——这是有意为之的安全行为，不是故障。',
         'q5.q': '怎么卸载？',
-        'q5.a': 'CLI：删除解压出来的目录（以及你复制到 PATH 里的 autarx 二进制）；运行期状态在系统临时目录的 autarx 子目录（崩溃日志 <TEMP>/autarx/crashes、更新器状态），可一并删除。GUI：把 Autarx.app 拖进废纸篓即可。',
+        'q5.a': 'CLI：删除解压出来的目录（以及你复制到 PATH 里的 autarx 二进制）；运行期状态在系统临时目录的 autarx 子目录（崩溃日志 <TEMP>/autarx/crashes、更新器状态），可一并删除。GUI：macOS 把 Autarx.app 拖进废纸篓；Windows 在「设置 › 应用」卸载 MSI；Linux 用包管理器移除（deb / rpm），AppImage 直接删文件。',
         'footer': 'Autarx · AUTOSAR 集成工作台 · turinglambdaai'
       };
       var en = {
@@ -611,18 +611,18 @@ autarx patch undo  &lt;workspace&gt; [--json]</div>
         'ce.rc2': 'Usage, file, or parse error; ambiguous object name',
         'ce.rc3': 'Unhandled crash (log written under <TEMP>/autarx/crashes)',
         'cg.eyebrow': 'GUI', 'cg.t1': 'The macOS workbench,', 'cg.t2': 'same engine.',
-        'cg.lead': 'The GUI runs the same Racket semantic engine as the CLI, wrapped in a native macOS window. Download autarx-<version>-macos-<arch>.dmg and drag it to Applications. The distribution is ad-hoc signed: on first launch, right-click the app and choose Open. The built-in Check for Updates (⌘U) consumes the Ed25519-signed feed with an atomic swap and automatic rollback. Note: only a copy under /Applications (or ~/Applications) can self-update. Windows and Linux GUIs are on the M9 roadmap — use the CLI for now.',
+        'cg.lead': 'The GUI runs the same Racket semantic engine as the CLI, wrapped in a native window per desktop: macOS (SwiftUI), Windows (WinUI), Linux (GTK4). On macOS, download autarx-<version>-macos-<arch>.dmg and drag it to Applications — ad-hoc signed, so right-click the app and choose Open on first launch, and only a copy under /Applications (or ~/Applications) can self-update. On Windows, install autarx-<version>-windows-x64.msi. On Linux, take the .deb / .rpm / .AppImage or unpack the -app.tar.gz portable layout. All three GUIs ship Check for Updates over the same Ed25519-signed feed: macOS swaps the bundle atomically and relaunches; Windows portable installs swap the directory in place and MSI installs run a passive upgrade; Linux portable copies get a download-and-extract hand-off while deb / rpm / AppImage installs get shape-aware guidance.',
         'cf.eyebrow': 'FAQ', 'cf.t1': 'Frequently asked.',
         'q1.q': 'Which platforms are supported?',
-        'q1.a': 'CLI: self-contained zips for macOS (Apple silicon / Intel), Linux (x64 / arm64) and Windows (x64). GUI: macOS 14+ (Apple silicon / Intel) as a dmg. Windows / Linux GUIs are on the M9 roadmap.',
+        'q1.a': 'CLI: self-contained zips for macOS (Apple silicon / Intel), Linux (x64 / arm64) and Windows (x64). GUI: macOS 14+ (Apple silicon / Intel) as a dmg, Windows 10+ (x64) as an MSI, Linux (x64 / arm64) as .deb / .rpm / .AppImage — one engine, one interaction surface across all three.',
         'q2.q': 'What data can it read? What input format?',
         'q2.a': 'ARXML — System Description, System Extract, ECU Extract, ECUC and communication ARXML, including multi-file delivery packages (just pass the directory). The AUTOSAR release is detected from the XSD schema location (AUTOSAR_4-3-0.xsd → 4.3.0); known revisions map to classic versions, unknown ones stay raw. Licensed source-available (visible source, proprietary license) — see the repository LICENSE.',
         'q3.q': 'How does it relate to DaVinci / tresos / ISOLAR?',
         'q3.a': 'Coexistence, not replacement. Autarx is not a configurator and does not redo vendor validation or code generation; it closes the gap between receiving an OEM delivery and opening the vendor toolchain. Vendor validation remains authoritative — autarx relays DaVinci/tresos/ISOLAR validation runs via the vendor command with normalized diagnostics, and edited files go back to the vendor toolchain for verification.',
         'q4.q': 'How do updates work?',
-        'q4.a': 'The CLI uses autarx update and the macOS GUI its built-in Check for Updates; both consume an Ed25519-signed update feed: the wrapper signature is verified first, then the artifact SHA-256, before the in-place swap (the GUI relaunches afterwards). Any verification failure refuses the update fail-closed — deliberate security behavior, not a malfunction.',
+        'q4.a': 'The CLI uses autarx update and all three GUIs their built-in Check for Updates; every channel consumes the Ed25519-signed update feed: the wrapper signature is verified first, then the artifact SHA-256, before the platform-appropriate install — macOS swaps the bundle and relaunches, Windows portable installs swap the directory and MSI installs run a passive upgrade, Linux gets a download-and-extract hand-off (AppImage swaps in place and relaunches). Any verification failure refuses the update fail-closed — deliberate security behavior, not a malfunction.',
         'q5.q': 'How do I uninstall?',
-        'q5.a': 'CLI: delete the unpacked directory (and any autarx binary you copied onto your PATH); runtime state lives in the autarx folder under the system temp directory (crash logs <TEMP>/autarx/crashes, updater state) and can go too. GUI: drag Autarx.app to the Trash.',
+        'q5.a': 'CLI: delete the unpacked directory (and any autarx binary you copied onto your PATH); runtime state lives in the autarx folder under the system temp directory (crash logs <TEMP>/autarx/crashes, updater state) and can go too. GUI: drag Autarx.app to the Trash on macOS; uninstall the MSI under Settings › Apps on Windows; remove the deb / rpm with your package manager, or delete the AppImage file.'
         'footer': 'Autarx · AUTOSAR Integration Workbench · turinglambdaai'
       };
 

@@ -139,9 +139,111 @@ jobs:
           path: dist-cli/autarx-*.zip
           if-no-files-found: error
 
+  windows:
+    name: Windows workbench (x64)
+    needs: validate
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install Racket
+        uses: Bogdanp/setup-racket@v1.15
+        with:
+          architecture: x64
+          version: stable
+          distribution: full
+      - name: Install Rivet (catalog)
+        shell: bash
+        run: raco pkg install --auto --no-docs 'https://github.com/turinglambdaai/rivet.git#${{ env.RIVET_PIN }}'
+      - name: Install WiX (v5; rivet's MSI toolchain)
+        shell: bash
+        run: dotnet tool install --global wix --version 5.0.2
+      - name: Install crypto (updater dependency)
+        shell: pwsh
+        run: raco pkg install --auto --no-docs crypto
+      - name: Link autarx core
+        shell: bash
+        run: raco pkg install --auto --no-docs --name autarx-core --link "file://$GITHUB_WORKSPACE/racket"
+      - name: Release (MSI + portable zip)
+        shell: pwsh
+        run: raco rivet release --without-updates --development
+      - name: Family naming
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          cd dist
+          # The portable zip is the workbench update payload and gets the
+          # family -app suffix — the plain name belongs to the CLI zip (the
+          # separate cli job ships it). The MSI keeps the plain family name:
+          # the updater derives its release URL from the feed zip entry.
+          mv "autarx-${VERSION}-windows-x64.zip" \
+             "autarx-${VERSION}-windows-x64-app.zip"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: windows
+          path: dist/autarx-*
+          if-no-files-found: error
+
+  linux:
+    name: Linux workbench (${{ matrix.arch }})
+    needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            os: ubuntu-latest
+          - arch: arm64
+            os: ubuntu-24.04-arm
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up embeddable Racket CS
+        uses: turinglambdaai/rivet/.github/actions/setup-embed-racket@v0.11.0
+      # Installed after the embeddable runtime so the catalog dependency
+      # closure (cext-lib, crypto-lib, keel) resolves against the minimal
+      # build — it ships no packages of its own. crypto backs the updater.
+      - name: Install Rivet (catalog) and backend packages
+        run: |
+          raco pkg install --auto --no-docs 'https://github.com/turinglambdaai/rivet.git#${{ env.RIVET_PIN }}'
+          raco pkg install --auto --no-docs crypto
+      - name: Install GTK4, rpm and packaging tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            libgtk-4-dev libadwaita-1-dev libglib2.0-dev cmake ninja-build \
+            pkg-config file rpm desktop-file-utils
+      - name: Link autarx core
+        run: raco pkg install --auto --no-docs --name autarx-core --link "file://$PWD/racket"
+      # tar.gz (the workbench update payload) + deb + rpm + AppImage, launch
+      # smoke included. The AppImage carries its own GTK4 dependency
+      # closure; APPIMAGE_EXTRACT_AND_RUN lets appimagetool run on the
+      # runner.
+      - name: Release (tar.gz + deb + rpm + AppImage)
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: '1'
+        run: raco rivet release --without-updates --development
+      - name: Family naming
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          ARCH="${{ matrix.arch }}"
+          cd dist
+          # The tar.gz is the workbench update payload and gets the family
+          # -app suffix. The release's portable zip is dropped: its payload
+          # duplicates the tar.gz and its plain name belongs to the CLI zip.
+          mv "autarx-${VERSION}-linux-${ARCH}.tar.gz" \
+             "autarx-${VERSION}-linux-${ARCH}-app.tar.gz"
+          rm -f "autarx-${VERSION}-linux-${ARCH}.zip"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: linux-${{ matrix.arch }}
+          path: dist/autarx-*
+          if-no-files-found: error
+
   release:
     name: Publish
-    needs: [macos, cli]
+    needs: [macos, cli, windows, linux]
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
@@ -176,10 +278,7 @@ jobs:
         run: |
           # Fail-closed: no key, no release. Starting with 0.4.1 the CLI
           # feed is an Ed25519 signed wrapper — an unauthenticated feed is
-          # the supply-chain gap this retires (shared/spec/UPDATE.md). CLI
-          # builds up to and including 0.4.0 read the legacy plaintext
-          # checksum shape and report a failed check against the signed
-          # feed; they must update manually once to cross over.
+          # the supply-chain gap this retires (shared/spec/UPDATE.md).
           racket scripts/make-update-feed.rkt \
             "${{ github.ref_name }}" dist \
             "https://github.com/turinglambdaai/autarx/releases/download/${{ github.ref_name }}"
@@ -188,9 +287,11 @@ jobs:
           UPDATE_ED25519_PRIVATE_KEY_B64: ${{ secrets.UPDATE_ED25519_PRIVATE_KEY_B64 }}
         run: |
           # Fail-closed, same contract as the CLI feed above: no key, no
-          # release. The workbench update client verifies the wrapper
-          # signature before parsing, so shipping without the feed would
-          # strand every installed copy on "release has no update manifest".
+          # release. All three hosts verify the wrapper signature before
+          # parsing — the macOS host via RivetUpdate, the Windows and Linux
+          # hosts through the backend updater — so shipping without the
+          # feed would strand every installed copy on "release has no
+          # update manifest".
           if [ -z "$UPDATE_ED25519_PRIVATE_KEY_B64" ]; then
             echo "::error::UPDATE_ED25519_PRIVATE_KEY_B64 is not set — refusing to publish without the signed workbench feed (shared/spec/UPDATE.md)"
             exit 1
@@ -211,7 +312,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           ver="${GITHUB_REF_NAME#v}"
-          notes="Autarx ${ver}. The macOS workbench (macOS 14+, Apple silicon and Intel) ships as autarx-<version>-macos-<arch>.dmg for human install and as autarx-<version>-macos-<arch>-app.zip — the payload the workbench's built-in updater consumes (Ed25519-signed feed, in-app update with relaunch). The CLI ships as self-contained zips — autarx-<version>-macos-arm64.zip, -macos-x64.zip, -linux-x64.zip, -linux-arm64.zip, -windows-x64.zip — and updates itself through an Ed25519-signed feed (\`autarx update\`). Every asset carries a .sha256 sidecar. Windows and Linux GUI hosts are in development. Ad-hoc signed — on first launch, right-click the app and choose Open."
+          notes="Autarx ${ver}. The workbench ships on all three desktops: macOS (Apple silicon and Intel) as autarx-<version>-macos-<arch>.dmg, Windows as autarx-<version>-windows-x64.msi, Linux as .deb/.rpm/.AppImage for the common architectures. Every host updates in place through the Ed25519-signed feed (update-app-manifest.json); Linux tarball hand-offs stay manual — extract the -app.tar.gz over the install directory. The CLI ships as self-contained zips — autarx-<version>-{macos-arm64,macos-x64,linux-x64,linux-arm64,windows-x64}.zip — and updates itself through \`autarx update\`. Every asset carries a .sha256 sidecar. Ad-hoc signed — on first macOS launch, right-click the app and choose Open."
           if gh release view "${{ github.ref_name }}" -R turinglambdaai/autarx >/dev/null 2>&1; then
             gh release upload "${{ github.ref_name }}" dist/* --clobber -R turinglambdaai/autarx
           else
@@ -232,13 +333,19 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           # Family rule: download buttons point at
           # releases/latest/download/<alias>, so every release also ships
-          # versionless copies. Autarx is CLI zips (all five platforms) plus
-          # the macOS GUI dmg; the *-app.zip payloads are update-feed
-          # internals and get no alias. Deliberately after the provenance
-          # attestation so dist/* there stays versioned-only.
+          # versionless copies of the primary installers. Aliases are
+          # overwritten on each release; the versioned assets stay
+          # canonical. The *-app.zip / *-app.tar.gz payloads are
+          # update-feed internals and get no alias. Deliberately after the
+          # provenance attestation so dist/* there stays versioned-only.
           mkdir -p stable-alias
           cp "dist/autarx-${VERSION}-macos-arm64.dmg" stable-alias/autarx-macos-arm64.dmg
           cp "dist/autarx-${VERSION}-macos-x64.dmg" stable-alias/autarx-macos-x64.dmg
+          cp "dist/autarx-${VERSION}-windows-x64.msi" stable-alias/autarx-windows-x64.msi
+          cp "dist/autarx-${VERSION}-linux-amd64.deb" stable-alias/autarx-linux-x64.deb
+          cp "dist/autarx-${VERSION}-linux-arm64.deb" stable-alias/autarx-linux-arm64.deb
+          cp "dist/autarx-${VERSION}-linux-x86_64.AppImage" stable-alias/autarx-linux-x64.AppImage
+          cp "dist/autarx-${VERSION}-linux-aarch64.AppImage" stable-alias/autarx-linux-arm64.AppImage
           cp "dist/autarx-${VERSION}-macos-arm64.zip" stable-alias/autarx-macos-arm64.zip
           cp "dist/autarx-${VERSION}-macos-x64.zip" stable-alias/autarx-macos-x64.zip
           cp "dist/autarx-${VERSION}-windows-x64.zip" stable-alias/autarx-windows-x64.zip

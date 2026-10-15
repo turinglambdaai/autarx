@@ -54,6 +54,8 @@ flows through M7's reviewed pipeline.
 
 ## M9 — Commercial Hardening
 
-Installer-grade distribution (per-platform installers instead of raw zips),
-licensing, performance profiling on large OEM deliveries, and code signing /
-notarization.
+Native hosts on all three desktops ✅ — the workbench ships as a macOS dmg
+(SwiftUI), a Windows MSI (WinUI) and Linux deb / rpm / AppImage (GTK4), all
+over the same embedded Racket core, RPC surface and Ed25519-signed update
+feed. What remains: licensing, performance profiling on large OEM
+deliveries, and code signing / notarization.

@@ -1,6 +1,6 @@
 name: ci
 
-# Contract tests + CLI smoke on every push/PR to the migration line.
+# Contract tests + host builds on every push/PR to the migration line.
 on:
   push:
     branches: [main, experiment/autarx-rivet]
@@ -36,7 +36,7 @@ jobs:
       - name: Install autarx core
         run: raco pkg install --auto --no-docs --name autarx-core --link "file://$PWD/racket"
 
-      - name: Contract tests (101 + RVT1 smoke)
+      - name: Contract tests (108 + update channels)
         run: raco test racket/
 
       - name: CLI exit-code smoke
@@ -75,3 +75,64 @@ jobs:
           raco pkg install --auto --no-docs --name autarx-core --link "file://$PWD/racket"
           raco rivet doctor --json
           raco rivet build
+
+  linux-host:
+    name: Linux host (GTK4 build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install GTK toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build pkg-config \
+            libgtk-4-dev libadwaita-1-dev libglib2.0-dev
+      # Builds and caches the embeddable Racket CS runtime and exports
+      # RIVET_RACKET_* (rivet's own composite action).
+      - name: Set up embeddable Racket CS
+        uses: turinglambdaai/rivet/.github/actions/setup-embed-racket@v0.11.0
+      # Installed after the embeddable runtime so the catalog dependency
+      # closure (cext-lib, crypto-lib, keel) resolves against the minimal
+      # build — it ships no packages of its own. crypto backs the updater.
+      - name: Install Rivet (catalog) and backend packages
+        run: |
+          raco pkg install --auto --no-docs 'https://github.com/turinglambdaai/rivet.git#${{ env.RIVET_PIN }}'
+          raco pkg install --auto --no-docs crypto
+      - name: Install autarx core
+        run: raco pkg install --auto --no-docs --name autarx-core --link "file://$PWD/racket"
+      - name: Toolchain doctor
+        run: raco rivet doctor --json
+      - name: Build host
+        run: raco rivet build
+      - name: Headless boot smoke
+        run: |
+          sudo apt-get install -y xvfb
+          xvfb-run -a ./.rivet/stage/RivetHost &
+          APP_PID=$!
+          sleep 8
+          kill -0 $APP_PID
+          kill $APP_PID
+
+  windows-host:
+    name: Windows host (WinRT build)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up Racket CS
+        uses: Bogdanp/setup-racket@v1.15
+        with:
+          architecture: x64
+          distribution: full
+          variant: CS
+          version: '9.3'
+      - name: Install Rivet (catalog)
+        shell: bash
+        run: raco pkg install --auto --no-docs 'https://github.com/turinglambdaai/rivet.git#${{ env.RIVET_PIN }}'
+      - name: Install crypto (updater dependency)
+        shell: pwsh
+        run: raco pkg install --auto --no-docs crypto
+      - name: Install autarx core
+        shell: bash
+        run: raco pkg install --auto --no-docs --name autarx-core --link "file://$PWD/racket"
+      - name: Build host
+        shell: pwsh
+        run: raco rivet build

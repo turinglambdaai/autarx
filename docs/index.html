@@ -136,8 +136,8 @@ closure: 7 objects in scope, relevant changes: 4, unrelated: 2, <span class="fla
   <section id="download">
     <div class="container">
       <span class="eyebrow" data-i18n="dl.eyebrow">下载</span>
-      <h2 class="section-title"><span data-i18n="dl.t1">CLI 先行，</span> <span class="accent" data-i18n="dl.t2">GUI 随行。</span></h2>
-      <p class="lead" data-i18n="dl.lead">CLI 是全功能入口：macOS、Linux、Windows 自包含 zip，解压即用。macOS GUI 以 dmg 交付；Windows 与 Linux GUI 在 M9 路线上。</p>
+      <h2 class="section-title"><span data-i18n="dl.t1">一个工作台，</span> <span class="accent" data-i18n="dl.t2">三个桌面。</span></h2>
+      <p class="lead" data-i18n="dl.lead">GUI 与 CLI 同一个引擎：macOS 以 dmg 交付，Windows 以 MSI 交付，Linux 以 deb / rpm / AppImage 交付；CLI 另有全平台自包含 zip。</p>
       <div class="platforms-grid four">
         <a class="platform-card" data-dl="cli-mac" href="https://github.com/turinglambdaai/autarx/releases/latest/download/autarx-macos-arm64.zip">
           <div class="platform-icon">🍎</div>
@@ -161,18 +161,18 @@ closure: 7 objects in scope, relevant changes: 4, unrelated: 2, <span class="fla
           <div class="platform-name" data-i18n="dl.mac-gui">GUI · macOS</div>
           <div class="platform-format">.dmg · arm64 + x64 · app.zip（应用内更新）</div>
         </a>
-        <div class="platform-card">
+        <a class="platform-card" data-dl="gui-win" href="https://github.com/turinglambdaai/autarx/releases/latest/download/autarx-windows-x64.msi">
           <div class="platform-icon">🪟</div>
           <div class="platform-name" data-i18n="dl.win-gui">GUI · Windows</div>
-          <span class="dev-note" data-i18n="dl.in-dev">开发中 · M9</span>
-        </div>
-        <div class="platform-card">
+          <div class="platform-format">.msi · x64</div>
+        </a>
+        <a class="platform-card" data-dl="gui-linux" href="https://github.com/turinglambdaai/autarx/releases/latest/download/autarx-linux-x64.AppImage">
           <div class="platform-icon">🐧</div>
           <div class="platform-name" data-i18n="dl.linux-gui">GUI · Linux</div>
-          <span class="dev-note" data-i18n="dl.in-dev">开发中 · M9</span>
-        </div>
+          <div class="platform-format">.deb / .rpm / .AppImage · x64 + arm64</div>
+        </a>
       </div>
-      <div class="callout"><span data-i18n="dl.callout">更新机制：CLI 用 autarx update 自更新，macOS GUI 内置「检查更新」（⌘U）——两条通道都走 Ed25519 签名的 update feed。每个资产都带 .sha256 校验文件。</span></div>
+      <div class="callout"><span data-i18n="dl.callout">更新机制：CLI 用 autarx update 自更新；三平台 GUI 都内置「检查更新」（macOS ⌘U / Win Ctrl+U / Linux Help 菜单），走同一条 Ed25519 签名的 update feed。Linux 的 deb / rpm / AppImage 副本按安装形态引导更新。每个资产都带 .sha256 校验文件。</span></div>
       <p style="margin-top:16px"><a href="https://github.com/turinglambdaai/autarx/releases" class="btn btn-secondary" data-i18n="dl.all-releases">全部版本</a></p>
     </div>
   </section>
@@ -181,7 +181,7 @@ closure: 7 objects in scope, relevant changes: 4, unrelated: 2, <span class="fla
     <div class="container">
       <span class="eyebrow" data-i18n="status.eyebrow">状态</span>
       <h2 class="section-title"><span data-i18n="status.t1">分析优先，</span> <span class="accent" data-i18n="status.t2">一个里程碑一个里程碑。</span></h2>
-      <p class="lead" data-i18n="status.lead">当前状态：完整分析栈已交付——工作区语义引擎、语义 diff、ECU 影响分析、通信投影、厂商交接、受控编辑与 MCP agent 接口。剩余为 M9 商业化加固——安装器、授权与性能画像；Windows / Linux GUI 宿主也在 M9 路线上。</p>
+      <p class="lead" data-i18n="status.lead">当前状态：完整分析栈已交付——工作区语义引擎、语义 diff、ECU 影响分析、通信投影、厂商交接、受控编辑与 MCP agent 接口；三平台 GUI 宿主（macOS / Windows / Linux）已上线。剩余为 M9 商业化加固——授权、性能画像与代码签名 / 公证。</p>
       <div class="hero-buttons">
         <a href="https://github.com/turinglambdaai/autarx/releases/latest/download/autarx-macos-arm64.dmg" class="btn btn-primary" data-i18n="status.download">下载</a>
         <a href="guide.html" class="btn btn-secondary" data-i18n="status.guide">用户手册</a>
@@ -195,10 +195,10 @@ closure: 7 objects in scope, relevant changes: 4, unrelated: 2, <span class="fla
   <script>
     // Platform-aware direct downloads: hero/status CTAs and the matching
     // platform cards point at the versionless alias for the visitor's OS
-    // (mac/linux arch refined via userAgentData). mac visitors get the CLI
-    // zip plus the GUI dmg (both aliases); win/linux get the CLI zip.
-    // Runs before the i18n block below so its language pass applies the
-    // OS-specific label keys.
+    // (mac/linux arch refined via userAgentData). mac visitors get the GUI
+    // dmg; win gets the MSI; linux gets the AppImage — the CLI zips stay
+    // one row below. Runs before the i18n block below so its language pass
+    // applies the OS-specific label keys.
     (function () {
       var BASE = 'https://github.com/turinglambdaai/autarx/releases/latest/download/';
       var ua = navigator.userAgent;
@@ -207,18 +207,19 @@ closure: 7 objects in scope, relevant changes: 4, unrelated: 2, <span class="fla
       var style = document.createElement('style');
       style.textContent = '.platform-card.current{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}';
       document.head.appendChild(style);
-      var heroFile = { mac: 'autarx-macos-' + arch + '.dmg', win: 'autarx-windows-x64.zip', linux: 'autarx-linux-' + arch + '.zip' }[os];
+      var heroFile = { mac: 'autarx-macos-' + arch + '.dmg', win: 'autarx-windows-x64.msi', linux: 'autarx-linux-' + arch + '.AppImage' }[os];
       var heroUrl = BASE + heroFile;
       document.querySelectorAll('a[data-i18n="hero.download"], a[data-i18n="status.download"]').forEach(function (a) {
         a.href = heroUrl;
         a.setAttribute('data-i18n', (a.getAttribute('data-i18n') === 'hero.download' ? 'hero.' : 'status.') + 'download-' + os);
       });
-      var cliForOs = { mac: 'cli-mac', win: 'cli-win', linux: 'cli-linux' }[os];
+      var currentForOs = { mac: ['cli-mac', 'gui-mac'], win: ['cli-win', 'gui-win'], linux: ['cli-linux', 'gui-linux'] }[os];
       document.querySelectorAll('a.platform-card[data-dl]').forEach(function (card) {
         var kind = card.getAttribute('data-dl');
         if (kind === 'cli-mac' || kind === 'gui-mac') card.setAttribute('href', BASE + 'autarx-macos-' + arch + (kind === 'gui-mac' ? '.dmg' : '.zip') );
         if (kind === 'cli-linux') card.setAttribute('href', BASE + 'autarx-linux-' + arch + '.zip');
-        if (kind === cliForOs || (os === 'mac' && kind === 'gui-mac')) card.classList.add('current');
+        if (kind === 'gui-linux') card.setAttribute('href', BASE + 'autarx-linux-' + arch + '.AppImage');
+        if (currentForOs.indexOf(kind) >= 0) card.classList.add('current');
       });
       if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
         navigator.userAgentData.getHighEntropyValues(['architecture', 'platform']).then(function (h) {
@@ -226,7 +227,7 @@ closure: 7 objects in scope, relevant changes: 4, unrelated: 2, <span class="fla
           var a = h.architecture === 'arm' ? 'arm64' : (h.architecture === 'x86' ? 'x64' : null);
           if (!a || a === arch) return;
           document.querySelectorAll('a[href^="' + BASE + '"]').forEach(function (x) {
-            x.setAttribute('href', x.getAttribute('href').replace('-' + arch + '.(dmg|zip)$', '-' + a + '.$1'));
+            x.setAttribute('href', x.getAttribute('href').replace('-' + arch + '.(dmg|zip|AppImage)$', '-' + a + '.$1'));
           });
         }).catch(function () {});
       }
@@ -265,20 +266,19 @@ closure: 7 objects in scope, relevant changes: 4, unrelated: 2, <span class="fla
         'f9.body': '同一套工作流可从 CLI/CI 运行，输出稳定 JSON——为自动化与 AI agent 准备。',
         'platform.eyebrow': '平台契约', 'platform.t1': '不是配置器，', 'platform.t2': '是工作台。',
         'platform.lead': 'Autarx 不替代 DaVinci Configurator、EB tresos 或 ETAS ISOLAR。它补上的是收到 OEM 交付到打开 vendor 工具链之间的工程缺口——vendor 侧的校验与代码生成仍是权威路径。',
-        'pf.desktop': '桌面端', 'pf.desktop-v': 'macOS 原生宿主（Swift）+ Racket 语义引擎',
-        'pf.platforms': '平台', 'pf.platforms-v': 'GUI：macOS 14+（Apple silicon / Intel）· CLI：macOS / Linux / Windows；Windows 与 Linux GUI 开发中',
+        'pf.desktop': '桌面端', 'pf.desktop-v': '三平台原生宿主（macOS Swift / Windows WinUI / Linux GTK）+ Racket 语义引擎',
+        'pf.platforms': '平台', 'pf.platforms-v': 'GUI：macOS 14+（Apple silicon / Intel）· Windows 10+（x64）· Linux（x64 / arm64）· CLI：macOS / Linux / Windows',
         'pf.input': '输入', 'pf.input-v': 'ARXML — System Description / System Extract / ECU Extract / ECUC / 通信，多文件交付包',
         'pf.automation': '自动化', 'pf.automation-v': 'CLI 稳定 JSON 输出（CI / AI agent 友好）+ MCP 服务器',
         'pf.license': '许可', 'pf.license-v': '源码可见，专有许可（source-available, proprietary）',
-        'pf.milestone': '里程碑', 'pf.milestone-v': '分析栈已交付：语义引擎、语义 diff、ECU 影响分析、通信投影、厂商交接、受控编辑、MCP；M9 商业化加固进行中',
+        'pf.milestone': '里程碑', 'pf.milestone-v': '分析栈已交付：语义引擎、语义 diff、ECU 影响分析、通信投影、厂商交接、受控编辑、MCP；三平台 GUI 宿主已上线；M9 商业化加固（授权、签名 / 公证、性能画像）进行中',
         'pf.caption': 'macOS 工作台真实截图：空态。⌘O 打开 OEM 交付包，开始索引。',
-        'dl.eyebrow': '下载', 'dl.t1': 'CLI 先行，', 'dl.t2': 'GUI 随行。',
-        'dl.lead': 'CLI 是全功能入口：macOS、Linux、Windows 自包含 zip，解压即用。macOS GUI 以 dmg 交付；Windows 与 Linux GUI 在 M9 路线上。',
+        'dl.eyebrow': '下载', 'dl.t1': '一个工作台，', 'dl.t2': '三个桌面。',
+        'dl.lead': 'GUI 与 CLI 同一个引擎：macOS 以 dmg 交付，Windows 以 MSI 交付，Linux 以 deb / rpm / AppImage 交付；CLI 另有全平台自包含 zip。',
         'dl.mac-gui': 'GUI · macOS', 'dl.win-gui': 'GUI · Windows', 'dl.linux-gui': 'GUI · Linux',
-        'dl.in-dev': '开发中 · M9',
-        'dl.callout': '更新机制：CLI 用 autarx update 自更新，macOS GUI 内置「检查更新」（⌘U）——两条通道都走 Ed25519 签名的 update feed。每个资产都带 .sha256 校验文件。',
+        'dl.callout': '更新机制：CLI 用 autarx update 自更新；三平台 GUI 都内置「检查更新」（macOS ⌘U / Win Ctrl+U / Linux Help 菜单），走同一条 Ed25519 签名的 update feed。Linux 的 deb / rpm / AppImage 副本按安装形态引导更新。每个资产都带 .sha256 校验文件。',
         'status.eyebrow': '状态', 'status.t1': '分析优先，', 'status.t2': '一个里程碑一个里程碑。',
-        'status.lead': '当前状态：完整分析栈已交付——工作区语义引擎、语义 diff、ECU 影响分析、通信投影、厂商交接、受控编辑与 MCP agent 接口。剩余为 M9 商业化加固——安装器、授权与性能画像；Windows / Linux GUI 宿主也在 M9 路线上。',
+        'status.lead': '当前状态：完整分析栈已交付——工作区语义引擎、语义 diff、ECU 影响分析、通信投影、厂商交接、受控编辑与 MCP agent 接口；三平台 GUI 宿主（macOS / Windows / Linux）已上线。剩余为 M9 商业化加固——授权、性能画像与代码签名 / 公证。',
         'status.download': '下载', 'status.guide': '用户手册', 'status.roadmap': '路线图',
         'status.download-mac': '下载 macOS 版', 'status.download-win': '下载 Windows 版', 'status.download-linux': '下载 Linux 版',
         'dl.all-releases': '全部版本',
@@ -314,20 +314,19 @@ closure: 7 objects in scope, relevant changes: 4, unrelated: 2, <span class="fla
         'f9.body': 'The same workflows run from CLI and CI with stable JSON output — ready for automation and AI agents.',
         'platform.eyebrow': 'Platform contract', 'platform.t1': 'Not a configurator.', 'platform.t2': 'A workbench.',
         'platform.lead': 'Autarx does not replace DaVinci Configurator, EB tresos or ETAS ISOLAR. It closes the engineering gap between receiving an OEM delivery and opening the vendor toolchain — vendor validation and code generation remain authoritative.',
-        'pf.desktop': 'Desktop', 'pf.desktop-v': 'Native macOS host (Swift) + Racket semantic engine',
-        'pf.platforms': 'Platforms', 'pf.platforms-v': 'GUI: macOS 14+ (Apple silicon / Intel) · CLI: macOS / Linux / Windows; Windows and Linux GUI in development',
+        'pf.desktop': 'Desktop', 'pf.desktop-v': 'Native hosts on all three desktops (macOS Swift / Windows WinUI / Linux GTK) + Racket semantic engine',
+        'pf.platforms': 'Platforms', 'pf.platforms-v': 'GUI: macOS 14+ (Apple silicon / Intel) · Windows 10+ (x64) · Linux (x64 / arm64) · CLI: macOS / Linux / Windows',
         'pf.input': 'Input', 'pf.input-v': 'ARXML — System Description / System Extract / ECU Extract / ECUC / communication, multi-file packages',
         'pf.automation': 'Automation', 'pf.automation-v': 'CLI with stable JSON output (CI / AI-agent friendly) + MCP server',
         'pf.license': 'License', 'pf.license-v': 'Source-available, proprietary',
-        'pf.milestone': 'Milestone', 'pf.milestone-v': 'Analysis stack shipped: semantic engine, semantic diff, ECU impact, communication projection, vendor hand-off, reviewed patching, MCP; M9 commercial hardening in progress',
+        'pf.milestone': 'Milestone', 'pf.milestone-v': 'Analysis stack shipped: semantic engine, semantic diff, ECU impact, communication projection, vendor hand-off, reviewed patching, MCP; native hosts on all three desktops; M9 commercial hardening (licensing, code signing / notarization, performance profiling) in progress',
         'pf.caption': 'Real screenshot of the macOS workbench: empty state. Press ⌘O to open an OEM delivery and start indexing.',
-        'dl.eyebrow': 'Download', 'dl.t1': 'CLI first,', 'dl.t2': 'GUI alongside.',
-        'dl.lead': 'The CLI is the full-featured entry point: self-contained zips for macOS, Linux and Windows — unpack and run. The macOS GUI ships as a dmg; Windows and Linux GUIs are on the M9 roadmap.',
+        'dl.eyebrow': 'Download', 'dl.t1': 'One workbench,', 'dl.t2': 'three desktops.',
+        'dl.lead': 'GUI and CLI share one engine: the macOS GUI ships as a dmg, the Windows GUI as an MSI, the Linux GUI as .deb / .rpm / .AppImage — plus self-contained CLI zips for every platform.',
         'dl.mac-gui': 'GUI · macOS', 'dl.win-gui': 'GUI · Windows', 'dl.linux-gui': 'GUI · Linux',
-        'dl.in-dev': 'In development · M9',
-        'dl.callout': 'Updates: the CLI updates itself with autarx update; the macOS GUI has a built-in Check for Updates (⌘U). Both channels consume an Ed25519-signed update feed. Every asset carries a .sha256 sidecar.',
+        'dl.callout': 'Updates: the CLI updates itself with autarx update; all three GUIs ship a built-in Check for Updates (macOS ⌘U / Win Ctrl+U / Linux Help menu) consuming the same Ed25519-signed update feed. Linux deb / rpm / AppImage installs get shape-aware guidance. Every asset carries a .sha256 sidecar.',
         'status.eyebrow': 'Status', 'status.t1': 'Analysis first,', 'status.t2': 'milestone by milestone.',
-        'status.lead': 'Where things stand: the full analysis stack is shipped — workspace semantic engine, semantic diff, ECU impact analysis, communication projection, vendor hand-off, reviewed editing and the MCP agent surface. What remains is M9 commercial hardening — installer, licensing and performance profiling; Windows / Linux GUI hosts are on the same roadmap.',
+        'status.lead': 'Where things stand: the full analysis stack is shipped — workspace semantic engine, semantic diff, ECU impact analysis, communication projection, vendor hand-off, reviewed editing and the MCP agent surface — and the native hosts run on all three desktops (macOS / Windows / Linux). What remains of M9 commercial hardening: licensing, performance profiling, code signing / notarization.',
         'status.download': 'Download', 'status.guide': 'User guide', 'status.roadmap': 'Roadmap',
         'status.download-mac': 'Download for macOS', 'status.download-win': 'Download for Windows', 'status.download-linux': 'Download for Linux',
         'dl.all-releases': 'All releases',

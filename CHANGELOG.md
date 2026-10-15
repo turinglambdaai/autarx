@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-15
+
+The all-desktops release: the workbench ships natively on Windows and
+Linux, joining the macOS host over the same embedded Racket core, RPC
+surface and interaction model (taskly is the family benchmark: WinUI 3
+over rivet's Windows platform layer, GTK4 over the Linux one).
+
+### Added
+
+- **Windows workbench (`windows/`, WinUI 3)** — the five-section semantic
+  workspace (Workspace summary, Objects, ECUs, Unresolved references,
+  Communication), the references inspector, progress events, open-delivery
+  folder/file pickers, an About panel and the family update flow. Built by
+  `raco rivet build` through the same `RivetHost.vcxproj` shape the family
+  hosts use; CI compiles it on `windows-latest`.
+- **Linux workbench (`linux/`, GTK4)** — the same interaction surface with
+  GNOME light/dark theme following the desktop color scheme; CI compiles it
+  on Ubuntu and boots it headless under Xvfb.
+- **The workbench update flow now covers all three hosts.** The backend
+  grows `check_updates` / `start_download` / `update_state` (the taskly
+  family shape) on a new `app-update.rkt` updater: it fetches and verifies
+  the signed workbench feed, downloads with progress under stall/total
+  watchdog bounds, and reports the verified artifact — Windows portable
+  installs swap the install directory in place, MSI installs run a passive
+  upgrade, Linux portable copies get an open-folder hand-off, AppImage
+  installs swap the image in place and re-exec, deb / rpm installs get
+  package-manager guidance. The macOS host keeps its RivetUpdate client
+  (the same feed). The 4-hour silent-check throttle is host-side on every
+  platform.
+- **Release artifacts for the two new hosts**: the Windows workbench ships
+  as `autarx-<version>-windows-x64.msi` plus a portable zip, the Linux
+  workbench as `.deb` / `.rpm` / `.AppImage` (x64 and arm64) plus a
+  `tar.gz`; the human installers keep the plain family names while the
+  update payloads carry the family `-app` suffix. Stable versionless
+  aliases now cover every platform's primary installer.
+
+### Changed
+
+- **The workbench feed (`update-app-manifest.json`) carries all three
+  platforms** — five artifacts: macOS arm64/x64 app zips, the Windows x64
+  app zip and the Linux x64/arm64 app tarballs. One feed, one key, one
+  format; the CLI feed (`update-manifest.json`) is unchanged.
+- The README install table, project structure, roadmap and the product
+  site describe the three-platform delivery; the release notes template
+  does the same.
+
 ## [0.4.3] - 2026-10-15
 
 The pin-restore release. The headline is a release-pipeline repair, not a

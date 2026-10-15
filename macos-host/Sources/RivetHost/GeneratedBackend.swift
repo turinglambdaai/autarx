@@ -7,7 +7,7 @@ public enum RivetGeneratedConfig {
     public static let moduleName = "backend"
     public static let entryName = "start"
     public static let displayName = "Autarx"
-    public static let version = "0.4.3"
+    public static let version = "0.5.0"
     public static let build: Int64 = 1
     public static let identifier = "site.jrtx.autarx.Autarx"
     public static let releaseChannel = "stable"
@@ -109,6 +109,42 @@ public enum RivetTypes {
         }
     }
 
+    public struct UpdateCheck: Sendable {
+        public let status: String
+        public let error: String?
+        public let current_version: String
+        public let available_version: String?
+        public let build: Int64?
+        public let published_at: String?
+        public let installer: String?
+        public let size_bytes: Int64?
+        public init(status: String, error: String?, current_version: String, available_version: String?, build: Int64?, published_at: String?, installer: String?, size_bytes: Int64?) {
+            self.status = status
+            self.error = error
+            self.current_version = current_version
+            self.available_version = available_version
+            self.build = build
+            self.published_at = published_at
+            self.installer = installer
+            self.size_bytes = size_bytes
+        }
+    }
+
+    public struct UpdateState: Sendable {
+        public let phase: String
+        public let percent: Int64
+        public let message: String?
+        public let downloaded_path: String?
+        public let available_version: String?
+        public init(phase: String, percent: Int64, message: String?, downloaded_path: String?, available_version: String?) {
+            self.phase = phase
+            self.percent = percent
+            self.message = message
+            self.downloaded_path = downloaded_path
+            self.available_version = available_version
+        }
+    }
+
     public struct WorkspaceSummary: Sendable {
         public let source_path: String
         public let file_count: Int64
@@ -136,42 +172,50 @@ public enum RivetTypes {
 
 }
 
-private func encode_Bool(_ v: Bool) -> RivetValue { .bool(v) }
 private func encode_String(_ v: String) -> RivetValue { .string(v) }
+private func encode__Optional_String_(_ v: String?) -> RivetValue { v.map(encode_String) ?? .null }
+private func encode_Int64(_ v: Int64) -> RivetValue { .int64(v) }
+private func encode__Optional_Int64_(_ v: Int64?) -> RivetValue { v.map(encode_Int64) ?? .null }
+private func encode_UpdateCheck(_ v: RivetTypes.UpdateCheck) -> RivetValue { .list([encode_String(v.status), encode__Optional_String_(v.error), encode_String(v.current_version), encode__Optional_String_(v.available_version), encode__Optional_Int64_(v.build), encode__Optional_String_(v.published_at), encode__Optional_String_(v.installer), encode__Optional_Int64_(v.size_bytes)]) }
+private func encode_Bool(_ v: Bool) -> RivetValue { .bool(v) }
 private func encode__List_String_(_ v: [String]) -> RivetValue { .list(v.map(encode_String)) }
 private func encode_ClusterDto(_ v: RivetTypes.ClusterDto) -> RivetValue { .list([encode_String(v.path), encode__List_String_(v.connected_ecus), encode__List_String_(v.frames)]) }
 private func encode__List_ClusterDto_(_ v: [RivetTypes.ClusterDto]) -> RivetValue { .list(v.map(encode_ClusterDto)) }
 private func encode_CommunicationDto(_ v: RivetTypes.CommunicationDto) -> RivetValue { .list([encode__List_ClusterDto_(v.clusters), encode__List_String_(v.orphan_frames), encode__List_String_(v.orphan_pdus), encode__List_String_(v.orphan_signals)]) }
 private func encode_ObjectChangeDto(_ v: RivetTypes.ObjectChangeDto) -> RivetValue { .list([encode_String(v.change_type), encode_String(v.short_name), encode_String(v.semantic_kind), encode_String(v.absolute_path), encode_String(v.detail)]) }
 private func encode__List_ObjectChangeDto_(_ v: [RivetTypes.ObjectChangeDto]) -> RivetValue { .list(v.map(encode_ObjectChangeDto)) }
-private func encode_Int64(_ v: Int64) -> RivetValue { .int64(v) }
 private func encode_DiffDto(_ v: RivetTypes.DiffDto) -> RivetValue { .list([encode_Bool(v.identical), encode__List_ObjectChangeDto_(v.object_changes), encode_Int64(v.reference_change_count)]) }
 private func encode_SemanticObjectDto(_ v: RivetTypes.SemanticObjectDto) -> RivetValue { .list([encode_String(v.short_name), encode_String(v.element_type), encode_String(v.semantic_kind), encode_String(v.absolute_path), encode_String(v.source_file), encode_Int64(v.unresolved_references)]) }
 private func encode__List_SemanticObjectDto_(_ v: [RivetTypes.SemanticObjectDto]) -> RivetValue { .list(v.map(encode_SemanticObjectDto)) }
 private func encode_ReferenceDto(_ v: RivetTypes.ReferenceDto) -> RivetValue { .list([encode_String(v.kind), encode_String(v.source_path), encode_String(v.source_element_path), encode_String(v.target_path), encode_Bool(v.resolved)]) }
 private func encode__List_ReferenceDto_(_ v: [RivetTypes.ReferenceDto]) -> RivetValue { .list(v.map(encode_ReferenceDto)) }
-private func encode__Optional_String_(_ v: String?) -> RivetValue { v.map(encode_String) ?? .null }
 private func encode_WorkspaceSummary(_ v: RivetTypes.WorkspaceSummary) -> RivetValue { .list([encode_String(v.source_path), encode_Int64(v.file_count), encode_Int64(v.identifiable_count), encode_Int64(v.package_count), encode_Int64(v.reference_count), encode_Int64(v.unresolved_count), encode_Int64(v.duplicate_count), encode_Int64(v.file_error_count), encode__Optional_String_(v.autosar_release), encode_Bool(v.mixed_schema)]) }
+private func encode_Void(_ v: Void) -> RivetValue { .null }
 private func encode_TraceDto(_ v: RivetTypes.TraceDto) -> RivetValue { .list([encode_String(v.root), encode_Int64(v.max_depth), encode__List_String_(v.node_paths), encode__List_ReferenceDto_(v.edges)]) }
+private func encode_UpdateState(_ v: RivetTypes.UpdateState) -> RivetValue { .list([encode_String(v.phase), encode_Int64(v.percent), encode__Optional_String_(v.message), encode__Optional_String_(v.downloaded_path), encode__Optional_String_(v.available_version)]) }
 private func encode_Any(_ v: RivetValue) -> RivetValue { v }
 
-private func decode_Bool(_ v: RivetValue) throws -> Bool { guard case .bool(let x) = v else { throw RivetGeneratedError.typeMismatch("Bool") }; return x }
 private func decode_String(_ v: RivetValue) throws -> String { guard case .string(let x) = v else { throw RivetGeneratedError.typeMismatch("String") }; return x }
+private func decode__Optional_String_(_ v: RivetValue) throws -> String? { if case .null = v { return nil }; return try decode_String(v) }
+private func decode_Int64(_ v: RivetValue) throws -> Int64 { guard case .int64(let x) = v else { throw RivetGeneratedError.typeMismatch("Int64") }; return x }
+private func decode__Optional_Int64_(_ v: RivetValue) throws -> Int64? { if case .null = v { return nil }; return try decode_Int64(v) }
+private func decode_UpdateCheck(_ v: RivetValue) throws -> RivetTypes.UpdateCheck { guard case .list(let xs) = v, xs.count == 8 else { throw RivetGeneratedError.typeMismatch("UpdateCheck") }; return RivetTypes.UpdateCheck(status: try decode_String(xs[0]), error: try decode__Optional_String_(xs[1]), current_version: try decode_String(xs[2]), available_version: try decode__Optional_String_(xs[3]), build: try decode__Optional_Int64_(xs[4]), published_at: try decode__Optional_String_(xs[5]), installer: try decode__Optional_String_(xs[6]), size_bytes: try decode__Optional_Int64_(xs[7])) }
+private func decode_Bool(_ v: RivetValue) throws -> Bool { guard case .bool(let x) = v else { throw RivetGeneratedError.typeMismatch("Bool") }; return x }
 private func decode__List_String_(_ v: RivetValue) throws -> [String] { guard case .list(let xs) = v else { throw RivetGeneratedError.typeMismatch("(List String)") }; return try xs.map(decode_String) }
 private func decode_ClusterDto(_ v: RivetValue) throws -> RivetTypes.ClusterDto { guard case .list(let xs) = v, xs.count == 3 else { throw RivetGeneratedError.typeMismatch("ClusterDto") }; return RivetTypes.ClusterDto(path: try decode_String(xs[0]), connected_ecus: try decode__List_String_(xs[1]), frames: try decode__List_String_(xs[2])) }
 private func decode__List_ClusterDto_(_ v: RivetValue) throws -> [RivetTypes.ClusterDto] { guard case .list(let xs) = v else { throw RivetGeneratedError.typeMismatch("(List ClusterDto)") }; return try xs.map(decode_ClusterDto) }
 private func decode_CommunicationDto(_ v: RivetValue) throws -> RivetTypes.CommunicationDto { guard case .list(let xs) = v, xs.count == 4 else { throw RivetGeneratedError.typeMismatch("CommunicationDto") }; return RivetTypes.CommunicationDto(clusters: try decode__List_ClusterDto_(xs[0]), orphan_frames: try decode__List_String_(xs[1]), orphan_pdus: try decode__List_String_(xs[2]), orphan_signals: try decode__List_String_(xs[3])) }
 private func decode_ObjectChangeDto(_ v: RivetValue) throws -> RivetTypes.ObjectChangeDto { guard case .list(let xs) = v, xs.count == 5 else { throw RivetGeneratedError.typeMismatch("ObjectChangeDto") }; return RivetTypes.ObjectChangeDto(change_type: try decode_String(xs[0]), short_name: try decode_String(xs[1]), semantic_kind: try decode_String(xs[2]), absolute_path: try decode_String(xs[3]), detail: try decode_String(xs[4])) }
 private func decode__List_ObjectChangeDto_(_ v: RivetValue) throws -> [RivetTypes.ObjectChangeDto] { guard case .list(let xs) = v else { throw RivetGeneratedError.typeMismatch("(List ObjectChangeDto)") }; return try xs.map(decode_ObjectChangeDto) }
-private func decode_Int64(_ v: RivetValue) throws -> Int64 { guard case .int64(let x) = v else { throw RivetGeneratedError.typeMismatch("Int64") }; return x }
 private func decode_DiffDto(_ v: RivetValue) throws -> RivetTypes.DiffDto { guard case .list(let xs) = v, xs.count == 3 else { throw RivetGeneratedError.typeMismatch("DiffDto") }; return RivetTypes.DiffDto(identical: try decode_Bool(xs[0]), object_changes: try decode__List_ObjectChangeDto_(xs[1]), reference_change_count: try decode_Int64(xs[2])) }
 private func decode_SemanticObjectDto(_ v: RivetValue) throws -> RivetTypes.SemanticObjectDto { guard case .list(let xs) = v, xs.count == 6 else { throw RivetGeneratedError.typeMismatch("SemanticObjectDto") }; return RivetTypes.SemanticObjectDto(short_name: try decode_String(xs[0]), element_type: try decode_String(xs[1]), semantic_kind: try decode_String(xs[2]), absolute_path: try decode_String(xs[3]), source_file: try decode_String(xs[4]), unresolved_references: try decode_Int64(xs[5])) }
 private func decode__List_SemanticObjectDto_(_ v: RivetValue) throws -> [RivetTypes.SemanticObjectDto] { guard case .list(let xs) = v else { throw RivetGeneratedError.typeMismatch("(List SemanticObjectDto)") }; return try xs.map(decode_SemanticObjectDto) }
 private func decode_ReferenceDto(_ v: RivetValue) throws -> RivetTypes.ReferenceDto { guard case .list(let xs) = v, xs.count == 5 else { throw RivetGeneratedError.typeMismatch("ReferenceDto") }; return RivetTypes.ReferenceDto(kind: try decode_String(xs[0]), source_path: try decode_String(xs[1]), source_element_path: try decode_String(xs[2]), target_path: try decode_String(xs[3]), resolved: try decode_Bool(xs[4])) }
 private func decode__List_ReferenceDto_(_ v: RivetValue) throws -> [RivetTypes.ReferenceDto] { guard case .list(let xs) = v else { throw RivetGeneratedError.typeMismatch("(List ReferenceDto)") }; return try xs.map(decode_ReferenceDto) }
-private func decode__Optional_String_(_ v: RivetValue) throws -> String? { if case .null = v { return nil }; return try decode_String(v) }
 private func decode_WorkspaceSummary(_ v: RivetValue) throws -> RivetTypes.WorkspaceSummary { guard case .list(let xs) = v, xs.count == 10 else { throw RivetGeneratedError.typeMismatch("WorkspaceSummary") }; return RivetTypes.WorkspaceSummary(source_path: try decode_String(xs[0]), file_count: try decode_Int64(xs[1]), identifiable_count: try decode_Int64(xs[2]), package_count: try decode_Int64(xs[3]), reference_count: try decode_Int64(xs[4]), unresolved_count: try decode_Int64(xs[5]), duplicate_count: try decode_Int64(xs[6]), file_error_count: try decode_Int64(xs[7]), autosar_release: try decode__Optional_String_(xs[8]), mixed_schema: try decode_Bool(xs[9])) }
+private func decode_Void(_ v: RivetValue) throws -> Void { guard case .null = v else { throw RivetGeneratedError.typeMismatch("Void") } }
 private func decode_TraceDto(_ v: RivetValue) throws -> RivetTypes.TraceDto { guard case .list(let xs) = v, xs.count == 4 else { throw RivetGeneratedError.typeMismatch("TraceDto") }; return RivetTypes.TraceDto(root: try decode_String(xs[0]), max_depth: try decode_Int64(xs[1]), node_paths: try decode__List_String_(xs[2]), edges: try decode__List_ReferenceDto_(xs[3])) }
+private func decode_UpdateState(_ v: RivetValue) throws -> RivetTypes.UpdateState { guard case .list(let xs) = v, xs.count == 5 else { throw RivetGeneratedError.typeMismatch("UpdateState") }; return RivetTypes.UpdateState(phase: try decode_String(xs[0]), percent: try decode_Int64(xs[1]), message: try decode__Optional_String_(xs[2]), downloaded_path: try decode__Optional_String_(xs[3]), available_version: try decode__Optional_String_(xs[4])) }
 private func decode_Any(_ v: RivetValue) throws -> RivetValue { v }
 
 public enum RivetEvent: Sendable {
@@ -189,6 +233,10 @@ public struct RivetAPI: Sendable {
     public let client: RivetClient
     public init(client: RivetClient) { self.client = client }
 
+    public func check_updates() async throws -> RivetTypes.UpdateCheck {
+        let rivetResult = try await client.call("check_updates", arguments: [])
+        return try decode_UpdateCheck(rivetResult)
+    }
     public func close_workspace() async throws -> Bool {
         let rivetResult = try await client.call("close_workspace", arguments: [])
         return try decode_Bool(rivetResult)
@@ -233,6 +281,10 @@ public struct RivetAPI: Sendable {
         let rivetResult = try await client.call("patch_plan", arguments: [encode_String(workspace), encode_String(ops_json)])
         return try decode_DiffDto(rivetResult)
     }
+    public func start_download() async throws -> Void {
+        let rivetResult = try await client.call("start_download", arguments: [])
+        return try decode_Void(rivetResult)
+    }
     public func trace_from(name_or_path: String, depth: Int64) async throws -> RivetTypes.TraceDto {
         let rivetResult = try await client.call("trace_from", arguments: [encode_String(name_or_path), encode_Int64(depth)])
         return try decode_TraceDto(rivetResult)
@@ -240,6 +292,10 @@ public struct RivetAPI: Sendable {
     public func unresolved_references() async throws -> [RivetTypes.ReferenceDto] {
         let rivetResult = try await client.call("unresolved_references", arguments: [])
         return try decode__List_ReferenceDto_(rivetResult)
+    }
+    public func update_state() async throws -> RivetTypes.UpdateState {
+        let rivetResult = try await client.call("update_state", arguments: [])
+        return try decode_UpdateState(rivetResult)
     }
     public func validate_workspace() async throws -> [String] {
         let rivetResult = try await client.call("validate_workspace", arguments: [])

@@ -6,6 +6,7 @@
 
 (require racket/string
          rivet/backend
+         "app-update.rkt"
          "index.rkt"
          "classify.rkt"
          "diff.rkt"
@@ -164,6 +165,51 @@
     (error 'patch_apply "plan invalid — nothing was written"))
   (apply-patch workspace plan (patch-plan-temp-workspace plan))
   (diff->dto (patch-plan-diff plan)))
+
+;; ------------------------------------------------------------ online update
+;; The taskly family shape: this backend verifies and downloads the signed
+;; workbench artifact (update-app-manifest.json); the Windows/Linux hosts
+;; own installation and the silent 4-hour throttle. The macOS workbench
+;; updates through RivetUpdate on the Swift side and never calls these.
+
+(define (update-check->record result)
+  (define (opt key) (nullable (hash-ref result key #f)))
+  (UpdateCheck
+   (hash-ref result 'status "error")
+   (opt 'message)
+   (hash-ref result 'currentVersion workbench-version)
+   (opt 'availableVersion)
+   (opt 'build)
+   (opt 'publishedAt)
+   (opt 'installer)
+   (opt 'sizeBytes)))
+
+;; Never raises: network/manifest failures surface as status "error" so a
+;; headless check can't take the host down with it.
+(define-rpc (check_updates : UpdateCheck)
+  (with-handlers
+      ([exn:fail?
+        (lambda (e)
+          (UpdateCheck "error" (nullable (exn-message e))
+                       workbench-version (void) (void) (void) (void) (void)))])
+    (update-check->record (perform-check!))))
+
+;; Runs on a backend worker thread; the host follows progress via
+;; update_state. Never raises: failures surface through the state's phase.
+(define-rpc (start_download : Void)
+  (with-handlers
+      ([exn:fail? (lambda (e) (set-update-error! (exn-message e)))])
+    (start-download!))
+  (void))
+
+(define-rpc (update_state : UpdateState)
+  (define s (update-state-snapshot))
+  (UpdateState
+   (hash-ref s 'phase "idle")
+   (hash-ref s 'percent 0)
+   (nullable (hash-ref s 'message #f))
+   (nullable (hash-ref s 'downloadedPath #f))
+   (nullable (hash-ref s 'availableVersion #f))))
 
 ;; ---------------------------------------------------------------- mapping
 
