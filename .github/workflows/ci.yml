@@ -132,7 +132,9 @@ jobs:
         run: raco pkg install --auto --no-docs crypto
       - name: Install autarx core
         shell: bash
-        run: raco pkg install --auto --no-docs --name autarx-core --link "file://$PWD/racket"
+        # cygpath -m: Racket needs a Windows-mixed path in the file:// URL —
+        # git-bash's $PWD is a POSIX path Racket cannot resolve.
+        run: raco pkg install --auto --no-docs --name autarx-core --link "file://$(cygpath -m "$PWD/racket")"
       - name: Build host
         shell: pwsh
         run: raco rivet build

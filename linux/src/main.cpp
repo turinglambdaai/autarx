@@ -1797,7 +1797,7 @@ void on_activate(GtkApplication* app, gpointer) {
   gtk_widget_set_vexpand(pages, TRUE);
   gtk_stack_set_hhomogeneous(GTK_STACK(pages), FALSE);
   gtk_stack_set_vhomogeneous(GTK_STACK(pages), FALSE);
-  g_state.pages = pages;
+  g_state.pages = GTK_STACK(pages);
 
   // Each page gets its own inner stack so empty states work per page; the
   // outer pages stack switches on section_page_name().
