@@ -104,7 +104,10 @@
                             "https://dl.example/autarx/autarx-9.9.9-macos-arm64.zip"
                             (sha256-file/hex artifact-file)
                             (file-size artifact-file)
-                            'zip '()))))
+                            'zip '()
+                            ;; rivet #271: component #f = the plain whole-app
+                            ;; artifact.
+                            #f))))
   ;; write-signed-manifest refuses malformed manifests before signing
   (define wrapped (open-output-bytes))
   (write-signed-manifest manifest priv "autarx-test" wrapped)
@@ -124,7 +127,9 @@
   (define (config-for version)
     (updater-config u:app-identifier version 'stable
                     (u:platform-symbol) (u:architecture-symbol)
-                    pub "autarx-test" 42 1000000))
+                    pub "autarx-test" 42 1000000
+                    ;; rivet #271: component #f = the plain whole-app artifact.
+                    #f))
   (define candidate (select-update (config-for "0.1.0") verified))
   (check-true (update-candidate? candidate))
   (check-equal? (update-artifact-sha256 (update-candidate-artifact candidate))
@@ -142,7 +147,9 @@
             "https://dl.example/autarx/autarx-9.9.9-other.zip"
             (sha256-file/hex artifact-file)
             (file-size artifact-file)
-            'zip '()))))
+            'zip '()
+            ;; rivet #271: component #f = the plain whole-app artifact.
+            #f))))
   (check-false (select-update (config-for "0.1.0") other-platform))
   (delete-file artifact-file))
 

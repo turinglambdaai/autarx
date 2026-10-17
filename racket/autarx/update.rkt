@@ -353,7 +353,10 @@
                       (embedded-public-key)
                       update-key-id
                       (rollout-bucket)
-                      maximum-download-bytes)
+                      maximum-download-bytes
+                      ;; rivet #271: component #f = the plain whole-app
+                      ;; artifact (legacy manifests carry no component).
+                      #f)
       candidate
       destination
       #:on-progress (lambda (_bytes) (touch)))))

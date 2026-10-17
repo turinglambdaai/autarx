@@ -36,8 +36,14 @@ struct AutarxApp: App {
         .commands {
             AutarxCommands(model: model)
             CommandGroup(replacing: .toolbar) {}
-            CommandGroup(replacing: .help) {
+            CommandGroup(replacing: .appInfo) {
                 Button("About Autarx") { model.aboutVisible = true }
+            }
+            // Family menu convention: Check for Updates… lives in the App
+            // menu directly below About.
+            CommandGroup(after: .appInfo) {
+                Button("Check for Updates…") { model.checkForUpdates() }
+                    .keyboardShortcut("u", modifiers: [.command])
             }
         }
     }
@@ -53,10 +59,6 @@ struct AutarxCommands: Commands {
                 .disabled(model.api == nil)
             Button("Close Workspace") { Task { await model.closeWorkspace() } }
                 .disabled(!model.isConnected)
-        }
-        CommandGroup(after: .newItem) {
-            Button("Check for Updates…") { model.checkForUpdates() }
-                .keyboardShortcut("u", modifiers: [.command])
         }
     }
 

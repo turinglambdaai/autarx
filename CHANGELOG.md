@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- "Check for Updates…" moved into the App menu directly below About on
+  macOS (About itself moves out of the Help menu to join it), per the
+  family menu convention. Windows and Linux already had the Help-menu
+  pair.
+
 ## [0.5.0] - 2026-10-15
 
 The all-desktops release: the workbench ships natively on Windows and
