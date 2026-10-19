@@ -31,11 +31,16 @@ def find_application():
         if any(role(node) == "frame" and (node.name or "") == "Autarx" for node in walk(application)): return application
     return None
 def press(node):
-    action = node.queryAction()
-    if action.nActions < 1: raise AssertionError(f"AT-SPI exposes no action for {node.name!r}")
-    # GTK queues accessible actions asynchronously and may return False even
-    # when activation was dispatched. Verify the resulting page instead.
-    action.doAction(0)
+    # GtkListBox exposes its semantic navigation through the Selection
+    # interface. Selecting the child drives the same row-selected signal as
+    # a pointer click; the optional row action is a second accessibility path.
+    parent = node.parent
+    parent.querySelection().selectChild(node.getIndexInParent())
+    try:
+        action = node.queryAction()
+        if action.nActions > 0: action.doAction(0)
+    except Exception:
+        pass
 def snapshot(node, depth=0):
     result = {"name": node.name or "", "role": role(node)}; value = text(node)
     if value: result["text"] = value
