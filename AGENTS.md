@@ -83,7 +83,7 @@ autarx/
 - Unknown AUTOSAR element types degrade to `unknown` — never a parse
   failure. Ambiguity is a first-class outcome, never silently resolved.
 - Rivet framework gaps go upstream (issue/PR to turinglambdaai/rivet);
-  this repo pins immutable commit `de1fb8997539d34ba029064f500f6903b955b5a7`.
+  this repo pins the reviewed `v0.12.0` release across CI, acceptance, and release.
 - Agent 不得以单元测试、编译或截图单独宣称产品完成；涉及 GUI 的改动必须让
   `raco rivet acceptance --json` 在声明支持的平台通过，并保留原生控件交互与
   后端结果证据。
