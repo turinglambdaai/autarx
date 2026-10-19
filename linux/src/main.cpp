@@ -1721,6 +1721,8 @@ ListPage make_list_page(GtkStack* stack, char const* list_css_class) {
 
 GtkWidget* make_nav_row(char const* title, Section section) {
   auto* row = gtk_list_box_row_new();
+  gtk_accessible_update_property(GTK_ACCESSIBLE(row),
+                                 GTK_ACCESSIBLE_PROPERTY_LABEL, title, -1);
   auto* label = gtk_label_new(title);
   gtk_label_set_xalign(GTK_LABEL(label), 0.0f);
   gtk_list_box_row_set_child(GTK_LIST_BOX_ROW(row), label);
