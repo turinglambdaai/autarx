@@ -84,7 +84,7 @@
     (let-values ([(base _dir _) (split-path (string->path full-project-abs))])
       (define dir (if (path? base) (path->string base) "."))
       (if (and (> (string-length dir) 1)
-               (char=? (string-ref dir (- (string-length dir) 1)) #\/))
+               (memq (string-ref dir (- (string-length dir) 1)) '(#\/ #\\)))
           (substring dir 0 (- (string-length dir) 1))
           dir)))
   (vendor-invocation

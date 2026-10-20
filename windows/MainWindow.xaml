@@ -171,6 +171,7 @@
                         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                             <ListView
                                 x:Name="ObjectList"
+                                AutomationProperties.AutomationId="ObjectList"
                                 Margin="16,0,16,16"
                                 SelectionMode="Single"
                                 SelectionChanged="OnObjectSelectionChanged">
@@ -299,6 +300,7 @@
         <Border Grid.Row="2" Background="{ThemeResource AutarxSidebarBrush}">
             <TextBlock
                 x:Name="StatusText"
+            AutomationProperties.AutomationId="StatusText"
                 Margin="12,4"
                 FontSize="12"
                 Foreground="{ThemeResource AutarxSecondaryTextBrush}"

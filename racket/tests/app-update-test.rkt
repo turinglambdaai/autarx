@@ -40,19 +40,21 @@
 ;; per-directory read so a packaged regression trips here, not in rivet's
 ;; launch smoke.
 (test-case "app-info candidates cover every packaged layout"
-  (define exe-dir (string->path "/tmp/Autarx.app/Contents/MacOS/"))
+  (define base (make-temporary-file "autarx-layout-~a" 'directory))
+  (define exe-dir (build-path base "Autarx.app" "Contents" "MacOS"))
   (define dirs (a:app-info-candidate-dirs exe-dir))
   (check-equal? (length dirs) 4)
   ;; macOS bundle: Contents/MacOS → Contents/Resources/app
   (check-not-false
-   (member (simplify-path (string->path "/tmp/Autarx.app/Contents/Resources/app"))
+   (member (simplify-path (build-path base "Autarx.app" "Contents" "Resources" "app"))
            dirs)
    "macOS bundle layout missing")
   ;; stage root: exe beside app/
   (check-not-false
-   (member (build-path (string->path "/tmp/Autarx.app/Contents/MacOS/") "app")
+   (member (build-path exe-dir "app")
            dirs)
-   "stage-root layout missing"))
+   "stage-root layout missing")
+  (delete-directory/files base))
 
 (test-case "app-info version reads the packaged bundle layout"
   (define base (make-temporary-file "autarx-bundle-~a" 'directory))

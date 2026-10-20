@@ -400,8 +400,9 @@ void MainWindow::RenderSummary() {
     value.TextWrapping(mx::TextWrapping::Wrap);
     value.IsTextSelectionEnabled(true);
     value.VerticalAlignment(mx::VerticalAlignment::Center);
-    if (warn && (row.label == L"Unresolved" || row.label == L"Duplicate paths" ||
-                 row.label == L"File errors") &&
+    auto const label_text = std::wstring(row.label);
+    if (warn && (label_text == L"Unresolved" || label_text == L"Duplicate paths" ||
+                 label_text == L"File errors") &&
         row.value != L"0") {
       value.Foreground(ThemeBrush(L"AutarxWarnBrush"));
     }

@@ -14,6 +14,7 @@ struct MainWindowView: View {
                     Label(section.rawValue, systemImage: icon(for: section))
                 }
                 .buttonStyle(.plain)
+                .accessibilityIdentifier("Nav\(section.rawValue)")
             }
             .navigationTitle("Autarx")
             .frame(minWidth: 190)
@@ -61,6 +62,7 @@ struct WorkspaceSummaryView: View {
                         Text(row.1).textSelection(.enabled)
                     }
                 }
+                .accessibilityIdentifier("WorkspaceSummary")
             } else {
                 ContentUnavailableView(
                     "No workspace",
@@ -116,6 +118,7 @@ struct ObjectListView: View {
                         object.absolute_path == selectedPath
                             ? Color.accentColor.opacity(0.15) : Color.clear)
             }
+            .accessibilityIdentifier("ObjectList")
         }
         .inspector(isPresented: .constant(selectedObject != nil)) {
             RefInspector(object: selectedObject, refs: detail)

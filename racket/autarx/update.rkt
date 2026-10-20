@@ -366,7 +366,7 @@
 
 (define (strip-trailing-slash s)
   (if (and (> (string-length s) 1)
-           (char=? (string-ref s (- (string-length s) 1)) #\/))
+           (memq (string-ref s (- (string-length s) 1)) '(#\/ #\\)))
       (substring s 0 (- (string-length s) 1))
       s))
 

@@ -1721,11 +1721,24 @@ ListPage make_list_page(GtkStack* stack, char const* list_css_class) {
 
 GtkWidget* make_nav_row(char const* title, Section section) {
   auto* row = gtk_list_box_row_new();
+  gtk_accessible_update_property(GTK_ACCESSIBLE(row),
+                                 GTK_ACCESSIBLE_PROPERTY_LABEL, title, -1);
   auto* label = gtk_label_new(title);
   gtk_label_set_xalign(GTK_LABEL(label), 0.0f);
   gtk_list_box_row_set_child(GTK_LIST_BOX_ROW(row), label);
   g_object_set_data(G_OBJECT(row), "section",
                     GINT_TO_POINTER(static_cast<gint>(section)));
+  // Expose the same navigation behavior through GTK's activate action so
+  // screen readers and AT-SPI automation can operate the sidebar, not only
+  // pointer-driven ListBox selection.
+  g_signal_connect(
+      row, "activate",
+      G_CALLBACK(+[](GtkListBoxRow* activated, gpointer) {
+        auto const selected = static_cast<Section>(GPOINTER_TO_INT(
+            g_object_get_data(G_OBJECT(activated), "section")));
+        select_section(selected);
+      }),
+      nullptr);
   return row;
 }
 
