@@ -56,6 +56,8 @@ var _hmt = _hmt || [];
   s.parentNode.insertBefore(hm, s);
 })();
 </script>
+<style>.lang-menu li.lang-choice{padding:0}.lang-menu .lang-choice button{display:block;width:100%;padding:8px 12px;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}.lang-menu .lang-choice button:focus-visible{outline:2px solid currentColor;outline-offset:-2px;border-radius:4px}</style>
+<style>.guide-status{margin:20px 0;padding:16px 20px;border:1px solid currentColor;border-radius:10px;font-size:.95rem;line-height:1.65}.guide-status p{margin:0 0 8px}.guide-status a{text-decoration:underline;text-underline-offset:4px}html:lang(en) .reader-zh,html:lang(zh) .reader-en{display:none!important}</style>
 </head>
 <body class="doc">
   <nav class="nav-container">
@@ -72,8 +74,8 @@ var _hmt = _hmt || [];
             <span id="current-lang-label">简体中文</span>
           </button>
           <ul class="lang-menu">
-            <li onclick="setLanguage('zh')">简体中文</li>
-            <li onclick="setLanguage('en')">English</li>
+            <li class="lang-choice"><button type="button" onclick="setLanguage('zh')">简体中文</button></li>
+            <li class="lang-choice"><button type="button" onclick="setLanguage('en')">English</button></li>
           </ul>
         </li>
         <li><button class="theme-btn" id="theme-btn" type="button" aria-label="Toggle theme">◐</button></li>
@@ -85,6 +87,7 @@ var _hmt = _hmt || [];
     <div class="container">
       <span class="eyebrow" data-i18n="g.eyebrow">用户手册</span>
       <h1 data-i18n="g.h1">Autarx 命令手册</h1>
+<aside class="guide-status"><p class="reader-en " lang="en">Engineering preview; the complete official workbench is planned as a purchase. No paid checkout is open.</p><p class="reader-zh " lang="zh">工程预览；完整官方工作台规划为买断，目前尚未开放付费购买。</p><a class="reader-en" lang="en" href="https://github.com/turinglambdaai/autarx/blob/main/docs/USER-GUIDE.md">Current installation, privacy and recovery</a><a class="reader-zh" lang="zh" href="https://github.com/turinglambdaai/autarx/blob/main/docs/USER-GUIDE.zh-CN.md">当前安装、隐私与恢复</a></aside>
       <p class="lead" data-i18n="g.lead">CLI 是 Autarx 的全功能入口，本手册就是它的命令手册：五分钟上手、每个子命令的真实示例（全部在仓库 fixture 上跑通）、GUI 简节与常见问题。</p>
       <div class="toc-chips">
         <a href="#start" data-i18n="g.toc-start">五分钟上手</a>
@@ -622,7 +625,7 @@ autarx patch undo  &lt;workspace&gt; [--json]</div>
         'q4.q': 'How do updates work?',
         'q4.a': 'The CLI uses autarx update and all three GUIs their built-in Check for Updates; every channel consumes the Ed25519-signed update feed: the wrapper signature is verified first, then the artifact SHA-256, before the platform-appropriate install — macOS swaps the bundle and relaunches, Windows portable installs swap the directory and MSI installs run a passive upgrade, Linux gets a download-and-extract hand-off (AppImage swaps in place and relaunches). Any verification failure refuses the update fail-closed — deliberate security behavior, not a malfunction.',
         'q5.q': 'How do I uninstall?',
-        'q5.a': 'CLI: delete the unpacked directory (and any autarx binary you copied onto your PATH); runtime state lives in the autarx folder under the system temp directory (crash logs <TEMP>/autarx/crashes, updater state) and can go too. GUI: drag Autarx.app to the Trash on macOS; uninstall the MSI under Settings › Apps on Windows; remove the deb / rpm with your package manager, or delete the AppImage file.'
+        'q5.a': 'CLI: delete the unpacked directory (and any autarx binary you copied onto your PATH); runtime state lives in the autarx folder under the system temp directory (crash logs <TEMP>/autarx/crashes, updater state) and can go too. GUI: drag Autarx.app to the Trash on macOS; uninstall the MSI under Settings › Apps on Windows; remove the deb / rpm with your package manager, or delete the AppImage file.',
         'footer': 'Autarx · AUTOSAR Integration Workbench · turinglambdaai'
       };
 

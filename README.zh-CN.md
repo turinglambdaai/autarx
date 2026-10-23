@@ -9,6 +9,12 @@
 
 ---
 
+## 开始使用
+
+工程预览；完整官方工作台规划为买断，目前尚未开放付费购买。 提供 macOS、Windows、Linux Rivet 桌面预览；CLI 和 MCP 共用 Racket 领域核心。AUTOSAR 支持范围由产品契约规定，不代表支持所有 ARXML。
+
+[安装、首次使用、隐私与备份恢复](docs/USER-GUIDE.zh-CN.md) · [English](docs/USER-GUIDE.md)
+
 ## 为什么做 Autarx？
 
 - **交付包是黑盒**——一个 OEM 交付是几十个 ARXML 文件：系统描述、ECU Extract、ECUC 捆绑混在一起；不打开完整厂商工具链，没人能回答"这里面有什么、它们拼不拼得起来"
@@ -212,11 +218,3 @@ Rivet 重建（R0–R8）已完成：Racket 语义核心、字节兼容 JSON 的
 ## 许可证
 
 专有软件——© TuringLambdaAI，保留所有权利。见 [LICENSE](LICENSE)。
-
-## 反馈与诊断
-
-问题和建议请使用 [GitHub Issues](https://github.com/turinglambdaai/autarx/issues)，附版本、系统/架构和复现步骤。分享前先检查并脱敏诊断；不要公开 API key、授权凭据、密钥库或私有文档。安全敏感问题优先按 SECURITY.md 联系；未提供私密渠道时，先请求私下联系方式，不在公开 issue 中披露敏感细节。此入口不会自动上传数据。
-
-## 产品与收费
-
-汽车配置工作台；完整官方版买断。首发目标、免费边界与开卖门禁见 [PRICING.md](PRICING.zh-CN.md)；当前仍在开发，没有实际用户，不表示已开售，也不因此给开发版即时加收费墙。
