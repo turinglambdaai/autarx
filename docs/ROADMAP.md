@@ -59,3 +59,9 @@ Native hosts on all three desktops ✅ — the workbench ships as a macOS dmg
 over the same embedded Racket core, RPC surface and Ed25519-signed update
 feed. What remains: licensing, performance profiling on large OEM
 deliveries, and code signing / notarization.
+
+## 当前交付优先级（2026-10-23）
+
+以 M9 为当前队列：先记录合成大型 ARXML 的索引/diff/影响分析性能预算与基线，再做 Permit 接入。历史栈只作历史说明，不再启动迁移分支。
+
+执行场景与完成标准见[本仓审查 issue](https://github.com/turinglambdaai/autarx/issues/22)及家族[交付标准](https://github.com/turinglambdaai/turinglambdaai.github.io/blob/master/docs/PRODUCT-STANDARD.md)。未完成的跨平台、硬件或真实支付验证仍是显式门禁；本节不表示这些验证已通过。后续一次认领一个切片，证据回填本文件与 issue。

@@ -234,3 +234,7 @@ OEM deliveries, and code signing / notarization (see
 ## License
 
 Proprietary — © TuringLambdaAI, all rights reserved. See [LICENSE](LICENSE).
+
+## Feedback and diagnostics
+
+Report reproducible bugs and feature requests through [GitHub Issues](https://github.com/turinglambdaai/autarx/issues). Include the release, OS/architecture and steps; inspect and redact diagnostics before sharing. Do not post API keys, license files, vault contents or private documents. For sensitive security reports, follow SECURITY.md when present; otherwise request a private contact route without disclosing sensitive details. Nothing is uploaded automatically.
