@@ -102,3 +102,7 @@ autarx/
 - 当前执行入口：[产品审查 issue](https://github.com/turinglambdaai/autarx/issues/22)。以 M9 为当前队列：先记录合成大型 ARXML 的索引/diff/影响分析性能预算与基线，再做 Permit 接入。历史栈只作历史说明，不再启动迁移分支。
 - 开工先检查干净工作树与远端，以 fast-forward-only 更新并记录 SHA；共享文件一次一个写入者，保留其他 checkout 的未提交工作。
 - 每次只完成一个可验收切片，记录 owned files、依赖 pin、命令/平台/产物证据和回滚。已实现、已发布、实机验收分别陈述；不修改 requirements 或复用旧证据来制造通过。
+
+## Documentation languages
+
+Public default documentation is English; maintain complete Chinese user paths in `*.zh-CN.md`, with reciprocal links. Update both languages when prices, quotas, installation, recovery, privacy or supported platforms change. API/protocol identifiers and commands remain unchanged; do not maintain a second normative protocol or implementation. Follow the [family language policy](https://github.com/turinglambdaai/turinglambdaai.github.io/blob/master/docs/DOCUMENTATION-LANGUAGES.md). Existing internal notes are not a claim that every document is bilingual.
