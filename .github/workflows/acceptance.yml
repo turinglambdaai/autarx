@@ -96,7 +96,7 @@ jobs:
       - name: Remember full Racket command path
         run: echo "FULL_RACKET_BIN=$(dirname "$(command -v raco)")" >> "$GITHUB_ENV"
       - name: Set up embeddable Racket CS
-        uses: turinglambdaai/rivet/.github/actions/setup-embed-racket@v0.12.0
+        uses: turinglambdaai/rivet/.github/actions/setup-embed-racket@v0.13.0
       - name: Run executable product acceptance
         run: PATH="$FULL_RACKET_BIN:$PATH" dbus-run-session -- raco rivet acceptance --json
       - uses: actions/upload-artifact@v4
