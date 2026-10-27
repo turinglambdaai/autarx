@@ -130,18 +130,18 @@ closure: 7 objects in scope, relevant changes: 4, unrelated: 2, <span class="fla
       <h2 class="section-title"><span data-i18n="platform.t1">不是配置器，</span> <span class="accent" data-i18n="platform.t2">是工作台。</span></h2>
       <p class="lead" data-i18n="platform.lead">Autarx 不替代 DaVinci Configurator、EB tresos 或 ETAS ISOLAR。它补上的是收到 OEM 交付到打开 vendor 工具链之间的工程缺口——vendor 侧的校验与代码生成仍是权威路径。</p>
       <table class="support-table">
-        <tr><th data-i18n="pf.desktop">桌面端</th><td data-i18n="pf.desktop-v">macOS 原生宿主（Swift）+ Racket 语义引擎</td></tr>
-        <tr><th data-i18n="pf.platforms">平台</th><td data-i18n="pf.platforms-v">GUI：macOS 14+（Apple silicon / Intel）· CLI：macOS / Linux / Windows；Windows 与 Linux GUI 开发中</td></tr>
+        <tr><th data-i18n="pf.desktop">桌面端</th><td data-i18n="pf.desktop-v">三平台原生宿主（macOS Swift / Windows WinUI / Linux GTK）+ Racket 语义引擎</td></tr>
+        <tr><th data-i18n="pf.platforms">平台</th><td data-i18n="pf.platforms-v">GUI：macOS 14+（Apple silicon / Intel）· Windows 10+（x64）· Linux（x64 / arm64）· CLI：macOS / Linux / Windows</td></tr>
         <tr><th data-i18n="pf.input">输入</th><td data-i18n="pf.input-v">ARXML — System Description / System Extract / ECU Extract / ECUC / 通信，多文件交付包</td></tr>
         <tr><th data-i18n="pf.automation">自动化</th><td data-i18n="pf.automation-v">CLI 稳定 JSON 输出（CI / AI agent 友好）+ MCP 服务器</td></tr>
         <tr><th data-i18n="pf.license">许可</th><td data-i18n="pf.license-v">源码可见，专有许可（source-available, proprietary）</td></tr>
-        <tr><th data-i18n="pf.milestone">里程碑</th><td data-i18n="pf.milestone-v">分析栈已交付：语义引擎、语义 diff、ECU 影响分析、通信投影、厂商交接、受控编辑、MCP；M9 商业化加固进行中</td></tr>
+        <tr><th data-i18n="pf.milestone">里程碑</th><td data-i18n="pf.milestone-v">分析栈已交付：语义引擎、语义 diff、ECU 影响分析、通信投影、厂商交接、受控编辑、MCP；三平台 GUI 宿主已上线；M9 商业化加固（授权、签名 / 公证、性能画像）进行中</td></tr>
       </table>
       <div class="hero-visual" style="margin-top:44px">
         <div class="app-window">
-          <img src="assets/autarx-workbench-empty-state.png" alt="Autarx macOS workbench — empty state" style="width:100%;height:auto;display:block">
+          <img src="assets/autarx-workbench-empty-state.png" alt="Autarx macOS 工作台：空态" data-i18n-alt="pf.shot-alt" style="width:100%;height:auto;display:block">
         </div>
-        <p style="text-align:center;font-size:13px;color:var(--text-3);margin-top:12px" data-i18n="pf.caption">macOS 工作台真实截图：空态。⌘O 打开 OEM 交付包，开始索引。</p>
+        <p style="text-align:center;font-size:13px;color:var(--text-3);margin-top:12px" data-i18n="pf.caption">macOS 工作台截图（截图版本尚未与当前发布核实）：空态。⌘O 打开 OEM 交付包，开始索引。</p>
       </div>
     </div>
   </section>
@@ -289,7 +289,8 @@ closure: 7 objects in scope, relevant changes: 4, unrelated: 2, <span class="fla
         'pf.automation': '自动化', 'pf.automation-v': 'CLI 稳定 JSON 输出（CI / AI agent 友好）+ MCP 服务器',
         'pf.license': '许可', 'pf.license-v': '源码可见，专有许可（source-available, proprietary）',
         'pf.milestone': '里程碑', 'pf.milestone-v': '分析栈已交付：语义引擎、语义 diff、ECU 影响分析、通信投影、厂商交接、受控编辑、MCP；三平台 GUI 宿主已上线；M9 商业化加固（授权、签名 / 公证、性能画像）进行中',
-        'pf.caption': 'macOS 工作台真实截图：空态。⌘O 打开 OEM 交付包，开始索引。',
+        'pf.caption': 'macOS 工作台截图（截图版本尚未与当前发布核实）：空态。⌘O 打开 OEM 交付包，开始索引。',
+        'pf.shot-alt': 'Autarx macOS 工作台：空态',
         'dl.eyebrow': '下载', 'dl.t1': '一个工作台，', 'dl.t2': '三个桌面。',
         'dl.lead': 'GUI 与 CLI 同一个引擎：macOS 以 dmg 交付，Windows 以 MSI 交付，Linux 以 deb / rpm / AppImage 交付；CLI 另有全平台自包含 zip。',
         'dl.mac-gui': 'GUI · macOS', 'dl.win-gui': 'GUI · Windows', 'dl.linux-gui': 'GUI · Linux',
@@ -337,7 +338,8 @@ closure: 7 objects in scope, relevant changes: 4, unrelated: 2, <span class="fla
         'pf.automation': 'Automation', 'pf.automation-v': 'CLI with stable JSON output (CI / AI-agent friendly) + MCP server',
         'pf.license': 'License', 'pf.license-v': 'Source-available, proprietary',
         'pf.milestone': 'Milestone', 'pf.milestone-v': 'Analysis stack shipped: semantic engine, semantic diff, ECU impact, communication projection, vendor hand-off, reviewed patching, MCP; native hosts on all three desktops; M9 commercial hardening (licensing, code signing / notarization, performance profiling) in progress',
-        'pf.caption': 'Real screenshot of the macOS workbench: empty state. Press ⌘O to open an OEM delivery and start indexing.',
+        'pf.caption': 'Mac workbench screenshot (capture version not yet reconciled to current release): empty state. Press ⌘O to open an OEM delivery and start indexing.',
+        'pf.shot-alt': 'Autarx macOS workbench: empty state',
         'dl.eyebrow': 'Download', 'dl.t1': 'One workbench,', 'dl.t2': 'three desktops.',
         'dl.lead': 'GUI and CLI share one engine: the macOS GUI ships as a dmg, the Windows GUI as an MSI, the Linux GUI as .deb / .rpm / .AppImage — plus self-contained CLI zips for every platform.',
         'dl.mac-gui': 'GUI · macOS', 'dl.win-gui': 'GUI · Windows', 'dl.linux-gui': 'GUI · Linux',
@@ -378,6 +380,11 @@ closure: 7 objects in scope, relevant changes: 4, unrelated: 2, <span class="fla
         for (var i = 0; i < nodes.length; i++) {
           var key = nodes[i].getAttribute('data-i18n');
           if (dict[key]) nodes[i].textContent = dict[key];
+        }
+        var images = document.querySelectorAll('[data-i18n-alt]');
+        for (var j = 0; j < images.length; j++) {
+          var altKey = images[j].getAttribute('data-i18n-alt');
+          if (dict[altKey]) images[j].setAttribute('alt', dict[altKey]);
         }
         var label = document.getElementById('current-lang-label');
         if (label) label.textContent = lang === 'en' ? 'English' : '简体中文';
