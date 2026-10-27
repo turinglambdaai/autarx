@@ -1,0 +1,25 @@
+name: Site content parity
+
+on:
+  pull_request:
+    paths:
+      - "docs/index.html"
+      - "scripts/check_site_copy.py"
+      - ".github/workflows/site-content-parity.yml"
+  push:
+    branches: [main]
+    paths:
+      - "docs/index.html"
+      - "scripts/check_site_copy.py"
+      - ".github/workflows/site-content-parity.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  no-js-copy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify critical Chinese fallback matches localized site dictionary
+        run: python3 scripts/check_site_copy.py
