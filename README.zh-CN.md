@@ -3,7 +3,7 @@
 **面向 OEM-Tier1 集成数据的现代 AUTOSAR 工程工作台：检查、理解、比较、追溯、自动化。**
 把 OEM 交付包或 ECU Extract 目录交给它，得到一个语义化工作区：对象清单、引用图、ECU 发现、未解析引用检查——全程可通过 agent 友好的 JSON CLI 脚本化。Autarx 位于厂商生成器**上层**；它不替代达芬奇、tresos 或 ISOLAR。
 
-[![CI](https://github.com/turinglambdaai/autarx/actions/workflows/ci.yml/badge.svg)](https://github.com/turinglambdaai/autarx/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/turinglambdaai/autarx)](https://github.com/turinglambdaai/autarx/releases/latest) ![Racket](https://img.shields.io/badge/Racket-CS-9F1D20?logo=racket&logoColor=white) [![License](https://img.shields.io/badge/License-Proprietary-red)](LICENSE)
+[![CI](https://github.com/turlamai/autarx/actions/workflows/ci.yml/badge.svg)](https://github.com/turlamai/autarx/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/turinglambdaai/autarx)](https://github.com/turlamai/autarx/releases/latest) ![Racket](https://img.shields.io/badge/Racket-CS-9F1D20?logo=racket&logoColor=white) [![License](https://img.shields.io/badge/License-Proprietary-red)](LICENSE)
 
 **中文** · [English](README.md)
 
@@ -122,7 +122,7 @@ autarx validate Mcu.arxml
 ## 安装
 
 发布产物统一按 `autarx-<version>-<os>-<arch>.<ext>` 命名，从
-[GitHub Releases](https://github.com/turinglambdaai/autarx/releases) 下载：
+[GitHub Releases](https://github.com/turlamai/autarx/releases) 下载：
 
 | 下载 | 平台 | 形态 |
 | --- | --- | --- |
@@ -140,24 +140,24 @@ CLI zip 就是自更新的载荷：装好后 `autarx update` 会从签名验证�
 也可以从源码构建：
 
 ```bash
-git clone https://github.com/turinglambdaai/autarx.git
+git clone https://github.com/turlamai/autarx.git
 cd autarx
 raco rivet build          # staged 应用 + CLI 运行时
 racket racket/autarx/cli.rkt --version
 ```
 
-前置：Racket CS 9.x 并 link [Rivet](https://github.com/turinglambdaai/rivet)——完整路径见下方「快速开始」。
+前置：Racket CS 9.x 并 link [Rivet](https://github.com/turlamai/rivet)——完整路径见下方「快速开始」。
 
 ## 快速开始
 
 ### 从源码构建
 
-依赖：Racket CS 9.x，并以 linked 方式装好 [Rivet](https://github.com/turinglambdaai/rivet)
+依赖：Racket CS 9.x，并以 linked 方式装好 [Rivet](https://github.com/turlamai/rivet)
 （在 rivet 检出内执行 `raco pkg install --auto --no-docs --name rivet --link file://$PWD`）。
 macOS 宿主另需 Xcode；Windows 宿主需 Visual Studio 2022 + Windows App SDK；Linux 宿主需 CMake + GTK4（`libgtk-4-dev` 等）。`raco rivet build` 构建当前平台对应的宿主。
 
 ```bash
-git clone https://github.com/turinglambdaai/autarx.git
+git clone https://github.com/turlamai/autarx.git
 cd autarx
 raco rivet build          # staged 布局：嵌入式后端 + 原生宿主
 racket racket/autarx/cli.rkt inspect shared/fixtures/OemDelivery --json

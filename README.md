@@ -3,7 +3,7 @@
 **A modern AUTOSAR engineering workbench for inspecting, understanding, comparing, tracing and automating OEM-to-supplier integration data.**
 Point it at an OEM delivery or ECU extract directory and get a semantic workspace: inventories, reference graphs, ECU discovery and unresolved-reference checks — scriptable end to end from an agent-friendly JSON CLI. Autarx sits **above** the vendor generators; it does not replace DaVinci, tresos or ISOLAR.
 
-[![CI](https://github.com/turinglambdaai/autarx/actions/workflows/ci.yml/badge.svg)](https://github.com/turinglambdaai/autarx/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/turinglambdaai/autarx)](https://github.com/turinglambdaai/autarx/releases/latest) ![Racket](https://img.shields.io/badge/Racket-CS-9F1D20?logo=racket&logoColor=white) [![License](https://img.shields.io/badge/License-Proprietary-red)](LICENSE)
+[![CI](https://github.com/turlamai/autarx/actions/workflows/ci.yml/badge.svg)](https://github.com/turlamai/autarx/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/turinglambdaai/autarx)](https://github.com/turlamai/autarx/releases/latest) ![Racket](https://img.shields.io/badge/Racket-CS-9F1D20?logo=racket&logoColor=white) [![License](https://img.shields.io/badge/License-Proprietary-red)](LICENSE)
 
 **English** · [中文](README.zh-CN.md)
 
@@ -122,7 +122,7 @@ autarx validate Mcu.arxml
 ## Install
 
 Releases follow `autarx-<version>-<os>-<arch>.<ext>` and ship from
-[GitHub Releases](https://github.com/turinglambdaai/autarx/releases):
+[GitHub Releases](https://github.com/turlamai/autarx/releases):
 
 | Download | Platform | Kind |
 | --- | --- | --- |
@@ -144,20 +144,20 @@ launch, right-click the app and choose Open.
 To build from source instead:
 
 ```bash
-git clone https://github.com/turinglambdaai/autarx.git
+git clone https://github.com/turlamai/autarx.git
 cd autarx
 raco rivet build          # staged app + CLI runtime
 racket racket/autarx/cli.rkt --version
 ```
 
-Prerequisites: Racket CS 9.x with [Rivet](https://github.com/turinglambdaai/rivet)
+Prerequisites: Racket CS 9.x with [Rivet](https://github.com/turlamai/rivet)
 linked — see [Getting started](#getting-started) below for the full path.
 
 ## Getting started
 
 ### Build from source
 
-Requirements: Racket CS 9.x with [Rivet](https://github.com/turinglambdaai/rivet)
+Requirements: Racket CS 9.x with [Rivet](https://github.com/turlamai/rivet)
 linked (inside a rivet checkout: `raco pkg install --auto --no-docs --name rivet --link file://$PWD`);
 the macOS host additionally needs Xcode, the Windows host Visual Studio 2022
 with the Windows App SDK, and the Linux host CMake + GTK4 (`libgtk-4-dev`
@@ -165,7 +165,7 @@ and friends). `raco rivet build` builds whichever host matches the current
 platform.
 
 ```bash
-git clone https://github.com/turinglambdaai/autarx.git
+git clone https://github.com/turlamai/autarx.git
 cd autarx
 raco rivet build          # staged layout: embedded backend + native host
 racket racket/autarx/cli.rkt inspect shared/fixtures/OemDelivery --json
