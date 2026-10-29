@@ -200,7 +200,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Set up embeddable Racket CS
-        uses: turinglambdaai/rivet/.github/actions/setup-embed-racket@v0.13.0
+        uses: turlamai/rivet/.github/actions/setup-embed-racket@v0.13.0
       # Installed after the embeddable runtime so the catalog dependency
       # closure (cext-lib, crypto-lib, keel) resolves against the minimal
       # build — it ships no packages of its own. crypto backs the updater.
@@ -314,11 +314,11 @@ jobs:
         run: |
           ver="${GITHUB_REF_NAME#v}"
           notes="Autarx ${ver}. The workbench ships on all three desktops: macOS (Apple silicon and Intel) as autarx-<version>-macos-<arch>.dmg, Windows as autarx-<version>-windows-x64.msi, Linux as .deb/.rpm/.AppImage for the common architectures. Every host updates in place through the Ed25519-signed feed (update-app-manifest.json); Linux tarball hand-offs stay manual — extract the -app.tar.gz over the install directory. The CLI ships as self-contained zips — autarx-<version>-{macos-arm64,macos-x64,linux-x64,linux-arm64,windows-x64}.zip — and updates itself through \`autarx update\`. Every asset carries a .sha256 sidecar. Ad-hoc signed — on first macOS launch, right-click the app and choose Open."
-          if gh release view "${{ github.ref_name }}" -R turinglambdaai/autarx >/dev/null 2>&1; then
-            gh release upload "${{ github.ref_name }}" dist/* --clobber -R turinglambdaai/autarx
+          if gh release view "${{ github.ref_name }}" -R turlamai/autarx >/dev/null 2>&1; then
+            gh release upload "${{ github.ref_name }}" dist/* --clobber -R turlamai/autarx
           else
             gh release create "${{ github.ref_name }}" dist/* \
-              -R turinglambdaai/autarx \
+              -R turlamai/autarx \
               --title "Autarx ${{ github.ref_name }}" \
               --notes "$notes"
           fi
@@ -352,4 +352,4 @@ jobs:
           cp "dist/autarx-${VERSION}-windows-x64.zip" stable-alias/autarx-windows-x64.zip
           cp "dist/autarx-${VERSION}-linux-x64.zip" stable-alias/autarx-linux-x64.zip
           cp "dist/autarx-${VERSION}-linux-arm64.zip" stable-alias/autarx-linux-arm64.zip
-          gh release upload "${{ github.ref_name }}" stable-alias/* --clobber -R turinglambdaai/autarx
+          gh release upload "${{ github.ref_name }}" stable-alias/* --clobber -R turlamai/autarx
