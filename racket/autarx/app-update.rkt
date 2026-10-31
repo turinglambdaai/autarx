@@ -105,7 +105,7 @@
 ;; "latest" location. Tests parameterize this at an unreachable local URL
 ;; instead of touching the network.
 (define default-update-base-url
-  "https://github.com/turinglambdaai/autarx/releases/latest/download")
+  "https://github.com/turlamai/autarx/releases/latest/download")
 
 (define current-update-base-url (make-parameter #f))
 
