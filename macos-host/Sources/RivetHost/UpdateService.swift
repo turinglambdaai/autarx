@@ -28,8 +28,8 @@ public final class UpdateService {
     nonisolated public static let expectedKeyID = "autarx-2026-10"
 
     public static let manifestURL = URL(string:
-        "https://github.com/turinglambdaai/autarx/releases/latest/download/update-app-manifest.json")!
-    public static let releasesPage = "https://github.com/turinglambdaai/autarx/releases/latest"
+        "https://github.com/turlamai/autarx/releases/latest/download/update-app-manifest.json")!
+    public static let releasesPage = "https://github.com/turlamai/autarx/releases/latest"
 
     public enum UpdateError: LocalizedError {
         case notInstalled
