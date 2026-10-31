@@ -16,6 +16,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  release-contract:
+    name: Offline release trust-root contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check Ed25519 release trust roots and canonical update feeds
+        run: python3 -m unittest discover -s scripts/tests -p 'test_release_signing.py'
+
   test:
     strategy:
       fail-fast: false
